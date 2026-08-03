@@ -1,0 +1,78 @@
+.dashboard-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 20px;
+
+  background: #f8f9fa;
+  padding: 15px 20px;
+  border-radius: 8px;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-item label {
+  font-weight: 500;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+/* Make ALL inputs and selects same height */
+.dashboard-filters input,
+.dashboard-filters select {
+  height: 36px;   /* slightly smaller */
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+/* Fix DatePicker wrapper */
+.react-datepicker-wrapper {
+  width: auto;
+}
+
+.react-datepicker__input-container {
+  display: block;
+}
+
+.page-header {
+  margin-top: 0; /* remove extra gap */
+  padding: 12px 0;
+  border-bottom: 1px solid #ccc;
+}
+.daily-entry-dashboard-container {
+  padding: 16px 24px;
+}
+
+@media screen and (max-width: 768px) {
+  .dashboard-filters {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 15px;
+  }
+
+  .filter-item label {
+    text-align: left;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .dashboard-filters input,
+  .dashboard-filters select,
+  .date-picker,
+  .reset-filters-btn {
+    width: 100%;
+  }
+
+  .daily-entries-table th,
+  .daily-entries-table td {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+}

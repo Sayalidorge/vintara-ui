@@ -1,0 +1,133 @@
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import config from "../config";
+import "../css/theme.css";
+import "./ChangePassword.css";
+
+const ChangePassword = () => {
+  const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const validatePassword = (password) => {
+    const strongPassword =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+    return strongPassword.test(password);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validatePassword(newPassword)) {
+      alert(
+        "Password must be at least 8 characters and include uppercase, lowercase, number, and special character."
+      );
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert("New passwords do not match");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${config.BASE_URL}/users/change-password`, {
+        method: "PUT",
+        headers: config.getHeaders(),
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
+
+      if (!res.ok) throw new Error();
+
+      alert("Password changed successfully. Please login again.");
+
+      // 🔥 Force logout after password change
+      localStorage.clear();
+      navigate("/");
+
+    } catch (err) {
+      alert("Error changing password. Please check current password.");
+    }
+  };
+
+  return (
+    <div className="change-password-container">
+      <div className="form-wrapper">
+
+        <button className="back-btn" onClick={() => navigate(-1)}>
+          &larr; Back
+        </button>
+
+        <h2 className="page-title">Change Password</h2>
+
+        <form onSubmit={handleSubmit} className="change-password-form">
+
+          {/* Current Password */}
+          <div className="form-group">
+            <label>Current Password</label>
+            <div className="password-field">
+              <input
+                type={showCurrent ? "text" : "password"}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+              />
+              <span onClick={() => setShowCurrent(!showCurrent)}>
+                {showCurrent ? "Hide" : "Show"}
+              </span>
+            </div>
+          </div>
+
+          {/* New Password */}
+          <div className="form-group">
+            <label>New Password</label>
+            <div className="password-field">
+              <input
+                type={showNew ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+              <span onClick={() => setShowNew(!showNew)}>
+                {showNew ? "Hide" : "Show"}
+              </span>
+            </div>
+          </div>
+
+          {/* Confirm Password */}
+          <div className="form-group">
+            <label>Confirm New Password</label>
+            <div className="password-field">
+              <input
+                type={showConfirm ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+              <span onClick={() => setShowConfirm(!showConfirm)}>
+                {showConfirm ? "Hide" : "Show"}
+              </span>
+            </div>
+          </div>
+
+          <button type="submit" className="submit-btn">
+            Update Password
+          </button>
+
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default ChangePassword;

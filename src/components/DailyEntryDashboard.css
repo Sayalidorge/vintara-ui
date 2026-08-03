@@ -1,0 +1,200 @@
+:root {
+  --primary-teal: #008080;
+  --primary-purple: #800080;
+  --bg-light: #f5f5f5;
+  --text-dark: #333;
+}
+
+.daily-entry-dashboard-container {
+  padding: 20px;
+  background-color: var(--bg-light);
+  color: var(--text-dark);
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+}
+
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  color: var(--primary-purple);
+  margin: 0;
+}
+
+.record-entry-btn {
+  width: 100px; /* or any value you want */
+  background-color: var(--primary-teal);
+  color: white;
+  border: none;
+  padding: 8px 0; /* adjust vertical padding only */
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.record-entry-btn:hover {
+  background-color: var(--primary-purple);
+}
+
+.dashboard-filters {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.dashboard-filters label {
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+.resort-select,
+.date-picker {
+  width: 150px;
+}
+
+.reset-filters-btn {
+  background-color: var(--primary-teal);
+  color: white;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.reset-filters-btn:hover {
+  background-color: var(--primary-purple);
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.daily-entries-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+}
+
+.daily-entries-table th {
+  background-color: var(--primary-teal);
+  color: white;
+  padding: 10px;
+  text-align: left;
+}
+
+.daily-entries-table td {
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+}
+
+.daily-entries-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.edit-btn {
+  background-color: var(--primary-purple);
+  color: white;
+  border: none;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.edit-btn:hover {
+  background-color: var(--primary-teal);
+}
+.back-btn {
+  background-color: var(--primary-purple);
+  color: white;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  background-color: var(--primary-teal);
+}
+
+/* Ensure header-section keeps space between back button, title, and record button */
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 10px;
+}
+
+/* ===============================
+   Status Dropdown Styled
+================================ */
+.dashboard-filters select {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  font-weight: 600;
+  background-color: #fff;
+  cursor: pointer;
+  min-width: 150px;
+
+  transition: all 0.2s ease;
+}
+
+.dashboard-filters select:focus {
+  outline: none;
+  border-color: var(--primary-purple);
+  box-shadow: 0 0 0 2px rgba(128, 0, 128, 0.15);
+}
+.status-dropdown {
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 13px;
+  background-color: #fff;
+  color: #333;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.status-dropdown:hover {
+  border-color: var(--primary-purple);
+  box-shadow: 0 0 4px rgba(128, 0, 128, 0.2);
+}
+
+.status-dropdown:focus {
+  outline: none;
+  border-color: var(--primary-teal);
+  box-shadow: 0 0 6px rgba(0, 128, 128, 0.3);
+}
+
+@media screen and (max-width: 768px) {
+  .header-section {
+    flex-wrap: wrap;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .header-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .resort-select,
+  .date-picker,
+  .dashboard-filters select {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+}

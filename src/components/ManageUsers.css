@@ -1,0 +1,262 @@
+/* Outer container */
+.manage-users-container {
+  padding: 60px 20px 40px 20px;
+  display: flex;
+  justify-content: flex-start;
+  background: #f4f4f4;
+  min-height: 100vh;
+}
+
+/* Card wrapper */
+.form-wrapper {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  max-width: 100%;
+  width: 100%;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+/* Header */
+.header-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  position: relative;
+}
+
+.page-title {
+  flex: 1;
+  text-align: center;
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--primary-purple);
+}
+
+.back-btn {
+  flex-shrink: 0;
+  position: absolute;
+  left: 0;
+  background: var(--primary-purple);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s;
+}
+
+.back-btn:hover {
+  background: var(--primary-teal);
+}
+
+/* User form */
+.user-form input,
+.user-form select {
+  width: 100%;
+  max-width: 250px;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  display: block;
+}
+
+/* React-select container width */
+.basic-multi-select {
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+/* Users button wrapper */
+.user-form .button-group {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 15px;
+}
+
+/* Users buttons */
+.user-form button[type="submit"],
+.user-form .cancel-btn {
+  width: 140px;
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  color: white;
+  text-align: center;
+  transition: background 0.3s;
+}
+
+.user-form button[type="submit"] {
+  background: var(--primary-teal);
+}
+
+.user-form button[type="submit"]:hover {
+  background: var(--primary-purple);
+}
+
+.user-form .cancel-btn {
+  background: var(--primary-purple);
+}
+
+.user-form .cancel-btn:hover {
+  background: var(--primary-teal);
+}
+
+/* Users table */
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.users-table th,
+.users-table td {
+  padding: 12px;
+  border: 1px solid #ddd;
+}
+
+.users-table th {
+  background: var(--primary-teal);
+  color: white;
+}
+
+.edit-btn {
+  margin-right: 5px;
+  padding: 5px 10px;
+  background: var(--primary-purple);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.edit-btn:hover {
+  background: var(--primary-teal);
+}
+
+.delete-btn {
+  padding: 5px 10px;
+  background: red;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  background: darkred;
+}
+
+/* Resort form */
+.resort-form input {
+  width: 250px;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  display: block;
+}
+
+/* Resort button wrapper */
+.resort-form .button-group {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 15px;
+}
+
+/* Resort buttons */
+.resort-form button {
+  width: 140px;
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  color: white;
+  text-align: center;
+  transition: background 0.3s;
+}
+
+.resort-form button[type="submit"] {
+  background: var(--primary-teal);
+}
+
+.resort-form button[type="submit"]:hover {
+  background: var(--primary-purple);
+}
+
+.resort-form .cancel-btn {
+  background: var(--primary-purple);
+}
+
+.resort-form .cancel-btn:hover {
+  background: var(--primary-teal);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header-section {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .page-title {
+    margin-top: 10px;
+  }
+
+  .back-btn {
+    width: 100%;
+    max-width: 300px;
+    position: static;
+    margin-bottom: 10px;
+  }
+
+  /* Full-width buttons on mobile */
+  .user-form .button-group,
+  .resort-form .button-group {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .user-form button[type="submit"],
+  .user-form .cancel-btn,
+  .resort-form button[type="submit"],
+  .resort-form .cancel-btn {
+    width: 100%;
+  }
+
+  /* .form-row gets its display/gap from an inline style in ManageUsers.jsx,
+     which never sets flex-direction, so this reaches the real element. */
+  .form-row {
+    flex-direction: column;
+  }
+
+  .form-row > div {
+    width: 100%;
+  }
+
+  .user-form input,
+  .user-form select,
+  .basic-multi-select {
+    max-width: 100%;
+  }
+}
+
+.alert-text {
+  color: red;
+  font-size: 0.85rem;
+  margin-top: 3px;
+  display: block;
+}

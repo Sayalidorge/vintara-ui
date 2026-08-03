@@ -1,0 +1,300 @@
+/* ==========================================================================
+   Layout Shell — Sidebar, Header, Content
+   Shared by AdminLayout.jsx and UserLayout.jsx (both import this file).
+   This is the single source of truth for .admin-layout / .sidebar /
+   .main-content / .dashboard-header-bar — do not redeclare these selectors
+   in page-specific CSS files.
+   ========================================================================== */
+
+:root {
+  --primary-purple: #800080;
+  --primary-teal: #008080;
+  --sidebar-width: 220px;
+  --sidebar-width-collapsed: 68px;
+}
+
+.admin-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  background: #f5f6fa;
+}
+
+/* ---- Sidebar ---- */
+.admin-layout .sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  height: 100vh;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--primary-teal);
+  color: white;
+  padding: 20px 0;
+  transition: width 0.25s ease, min-width 0.25s ease, transform 0.3s ease;
+}
+
+.sidebar-logo-section {
+  text-align: center;
+  margin-bottom: 30px;
+  padding: 0 16px;
+}
+
+.sidebar-logo-section .sidebar-logo {
+  font-size: 20px;
+  font-weight: bold;
+  margin: 5px 0;
+  white-space: nowrap;
+}
+
+.sidebar-logo-section .username {
+  display: block;
+  font-size: 0.9rem;
+  color: #fff;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 0 12px;
+  margin: 0;
+}
+
+.sidebar-menu li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.3s;
+}
+
+.sidebar-menu li svg {
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
+.sidebar-menu li:hover {
+  background: var(--primary-purple);
+}
+
+.sidebar-menu li.active {
+  background: var(--primary-purple);
+}
+
+/* Minimize / maximize — desktop collapses to an icon-only rail */
+.admin-layout.menu-hidden .sidebar {
+  width: var(--sidebar-width-collapsed);
+  min-width: var(--sidebar-width-collapsed);
+}
+
+.admin-layout.menu-hidden .sidebar-logo-section {
+  padding: 0;
+}
+
+.admin-layout.menu-hidden .sidebar-logo-section .sidebar-logo,
+.admin-layout.menu-hidden .sidebar-logo-section .username,
+.admin-layout.menu-hidden .sidebar-menu li .link-text {
+  display: none;
+}
+
+.admin-layout.menu-hidden .sidebar-menu li {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* ---- Main content / header ---- */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.dashboard-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 15px 20px;
+  background: var(--primary-purple);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.header-brand {
+  margin-left: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand-title {
+  font-weight: 700;
+}
+
+.brand-subtitle {
+  color: var(--primary-teal);
+}
+
+.dashboard-header-bar .actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dashboard-header-bar .actions .btn {
+  padding: 6px 12px;
+  background: white;
+  color: var(--primary-purple);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+  white-space: nowrap;
+}
+
+.dashboard-header-bar .actions .btn:hover {
+  background: var(--primary-teal);
+  color: white;
+}
+
+.menu-toggle-hamburger {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  transition: background-color 0.2s;
+}
+
+.menu-toggle-hamburger:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.content-viewport {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* Backdrop shown behind the sidebar drawer on mobile */
+.sidebar-backdrop {
+  display: none;
+}
+
+/* ==========================================================================
+   Tablet
+   ========================================================================== */
+@media screen and (max-width: 1024px) {
+  :root {
+    --sidebar-width: 200px;
+  }
+}
+
+/* ==========================================================================
+   Mobile — sidebar becomes an off-canvas drawer with a backdrop
+   ========================================================================== */
+@media screen and (max-width: 768px) {
+  .admin-layout .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    transform: translateX(-100%);
+    box-shadow: 2px 0 16px rgba(0, 0, 0, 0.25);
+  }
+
+  .admin-layout.menu-visible .sidebar {
+    transform: translateX(0);
+  }
+
+  /* On mobile "hidden" always means fully off-canvas — never the icon rail */
+  .admin-layout.menu-hidden .sidebar {
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    transform: translateX(-100%);
+  }
+
+  .admin-layout.menu-hidden .sidebar-logo-section {
+    padding: 0 16px;
+  }
+
+  .admin-layout.menu-hidden .sidebar-logo-section .sidebar-logo,
+  .admin-layout.menu-hidden .sidebar-logo-section .username,
+  .admin-layout.menu-hidden .sidebar-menu li .link-text {
+    display: block;
+  }
+
+  .admin-layout.menu-hidden .sidebar-menu li {
+    justify-content: flex-start;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .admin-layout.menu-visible .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 999;
+  }
+
+  .dashboard-header-bar {
+    padding: 12px 16px;
+  }
+
+  .header-brand {
+    margin-left: 10px;
+  }
+
+  .content-viewport {
+    padding: 16px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .logged-in-as {
+    display: none;
+  }
+
+  .brand-subtitle {
+    display: none;
+  }
+
+  .content-viewport {
+    padding: 12px;
+  }
+
+  .dashboard-header-bar .actions .btn {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+}

@@ -1,0 +1,108 @@
+.monthly-settlement-page {
+    padding: 25px;
+    background: var(--bg-light);
+    min-height: 100vh;
+}
+
+.filter-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+.summary-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+.summary-card h5 {
+    color: var(--primary-teal);
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.summary-row:last-child {
+    border-bottom: none;
+}
+
+.summary-label {
+    color: #666;
+    font-weight: 500;
+}
+
+.summary-value {
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+.profit {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.loss {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.card,
+.card *,
+.container-fluid,
+.container-fluid * {
+    color: #000 !important;
+}
+
+/* Minimal grid so the .row / .col-md-* markup (no Bootstrap installed)
+   actually lays out as intended, instead of just stacking as plain divs. */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.col-md-8 {
+    flex: 0 0 66.6667%;
+    max-width: 66.6667%;
+}
+
+.col-md-4 {
+    flex: 0 0 33.3333%;
+    max-width: 33.3333%;
+}
+
+.text-end {
+    text-align: right;
+}
+
+.settlement-filter-field {
+    flex: 1 1 160px;
+    min-width: 140px;
+}
+
+.settlement-filter-field--narrow {
+    flex: 1 1 100px;
+    min-width: 100px;
+}
+
+@media screen and (max-width: 768px) {
+    .col-md-8,
+    .col-md-4 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .col-md-4.text-end {
+        text-align: left;
+    }
+}

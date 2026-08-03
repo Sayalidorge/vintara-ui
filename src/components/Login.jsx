@@ -1,0 +1,91 @@
+// src/components/Login.jsx
+import React, { useState } from "react";
+import "./Login.css";
+import "../css/theme.css";
+import logo from "../assets/logo.jpg";
+import { useNavigate } from "react-router-dom";
+import config from "../config";
+
+
+const Login = () => {
+  const [userId, setUserId] = useState("");
+  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!userId || !password) {
+    alert("Please enter User ID and password");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${config.BASE_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, password }),
+    });
+
+    if (!res.ok) {
+      throw new Error("Invalid credentials");
+    }
+
+    const data = await res.json();
+    console.log("Login response:", data);
+
+    // Store token and user separately
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data));
+ console.log("Token stored:", localStorage.getItem("token")); // Check if token is saved
+    // Redirect based on role
+   // Redirect based on role
+if (data.role === "ADMIN") {
+  navigate("/admin/dashboard");
+} else if (data.role === "PROPERTY_MANAGER") {
+  navigate("/user/inventory"); // Redirect property manager to their daily booking dashboard
+} else {
+  navigate("/user/dashboard"); // Other roles
+}
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
+
+  return (
+    <div className="login-container">
+      <div className="login-box">
+        <img src={logo} alt="Vintara Resorts Logo" className="login-logo" />
+
+        <form onSubmit={handleSubmit}>
+          <label>User ID</label>
+          <input
+            type="text"
+            placeholder="Enter your User ID"
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+            required
+          />
+
+          <label>Password</label>
+          <input
+            type="password"
+            placeholder="Enter your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+<div className="forgot-password">
+  <a href="/forgot-password" className="forgot-password-link">
+    Forgot Password?
+  </a>
+</div>
+          <button type="submit">Login</button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default Login;

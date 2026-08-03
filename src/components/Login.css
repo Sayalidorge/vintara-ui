@@ -1,0 +1,94 @@
+/* src/components/Login.css */
+body, html {
+  height: 100%;
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: var(--bg-light);
+}
+
+.login-box {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 350px;
+  text-align: center;
+}
+
+.login-box h2 {
+  color: var(--primary-purple);
+  margin-bottom: 20px;
+}
+
+.login-box form {
+  display: flex;
+  flex-direction: column;
+}
+
+.login-box label {
+  text-align: left;
+  margin: 10px 0 5px;
+  font-weight: bold;
+}
+
+.login-box input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  outline: none;
+}
+
+.login-box input:focus {
+  border-color: var(--primary-teal);
+  box-shadow: 0 0 5px var(--primary-teal);
+}
+
+.login-box button {
+  padding: 12px;
+  background: var(--primary-teal);
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.login-box button:hover {
+  background: var(--primary-purple);
+}
+.login-logo {
+  width: 120px; /* adjust size */
+  margin-bottom: 20px;
+}
+.forgot-password {
+  text-align: right;        /* Align link to the right */
+  margin-bottom: 15px;      /* Space between link and button */
+}
+
+.forgot-password a {
+  color: var(--primary-purple);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s;
+}
+
+.forgot-password a:hover {
+  color: var(--primary-teal);
+}
+
+@media screen and (max-width: 480px) {
+  .login-box {
+    padding: 24px;
+  }
+}

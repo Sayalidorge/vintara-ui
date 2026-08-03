@@ -1,0 +1,20 @@
+/* Base reset — applies app-wide since this file is imported globally. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Breakpoint standard — use these three max-width values app-wide, mobile-last:
+   1024px — small laptop / tablet landscape (sidebar narrows, multi-col forms may go 2-col)
+   768px  — tablet portrait / large phone (stack to single column, hamburger nav)
+   480px  — phone portrait (tightest spacing, full-width buttons/inputs)
+   Do not introduce new breakpoints (600/900/1200/1400px etc.) in new work;
+   fold existing ones into this set whenever a file is otherwise being touched. */

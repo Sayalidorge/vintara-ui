@@ -1,0 +1,167 @@
+/* Container & page */
+.page-container.revenue-dashboard {
+  padding: 20px 24px;
+  background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  
+  color: var(--primary-teal);
+}
+
+/* Revenue section card */
+.revenue-section {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Section header: title + filters */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.section-header h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--primary-purple);
+}
+
+/* Filters dropdown */
+.filters select,
+.section-header select {
+  margin-left: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+/* Summary cards */
+.cards,
+.summary-cards {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.card,
+.summary-card {
+  background: white;
+  color: #fff;
+  padding: 10px 12px;    /* slightly smaller padding */
+  border-radius: 8px;
+  font-weight: 600;
+  flex: 1 1 100px;       /* smaller base width */
+  min-width: 100px;      /* reduce minimum width */
+  text-align: center;
+  border: 2px solid var(--primary-teal);  /* teal border */
+}
+
+.card h4,
+.summary-card h4 {
+  margin: 0 0 6px 0;     /* reduce spacing */
+  font-size: 14px;       /* smaller font */
+  font-weight: 600;
+}
+
+.card p,
+.summary-card p {
+  font-size: 16px;       /* smaller number text */
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Chart wrapper */
+.chart-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.chart-wrapper svg {
+  max-height: 320px;
+}
+
+/* Chart card (optional wrapper for better spacing) */
+.chart-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+/* Chart header inside chart wrapper */
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.chart-header h3 {
+  margin: 0;
+  font-weight: 600;
+  color: var(--primary-purple);
+}
+
+.chart-header select {
+  margin-left: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 0.9rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* Tooltip custom styling */
+.recharts-tooltip-wrapper {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.recharts-tooltip-wrapper div {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background-color: #fff !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .filters select,
+  .section-header select {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+
+  .cards,
+  .summary-cards {
+    flex-direction: column;
+    gap: 12px;
+  }
+}

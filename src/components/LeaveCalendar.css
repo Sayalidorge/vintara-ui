@@ -1,0 +1,105 @@
+/* src/components/LeaveCalendar.css */
+
+/* 1. Main Wrapper Container Card Layout */
+.leave-calendar-container {
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eaeaea;
+  max-width: 450px; /* Keeps the calendar layout compact and professional */
+  margin: 0 auto;
+}
+
+/* 2. Page Header Title Typography */
+.leave-calendar-container .page-title {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333333;
+}
+
+/* 3. Neutralize Weekend Styles (Overriding react-calendar default red markings) */
+.leave-calendar-container .react-calendar__month-view__days__day--weekend {
+  color: #333333 !important; /* Resets text to standard weekday dark gray */
+}
+
+/* 4. HIGH SPECIFICITY TILES: Forces Approved Leave Colors onto Calendar Day Circles */
+.leave-calendar-container .react-calendar__tile.leave-paid {
+  background-color: var(--primary-teal, #2ecc71) !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  font-weight: 600;
+}
+
+.leave-calendar-container .react-calendar__tile.leave-unpaid {
+  background-color: var(--primary-red, #e74c3c) !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  font-weight: 600;
+}
+
+.leave-calendar-container .react-calendar__tile.leave-wfh {
+  background-color: var(--primary-purple, #3498db) !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  font-weight: 600;
+}
+
+/* 5. Clean up interaction states on marked days */
+.leave-calendar-container .react-calendar__tile.leave-paid:hover,
+.leave-calendar-container .react-calendar__tile.leave-unpaid:hover,
+.leave-calendar-container .react-calendar__tile.leave-wfh:hover {
+  filter: brightness(90%) !important;
+}
+
+/* 6. Dashboard Leave Legend Structure Layout */
+.leave-calendar-container .leave-legend {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Base Legend Keys - Kept as squares so they don't break look alignments */
+.leave-calendar-container .legend-box {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  margin-right: 8px;
+  border-radius: 4px; /* Soft slightly rounded squares */
+  flex-shrink: 0;
+}
+
+/* Map legend box backgrounds explicitly to your dashboard colors */
+.leave-calendar-container .legend-box.leave-paid {
+  background-color: var(--primary-teal, #2ecc71) !important;
+}
+
+.leave-calendar-container .legend-box.leave-unpaid {
+  background-color: var(--primary-red, #e74c3c) !important;
+}
+
+.leave-calendar-container .legend-box.leave-wfh {
+  background-color: var(--primary-purple, #3498db) !important;
+}
+
+.leave-calendar-container .leave-legend span {
+  font-size: 13px;
+  color: #666666;
+  font-weight: 500;
+}
+
+@media screen and (max-width: 480px) {
+  .leave-calendar-container {
+    padding: 16px;
+  }
+
+  .leave-calendar-container .leave-legend {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}

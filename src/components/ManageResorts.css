@@ -1,0 +1,328 @@
+  /* Outer container: gives spacing from top of page */
+  .manage-resorts-container {
+    padding-top: 60px; /* top space */
+    padding-bottom: 40px;
+    padding-left: 20px;
+    padding-right: 20px;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* Card wrapper inside container */
+.manage-resorts-container .form-wrapper {
+  width: 1800px; /* increase for more table space */
+  max-width: 95%; /* keep responsive on smaller screens */
+  margin: 0 auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+  /* Header: back button + title in same line */
+  .header-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+  }
+
+  .header-section .page-title {
+    flex: 1;
+    text-align: center;
+    margin: 0;
+  }
+
+  .back-btn {
+    flex-shrink: 0;
+    background: var(--primary-purple);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 15px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  .back-btn:hover {
+    background: var(--primary-teal);
+  }
+
+  /* Form styling */
+  .resort-form {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* 👈 centers inputs + button */
+  }
+
+  .form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px; /* spacing between inputs */
+  width: 100%; /* ensures children don’t shrink weirdly */
+  justify-content: flex-start; /* left align children */
+}
+  /* Inputs */
+  .resort-form input {
+    width: 250px;
+    margin-bottom: 15px; /* increased vertical spacing */
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+  }
+
+  /* Submit button */
+  .resort-form button {
+    width: 140px;
+    margin-top: 10px;
+    background: var(--primary-teal);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  .resort-form button:hover {
+    background: var(--primary-purple);
+  }
+
+  /* Table styling */
+  .table-wrapper {
+  width: 100%;
+  overflow-x: visible;
+}
+
+.resorts-table {
+    width: 100%;
+  table-layout: auto; /* columns expand naturally */
+  min-width: unset;   /* remove previous 800px */
+   border-collapse: collapse;
+}
+
+/* Data cells */
+.resorts-table td {
+  padding: 12px;
+  border: 1px solid #ddd;   /* full grid */
+}
+
+.resorts-table th {
+  padding: 12px;
+  text-align: left;
+  background: var(--primary-teal);
+  color: white;
+   border: 1px solid #ddd;   /* full grid */
+}
+
+  .resorts-table th {
+    background: var(--primary-teal);
+    color: white;
+  }
+
+  .resorts-table td button {
+    padding: 5px 10px;
+    margin-right: 5px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    color: white;
+  }
+
+  .resorts-table .edit-btn {
+    background: var(--primary-purple);
+  }
+
+  .resorts-table .edit-btn:hover {
+    background: var(--primary-teal);
+  }
+
+  .resorts-table .delete-btn {
+    background: #ff4d4d;
+  }
+
+  .resorts-table .delete-btn:hover {
+    background: #cc0000;
+  }
+
+  /* Responsive: stack back button above title, and stack the two-column
+     form rows to a single column. The rows themselves get their display/gap
+     from an inline style (see ManageResorts.jsx), so this only needs to set
+     flex-direction, which the inline style never sets. */
+  @media (max-width: 768px) {
+    .header-section {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .header-section .page-title {
+      margin-top: 10px; /* space between button and title */
+      text-align: center;
+    }
+
+    .back-btn {
+      width: 100%;       /* full width for button on mobile */
+      max-width: 300px;  /* optional max width */
+      margin-bottom: 0;  /* spacing handled by margin-top on title */
+    }
+
+    .resort-form {
+      flex-wrap: wrap;
+    }
+
+    .resort-form input[type="text"],
+    .resort-form button {
+      width: 100%;
+    }
+
+    .form-row {
+      flex-direction: column;
+    }
+
+    .form-row > div {
+      width: 100%;
+    }
+
+    .room-category-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .room-category-row select.room-category-field--wide,
+    .room-category-row input.room-category-field--wide,
+    .room-category-row input.room-category-field--narrow {
+      flex: 1 1 100%;
+      width: 100%;
+    }
+  }
+
+  /* Room Categories Section */
+  .room-categories-section {
+    width: 100%;
+    margin-top: 20px;
+    padding: 10px 0;
+    border-top: 1px solid #ddd;
+  }
+
+  .room-categories-section h4 {
+    margin-bottom: 12px; /* slightly more spacing */
+  }
+
+  /* Each room category row */
+  .room-category-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+  }
+
+  .room-category-row input[type="text"],
+  .room-category-row input[type="number"] {
+    flex: 1 1 150px; /* grow but minimum width 150px */
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 0.9rem;
+  }
+
+  /* Matched on element+class to outrank the input[type=...] rule above,
+     which has the same specificity weight and would otherwise win by being
+     declared first. */
+  .room-category-row select.room-category-field--wide,
+  .room-category-row input.room-category-field--wide {
+    flex: 2 1 40%;
+  }
+
+  .room-category-row input.room-category-field--narrow {
+    flex: 1 1 20%;
+  }
+
+  /* Remove button for category row */
+  .room-category-row .remove-btn {
+    flex-shrink: 0;
+    background: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .room-category-row .remove-btn:hover {
+    background: #cc0000;
+  }
+
+  /* Add Room Category Button */
+  .add-btn {
+    background: var(--primary-teal);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+    width: 250px; /* same as inputs */
+    text-align: center;
+  }
+
+  .add-btn:hover {
+    background: var(--primary-purple);
+  }
+  .status-dropdown {
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 13px;
+    cursor: pointer;
+    min-width: 70px;
+  }
+  /* Reduce width of the location select dropdown */
+.form-row select {
+  flex: 0 0 180px; /* fixed width for dropdown */
+  max-width: 180px;
+  min-width: 150px; /* prevent it from shrinking too small */
+}
+
+/* New location input next to dropdown */
+.new-location input {
+  flex: 1 1 auto; /* grows to take remaining space */
+  margin-left: 10px; /* small spacing */
+}
+
+/* Add button next to input */
+.new-location .add-location-btn {
+  flex-shrink: 0; /* button keeps its size */
+  margin-left: 8px; /* spacing from input */
+  padding: 6px 12px; 
+  font-size: 0.9rem;
+}
+/* Space below Edit button */
+.resorts-table td.actions .edit-btn {
+  margin-bottom: 6px; /* adjust value as needed */
+}
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  color: white;
+  transition: background 0.3s;
+}
+
+.sidebar-link:hover {
+  background: var(--primary-purple);
+}
+
+.sidebar-link.active {
+  background: var(--primary-purple);
+}
+

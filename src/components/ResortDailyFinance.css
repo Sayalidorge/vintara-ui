@@ -1,0 +1,382 @@
+:root {
+  --primary-teal: #008080;
+  --primary-purple: #800080;
+  --bg-light: #f5f5f5;
+  --text-dark: #333;
+}
+
+.finance-wrapper {
+  padding: 20px;
+  background: var(--bg-light);
+  min-height: 100vh;
+}
+
+.page-title {
+  margin-bottom: 20px;
+  color: var(--primary-purple);
+}
+
+/* -----------------------------
+   Filters
+--------------------------------*/
+
+.filters {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 20px;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+}
+
+.filter-item label {
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.custom-datepicker {
+  height: 38px;
+  border-radius: 6px;
+  border: 1px solid var(--primary-teal);
+  padding: 0 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* -----------------------------
+   Tabs
+--------------------------------*/
+
+.finance-tabs {
+  display: flex;
+  margin: 25px 0;
+}
+
+.finance-tabs button {
+
+  border: none;
+  background: white;
+  color: #555;
+  cursor: pointer;
+
+  padding: 12px 30px;
+
+  font-weight: 600;
+
+  border: 1px solid #ddd;
+
+  transition: .2s;
+}
+
+.finance-tabs button:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.finance-tabs button:last-child {
+  border-radius: 0 6px 6px 0;
+}
+
+.finance-tabs .active-tab {
+
+  background: var(--primary-teal);
+
+  color: white;
+
+}
+
+/* -----------------------------
+   Card
+--------------------------------*/
+
+.finance-card label {
+
+  display:block;
+
+  margin-bottom:8px;
+
+  font-weight:bold;
+
+}
+
+.finance-card input{
+
+  width:100%;
+
+  height:40px;
+
+  padding:0 12px;
+
+  border-radius:6px;
+
+  border:1px solid #ccc;
+
+  box-sizing:border-box;
+
+  font-size:14px;
+
+}
+
+.finance-card input:focus{
+
+  outline:none;
+
+  border-color:var(--primary-teal);
+
+}
+
+/* -----------------------------
+   Buttons
+--------------------------------*/
+
+.save-btn,
+.cancel-btn,
+.edit-btn{
+
+  border:none;
+
+  border-radius:6px;
+
+  cursor:pointer;
+
+  font-weight:600;
+
+  transition:.2s;
+
+}
+
+.save-btn{
+
+  background:var(--primary-teal);
+
+  color:white;
+
+  padding:10px 24px;
+
+}
+
+.save-btn:hover{
+
+  background:#006666;
+
+}
+
+.cancel-btn{
+
+  background:#999;
+
+  color:white;
+
+  padding:10px 24px;
+
+}
+
+.cancel-btn:hover{
+
+  background:#666;
+
+}
+
+.edit-btn{
+
+  background:var(--primary-purple);
+
+  color:white;
+
+  padding:6px 14px;
+
+}
+
+.edit-btn:hover{
+
+  background:#5d005d;
+
+}
+
+/* -----------------------------
+   Table
+--------------------------------*/
+
+.finance-table{
+
+  margin-top:30px;
+
+  background:white;
+
+  border-radius:8px;
+
+  overflow:hidden;
+
+  box-shadow:0 2px 10px rgba(0,0,0,.08);
+
+}
+
+.finance-table table{
+
+  width:100%;
+
+  border-collapse:collapse;
+
+}
+
+.finance-table th{
+
+  background:var(--primary-teal);
+
+  color:white;
+
+  padding:14px;
+
+  text-align:left;
+
+}
+
+.finance-table td{
+
+  padding:14px;
+
+  border-bottom:1px solid #eee;
+
+}
+
+.finance-table tr:hover{
+
+  background:#f8f8f8;
+
+}
+
+/* -----------------------------
+   React Select
+--------------------------------*/
+
+.finance-wrapper .react-select__control{
+
+  min-height:38px;
+
+  border-color:var(--primary-teal);
+
+}
+
+.finance-wrapper .react-select__control--is-focused{
+
+  border-color:var(--primary-purple);
+
+  box-shadow:none;
+
+}
+
+.finance-wrapper .react-select__option--is-selected{
+
+  background:var(--primary-teal);
+
+}
+
+.finance-wrapper .react-select__option--is-focused{
+
+  background:#e6f7f7;
+
+}
+.finance-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+.finance-entry-row{
+    display:flex;
+    align-items:flex-end;
+    gap:20px;
+    flex-wrap:wrap;
+}
+
+.finance-input{
+    display:flex;
+    flex-direction:column;
+    flex:1;
+    min-width:220px;
+}
+
+.finance-input label{
+    font-weight:600;
+    margin-bottom:6px;
+}
+
+.finance-input input{
+    height:38px;
+    padding:0 12px;
+    border:1px solid #ccc;
+    border-radius:6px;
+    font-size:14px;
+    box-sizing:border-box;
+}
+
+.finance-button{
+    display:flex;
+    gap:10px;
+}
+
+.finance-button .save-btn,
+.finance-button .cancel-btn{
+    height:38px;
+    padding:0 22px;
+}
+/* -----------------------------
+   Responsive
+--------------------------------*/
+
+@media(max-width:768px){
+
+.filters{
+
+flex-direction:column;
+
+align-items:stretch;
+
+}
+
+.filter-item{
+
+width:100%;
+
+}
+
+.finance-card{
+
+max-width:100%;
+
+}
+
+.finance-tabs{
+
+flex-direction:column;
+
+}
+
+.finance-tabs button{
+
+border-radius:6px !important;
+
+margin-bottom:8px;
+
+}
+
+.finance-table{
+
+overflow-x:auto;
+
+}
+
+.finance-table table{
+
+min-width:700px;
+
+}
+
+}
