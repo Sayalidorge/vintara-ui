@@ -1,6 +1,6 @@
 // src/components/AdminLeaveDashboard.jsx
 import React, { useEffect, useState } from "react";
-import { getUsers, getAllLeaveRequests, approveLeave, rejectLeave } from "../services/LeaveService";
+import { getAttendanceEligibleUsers, getAllLeaveRequests, approveLeave, rejectLeave } from "../services/LeaveService";
 import "./AdminLeaveDashboard.css";
 
 const AdminLeaveDashboard = () => {
@@ -21,11 +21,12 @@ const AdminLeaveDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
 
-  // fetch users
+  // fetch users - USER + SUPER_USER only, matching the sibling dropdown in
+  // TeamAttendanceLeave.jsx which already uses this endpoint.
 useEffect(() => {
   const fetchUsers = async () => {
     try {
-      const data = await getUsers();
+      const data = await getAttendanceEligibleUsers();
       setUsers(data || []);
     } catch (err) {
       console.error("Error fetching users:", err);

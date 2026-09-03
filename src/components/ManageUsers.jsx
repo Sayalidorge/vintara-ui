@@ -380,6 +380,7 @@ const ManageUsers = () => {
         <table className="users-table" style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "#f2f2f2", textAlign: "left" }}>
+              <th style={{ padding: "10px", borderBottom: "2px solid #ddd" }}>ID</th>
               <th style={{ padding: "10px", borderBottom: "2px solid #ddd" }}>Name</th>
               <th style={{ padding: "10px", borderBottom: "2px solid #ddd" }}>Email</th>
               <th style={{ padding: "10px", borderBottom: "2px solid #ddd" }}>Contact Number</th>
@@ -392,6 +393,7 @@ const ManageUsers = () => {
             {filteredUsers.length > 0 ? (
               filteredUsers.map((user) => (
                 <tr key={user.id} style={{ borderBottom: "1px solid #eee" }}>
+                  <td style={{ padding: "10px" }}>{user.id}</td>
                   <td style={{ padding: "10px" }}>{user.name}</td>
                   <td style={{ padding: "10px" }}>{user.email}</td>
                   <td style={{ padding: "10px" }}>{user.contactNumber || "-"}</td>
@@ -426,7 +428,7 @@ const ManageUsers = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="6" style={{ textAlign: "center", padding: "20px" }}>
+                <td colSpan="7" style={{ textAlign: "center", padding: "20px" }}>
                   {users.length === 0
                     ? "No active user provision registry records tracked in database."
                     : "No users match your search/filters."}
