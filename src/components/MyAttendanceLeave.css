@@ -1,0 +1,100 @@
+.my-attendance-leave .attendance-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.my-attendance-leave .attendance-card h2 {
+  margin-top: 0;
+  color: var(--primary-purple);
+}
+
+.attendance-status-row {
+  display: flex;
+  gap: 32px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+
+.attendance-status-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.attendance-status-label {
+  font-size: 13px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.attendance-status-value {
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.location-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-office {
+  background: #e6f7ed;
+  color: #1e7e34;
+}
+
+.badge-remote {
+  background: #fff4e0;
+  color: #b45309;
+}
+
+.badge-unknown {
+  background: #eee;
+  color: #666;
+}
+
+.attendance-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.attendance-buttons button {
+  padding: 10px 22px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.attendance-buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-checkin {
+  background: var(--primary-teal, #008080);
+  color: #fff;
+}
+
+.btn-checkout {
+  background: var(--primary-purple, #800080);
+  color: #fff;
+}
+
+.my-attendance-leave small {
+  display: block;
+  margin-top: 10px;
+  color: #888;
+}

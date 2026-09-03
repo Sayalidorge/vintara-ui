@@ -1,3 +1,26 @@
+  /* Neutralizes ViewBookingEnquiry.css's bare ".page-header" (border-bottom +
+     padding) leaking in here, and the browser's default <h2> margin - both were
+     the real source of the large gap above/below the title. Also covers
+     PaymentAccounts.jsx, which reuses the same .resorts-page-container/.page-header
+     classes. */
+  .resorts-page-container .page-header {
+    margin: 0 0 15px 0;
+    padding: 0;
+    border-bottom: none;
+  }
+
+  .resorts-page-container .page-header h2 {
+    margin: 0;
+  }
+
+  /* Firefox adds an invisible focus-ring border+padding inside <button> that
+     isn't part of the declared box model, inflating buttons past their set
+     height (e.g. the "Add" button next to the new-location input). Reset it. */
+  .resort-form button::-moz-focus-inner {
+    border: 0;
+    padding: 0;
+  }
+
   /* Outer container: gives spacing from top of page */
   .manage-resorts-container {
     padding-top: 60px; /* top space */
@@ -55,7 +78,7 @@
     align-items: flex-start; /* 👈 centers inputs + button */
   }
 
-  .form-row {
+  .resort-form .form-row {
   display: flex;
   flex-wrap: wrap;
   gap: 15px; /* spacing between inputs */
@@ -282,7 +305,7 @@
     min-width: 70px;
   }
   /* Reduce width of the location select dropdown */
-.form-row select {
+.resort-form .form-row select {
   flex: 0 0 180px; /* fixed width for dropdown */
   max-width: 180px;
   min-width: 150px; /* prevent it from shrinking too small */

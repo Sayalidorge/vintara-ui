@@ -6,6 +6,7 @@ import config from "../config";
 import "./CreateBookingForm.css";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
+import { toLocalDateStr } from "../utils/date";
 
 const EditBookingForm = () => {
   const { bookingId } = useParams();
@@ -34,7 +35,7 @@ const EditBookingForm = () => {
   const [roomOptions, setRoomOptions] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = toLocalDateStr(new Date());
 
   // Phone validation
   const validatePhone = (value, country) => {

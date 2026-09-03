@@ -60,8 +60,9 @@
   padding-top: 15px;
   border-top: 1px solid #f0f0f0;
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 10px 16px;
 }
 
 /* Base Legend Keys - Kept as squares so they don't break look alignments */
@@ -91,6 +92,116 @@
   font-size: 13px;
   color: #666666;
   font-weight: 500;
+}
+
+/* 7. Attendance tile colors (opt-in via showAttendance prop) - distinct hues
+   from the leave colors above so the two layers stay visually separable. */
+.leave-calendar-container .react-calendar__tile.attendance-office {
+  background-color: #28a745 !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  font-weight: 600;
+}
+
+.leave-calendar-container .react-calendar__tile.attendance-remote {
+  background-color: #f39c12 !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  font-weight: 600;
+}
+
+.leave-calendar-container .react-calendar__tile.attendance-absent {
+  background-color: #7f8c8d !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  font-weight: 600;
+}
+
+.leave-calendar-container .react-calendar__tile.attendance-pending {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+  border: 2px dashed #999999 !important;
+  border-radius: 50% !important;
+  font-weight: 600;
+}
+
+.leave-calendar-container .legend-box.attendance-office {
+  background-color: #28a745 !important;
+}
+
+.leave-calendar-container .legend-box.attendance-remote {
+  background-color: #f39c12 !important;
+}
+
+.leave-calendar-container .legend-box.attendance-absent {
+  background-color: #7f8c8d !important;
+}
+
+.leave-calendar-container .legend-box.attendance-pending {
+  background-color: #ffffff !important;
+  border: 2px dashed #999999 !important;
+}
+
+.leave-calendar-container .attendance-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #888888;
+}
+
+.leave-calendar-container .correction-panel {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.leave-calendar-container .correction-panel h4 {
+  margin: 0 0 10px 0;
+  color: var(--primary-purple, #800080);
+}
+
+.leave-calendar-container .correction-panel label {
+  display: block;
+  margin-top: 8px;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: #555555;
+}
+
+.leave-calendar-container .correction-panel select,
+.leave-calendar-container .correction-panel textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.leave-calendar-container .correction-panel-buttons {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+}
+
+.leave-calendar-container .correction-panel-buttons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  background: var(--primary-purple, #800080);
+  color: #ffffff;
+}
+
+.leave-calendar-container .correction-panel-buttons button.secondary-btn {
+  background: #e0e0e0;
+  color: #333333;
+}
+
+.leave-calendar-container .correction-panel-buttons button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 @media screen and (max-width: 480px) {

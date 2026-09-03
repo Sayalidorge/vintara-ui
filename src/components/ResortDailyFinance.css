@@ -6,22 +6,29 @@
 }
 
 .finance-wrapper {
-  padding: 20px;
+  padding: 0 20px 20px;
   background: var(--bg-light);
   min-height: 100vh;
 }
 
-.page-title {
-  margin-bottom: 20px;
-  color: var(--primary-purple);
+/* Scoped to .finance-wrapper: .page-title/.filters are reused, unscoped class
+   names in several other page CSS files (e.g. text-align:center on .page-title,
+   justify-content:space-between on .filters), and since CRA bundles all
+   imported CSS globally, those can otherwise leak in and override this page's
+   intended layout depending on bundle order. */
+.finance-wrapper .page-title {
+  text-align: left;
+  margin: 0 0 15px;
+  color: var(--text-dark);
 }
 
 /* -----------------------------
    Filters
 --------------------------------*/
 
-.filters {
+.finance-wrapper .filters {
   display: flex;
+  justify-content: flex-start;
   gap: 20px;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -258,6 +265,14 @@
 
   min-height:38px;
 
+}
+
+/* react-select's own default theme colors the mouse-hover (not focused) border
+   blue - override it to the app's green/teal. Excludes --is-focused so focus
+   (purple) still wins when the mouse is also over the control - :hover alone
+   would otherwise outrank the plain --is-focused class on specificity. */
+.finance-wrapper .react-select__control:hover:not(.react-select__control--is-focused){
+
   border-color:var(--primary-teal);
 
 }
@@ -270,15 +285,20 @@
 
 }
 
-.finance-wrapper .react-select__option--is-selected{
+.finance-wrapper .react-select__option--is-focused{
 
-  background:var(--primary-teal);
+  background:#f3e6f5;
+
+  color:var(--text-dark);
 
 }
 
-.finance-wrapper .react-select__option--is-focused{
+/* Placed after --is-focused so it wins when an option is both selected and focused */
+.finance-wrapper .react-select__option--is-selected{
 
-  background:#e6f7f7;
+  background:var(--primary-purple);
+
+  color:#fff;
 
 }
 .finance-card {
@@ -333,7 +353,7 @@
 
 @media(max-width:768px){
 
-.filters{
+.finance-wrapper .filters{
 
 flex-direction:column;
 

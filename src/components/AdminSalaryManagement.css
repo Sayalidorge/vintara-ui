@@ -1,0 +1,137 @@
+.admin-salary-management .salary-admin-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.admin-salary-management h2 {
+  margin-top: 0;
+  color: var(--primary-purple);
+}
+
+.salary-form {
+  display: flex;
+  flex-direction: column;
+  max-width: 360px;
+  gap: 4px;
+}
+
+.salary-form label {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #555;
+}
+
+.salary-form select,
+.salary-form input[type="number"],
+.salary-form input[type="date"] {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  flex-direction: row !important;
+}
+
+.btn-save-salary {
+  margin-top: 16px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary-purple);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.btn-save-salary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-salary-management table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-salary-management th,
+.admin-salary-management td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.btn-view-payslip {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary-teal, #008080);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.salary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.month-picker {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.month-picker select {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.month-picker .secondary-btn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #e0e0e0;
+  color: #333;
+  cursor: pointer;
+}
+
+.salary-error {
+  color: #b91c1c;
+  background: #fee2e2;
+  padding: 10px 14px;
+  border-radius: 6px;
+}
+
+.salary-breakdown {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.salary-breakdown td {
+  padding: 8px 4px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.salary-breakdown td:last-child {
+  text-align: right;
+  font-weight: 600;
+}
+
+.salary-breakdown .total-deduction-row td {
+  border-top: 2px solid #ddd;
+  font-weight: 700;
+}

@@ -1,0 +1,106 @@
+.my-salary .salary-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px 24px;
+  max-width: 560px;
+  margin: 0 auto 24px auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.salary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.salary-header h2 {
+  margin: 0;
+  color: var(--primary-purple);
+}
+
+.month-picker {
+  display: flex;
+  gap: 8px;
+}
+
+.month-picker select {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.salary-error {
+  color: #b91c1c;
+  background: #fee2e2;
+  padding: 10px 14px;
+  border-radius: 6px;
+}
+
+.permanent-wfh-note {
+  background: #e6f7ed;
+  color: #1e7e34;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.salary-breakdown {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.salary-breakdown td {
+  padding: 8px 4px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.salary-breakdown td:last-child {
+  text-align: right;
+  font-weight: 600;
+}
+
+.salary-breakdown .total-deduction-row td {
+  border-top: 2px solid #ddd;
+  font-weight: 700;
+}
+
+.net-pay-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-top: 8px;
+  background: #fafafa;
+}
+
+.net-pay-box .net-pay-label {
+  font-size: 14px;
+  color: #555;
+}
+
+.net-pay-box .net-pay-value {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.net-pay-box .net-pay-value.deduction {
+  color: #c0392b;
+}
+
+.net-pay-box.net-pay-final {
+  background: #fff4e5;
+  border: 2px solid #b45309;
+  margin-top: 12px;
+}
+
+.net-pay-box.net-pay-final .net-pay-label,
+.net-pay-box.net-pay-final .net-pay-value {
+  color: #b45309;
+  font-size: 18px;
+}

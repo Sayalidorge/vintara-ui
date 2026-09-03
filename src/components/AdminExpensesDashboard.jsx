@@ -3,19 +3,29 @@ import React, { useState, useEffect } from "react";
 import config from "../config";
 import "./AdminExpensesDashboard.css";
 import Select from "react-select";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { downloadCsv } from "../utils/csv";
+import { toLocalDateStr } from "../utils/date";
+import { isSuperAdmin } from "../utils/auth";
 
 const AdminExpensesDashboard = () => {
   const [expenses, setExpenses] = useState([]);
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
-  const [expenseDate, setExpenseDate] = useState("");
+  const [expenseDate, setExpenseDate] = useState(toLocalDateStr(new Date()));
   const [paidBy, setPaidBy] = useState("");
   const [selectedResort, setSelectedResort] = useState(null); // react-select object {value, label}
   const [editId, setEditId] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const selectedMonth = toLocalDateStr(selectedDate).slice(0, 7);
 
   const [collectors, setCollectors] = useState([]);
   const [resorts, setResorts] = useState([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [expensesTotal, setExpensesTotal] = useState(0);
+  const PAGE_SIZE = 20;
 
   // Fetch collectors dropdown
   useEffect(() => {
@@ -45,23 +55,53 @@ const AdminExpensesDashboard = () => {
     fetchResorts();
   }, []);
 
-  // Fetch expenses whenever month or resort filter changes
+  // Filters changing means a different result set — start back on page 1.
+  useEffect(() => {
+    setPage(0);
+  }, [selectedMonth, selectedResort]);
+
+  // Fetch expenses whenever month, resort filter, or page changes
   useEffect(() => {
     const fetchExpenses = async () => {
       try {
-        let url = `${config.BASE_URL}/api/expenses/fetch?month=${selectedMonth}`;
+        let url = `${config.BASE_URL}/api/expenses/fetch?month=${selectedMonth}&page=${page}&size=${PAGE_SIZE}`;
         if (selectedResort) url += `&resortId=${selectedResort.value}`;
 
         const res = await fetch(url, { headers: config.getHeaders() });
         if (!res.ok) throw new Error("Failed to fetch expenses");
 
         const data = await res.json();
-        setExpenses(data);
+        setExpenses(data.content || []);
+        setTotalPages(data.totalPages ?? 0);
       } catch (err) {
         console.error(err);
       }
     };
     fetchExpenses();
+  }, [selectedMonth, selectedResort, page]);
+
+  // Separate aggregate for the "Total" row — reflects every matching row for
+  // the active filters, not just whatever page is currently displayed.
+  // Also re-run after add/edit/delete so the total doesn't go stale.
+  const fetchTotal = async () => {
+    try {
+      let url = `${config.BASE_URL}/api/expenses/fetch/total?month=${selectedMonth}`;
+      if (selectedResort) url += `&resortId=${selectedResort.value}`;
+
+      const res = await fetch(url, { headers: config.getHeaders() });
+      if (!res.ok) throw new Error("Failed to fetch expenses total");
+
+      const total = await res.json();
+      setExpensesTotal(total || 0);
+    } catch (err) {
+      console.error(err);
+      setExpensesTotal(0);
+    }
+  };
+
+  useEffect(() => {
+    fetchTotal();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMonth, selectedResort]);
 
   // Form submit handler
@@ -95,12 +135,13 @@ const AdminExpensesDashboard = () => {
       const data = await res.json();
 
       setExpenses(prev => editId ? prev.map(e => e.id === editId ? data : e) : [...prev, data]);
+      fetchTotal();
 
       // Reset form
       setEditId(null);
       setDescription("");
       setAmount("");
-      setExpenseDate("");
+      setExpenseDate(toLocalDateStr(new Date()));
       setPaidBy("");
       setSelectedResort(null);
     } catch (err) {
@@ -118,6 +159,36 @@ const AdminExpensesDashboard = () => {
     setSelectedResort({ value: exp.resortId, label: exp.resortName });
   };
 
+  const exportExpenses = async () => {
+    // `expenses` is only the current page — fetch every matching row for
+    // the active filters (not just what's on screen) before exporting.
+    try {
+      let url = `${config.BASE_URL}/api/expenses/fetch?month=${selectedMonth}&page=0&size=10000`;
+      if (selectedResort) url += `&resortId=${selectedResort.value}`;
+
+      const res = await fetch(url, { headers: config.getHeaders() });
+      if (!res.ok) throw new Error("Failed to fetch expenses for export");
+      const data = await res.json();
+
+      const resortLabel = selectedResort ? selectedResort.label : "all-resorts";
+      downloadCsv(
+        `expenses_${resortLabel}_${selectedMonth}.csv`,
+        data.content || [],
+        [
+          { key: "id", header: "ID" },
+          { key: "description", header: "Description" },
+          { key: "amount", header: "Amount" },
+          { key: "expenseDate", header: "Date" },
+          { key: "paidBy", header: "Paid By" },
+          { key: "resortName", header: "Resort" },
+        ]
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Failed to export expenses. Please try again.");
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this expense?")) return;
     try {
@@ -127,6 +198,7 @@ const AdminExpensesDashboard = () => {
       });
       if (!res.ok) throw new Error("Failed to delete expense");
       setExpenses(prev => prev.filter(e => e.id !== id));
+      fetchTotal();
     } catch (err) {
       console.error(err);
       alert(err.message);
@@ -134,82 +206,119 @@ const AdminExpensesDashboard = () => {
   };
 
   return (
-    <div className="resorts-page-container">
+    <div className="resorts-page-container" style={{ padding: "0px 20px 20px 20px", boxSizing: "border-box" }}>
       <div className="page-header">
-        <h2>Manage Expenses</h2>
+        <h2 style={{ fontSize: "23px", fontWeight: 700, color: "var(--text-dark)", textAlign: "left", letterSpacing: "0.2px", marginTop: "4px", marginBottom: "24px", paddingBottom: "6px", borderBottom: "2px dashed var(--primary-teal)" }}>Manage Expenses</h2>
       </div>
 
       {/* Expense Form */}
-      <form className="resort-form" onSubmit={handleAddOrEdit}>
-        <div className="form-row">
-          <input
-            type="text"
-            placeholder="Description"
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            required
-          />
-          <input
-            type="number"
-            placeholder="Amount"
-            value={amount}
-            onChange={e => setAmount(e.target.value)}
-            required
-          />
-        </div>
+      <div className="expense-form-card">
+        <h3 className="expense-form-card__title">
+          {editId ? `Update Expense (ID: #${editId})` : "Add New Expense"}
+        </h3>
+        <form className="expense-form" onSubmit={handleAddOrEdit}>
+          <div className="expense-form-row">
+            <div className="expense-field">
+              <label>Description</label>
+              <input
+                type="text"
+                placeholder="Description"
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                required
+              />
+            </div>
+            <div className="expense-field">
+              <label>Amount</label>
+              <input
+                type="number"
+                placeholder="Amount"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                required
+              />
+            </div>
+          </div>
 
-        <div className="form-row">
-          <input
-            type="date"
-            value={expenseDate}
-            onChange={e => setExpenseDate(e.target.value)}
-            required
-          />
+          <div className="expense-form-row">
+            <div className="expense-field">
+              <label>Date</label>
+              <DatePicker
+                selected={expenseDate ? new Date(expenseDate) : null}
+                onChange={date => setExpenseDate(date ? toLocalDateStr(date) : "")}
+                dateFormat="dd/MM/yyyy"
+                className="date-picker"
+              />
+            </div>
 
-          <select value={paidBy} onChange={e => setPaidBy(e.target.value)} required>
-            <option value="">Paid By</option>
-            {collectors.map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+            <div className="expense-field">
+              <label>Paid By</label>
+              <select value={paidBy} onChange={e => setPaidBy(e.target.value)} required>
+                <option value="">Paid By</option>
+                {collectors.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
 
-          <Select
-            className="react-select-container"
-            classNamePrefix="react-select"
-            placeholder="Select Resort"
-            options={resorts}
-            value={selectedResort}
-            onChange={setSelectedResort}
-            isClearable
-          />
-        </div>
+            <div className="expense-field">
+              <label>Resort</label>
+              <Select
+                className="react-select-container"
+                classNamePrefix="react-select"
+                placeholder="Select Resort"
+                options={resorts}
+                value={selectedResort}
+                onChange={setSelectedResort}
+                isClearable
+                menuPortalTarget={document.body}
+                styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+              />
+            </div>
+          </div>
 
-        <div className="form-row">
-          <button type="submit">{editId ? "Update Expense" : "Add Expense"}</button>
-          <button type="button" className="cancel-btn" onClick={() => {
-            setEditId(null);
-            setDescription("");
-            setAmount("");
-            setExpenseDate("");
-            setPaidBy("");
-            setSelectedResort(null);
-          }}>Cancel</button>
-        </div>
-      </form>
+          <div className="expense-form-actions">
+            <button type="submit">{editId ? "Update Expense" : "Add Expense"}</button>
+            <button type="button" className="cancel-btn" onClick={() => {
+              setEditId(null);
+              setDescription("");
+              setAmount("");
+              setExpenseDate(toLocalDateStr(new Date()));
+              setPaidBy("");
+              setSelectedResort(null);
+            }}>Cancel</button>
+          </div>
+        </form>
+      </div>
 
       {/* Month & Resort Filters */}
       <div className="form-row month-picker" style={{ margin: "12px 0" }}>
         <label>Select Month:</label>
-        <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} />
+        <DatePicker
+          selected={selectedDate}
+          onChange={(date) => setSelectedDate(date)}
+          dateFormat="dd/MM/yyyy"
+          className="date-picker"
+        />
 
         <label style={{ marginLeft: "16px" }}>Select Resort:</label>
         <Select
+          className="react-select-container"
+          classNamePrefix="react-select"
           options={resorts}
           value={selectedResort}
           onChange={setSelectedResort}
           placeholder="All Resorts"
           isClearable
+          menuPortalTarget={document.body}
+          styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
         />
+
+        {isSuperAdmin() && (
+          <button type="button" className="export-csv-btn" style={{ marginLeft: "16px" }} onClick={exportExpenses}>
+            Export CSV
+          </button>
+        )}
       </div>
 
       {/* Expenses Table */}
@@ -251,13 +360,33 @@ const AdminExpensesDashboard = () => {
               <tr>
                 <td colSpan="2"><strong>Total</strong></td>
                 <td colSpan="5">
-                  <strong>₹{expenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}</strong>
+                  <strong>₹{Number(expensesTotal).toLocaleString()}</strong>
                 </td>
               </tr>
             </tfoot>
           )}
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", marginTop: "14px" }}>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0}
+          >
+            Previous
+          </button>
+          <span>Page {page + 1} of {totalPages}</span>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={page >= totalPages - 1}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };

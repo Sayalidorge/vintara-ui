@@ -2,11 +2,46 @@
    User Dashboard Container
    ============================== */
 .user-dashboard {
-  padding: 20px 40px;
+  padding: 0 8px 20px 8px;
   background: #f4f4f4;
   min-height: 100vh;
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Neutralizes ViewBookingEnquiry.css's bare ".page-header" (border-bottom +
+   padding) leaking in here, and the browser's default <h2> margin - both were
+   the real source of the big gap under the navbar. */
+.user-dashboard .page-header {
+  margin: 0 0 15px 0;
+  padding: 0;
+  border-bottom: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.user-dashboard .page-header h2 {
+  margin: 0;
+  padding-top: 5px;
+}
+
+.btn-create-booking {
+  background: var(--primary-purple);
+  color: #fff;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn-create-booking:hover {
+  background: #660066;
 }
 
 /* ==============================
@@ -66,15 +101,26 @@
 /* ==============================
    Filters Section
    ============================== */
-.dashboard-filters {
+/* Every selector below is scoped as ".user-dashboard .dashboard-filters ..."
+   (3 classes) - not just ".user-dashboard ..." (2 classes) - because other
+   dashboard CSS files (DailyEntryDashboard.css, ViewBookingEnquiry.css) also
+   define plain ".dashboard-filters" / ".filter-item" / ".date-picker" /
+   ".reset-filters-btn" rules with 2-class specificity. A 2-class scope here
+   would just tie with theirs and the winner would depend on unpredictable
+   bundle order, which is exactly what caused the uneven date field widths
+   and wrong reset button color. 3 classes always wins outright. */
+.user-dashboard .dashboard-filters {
   display: flex;
   gap: 15px;
   align-items: flex-end;
   flex-wrap: wrap;
   margin-bottom: 20px;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
 }
 
-.filter-item {
+.user-dashboard .dashboard-filters .filter-item {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -82,53 +128,71 @@
   flex: 0 0 auto;
 }
 
-.filter-item:first-child {
+.user-dashboard .dashboard-filters .filter-item:first-child {
   min-width: 240px; /* Resort slightly wider */
 }
 
-.filter-item label {
+.user-dashboard .dashboard-filters .filter-item label {
   font-size: 14px;
   font-weight: 500;
   color: #333;
+  text-align: left;
 }
 
 /* ==============================
    UNIFIED FILTER HEIGHT SYSTEM
    ============================== */
-.react-select__control,
-.date-picker,
-.reset-filters-btn {
+.user-dashboard .dashboard-filters .react-select__control,
+.user-dashboard .dashboard-filters .date-picker,
+.user-dashboard .dashboard-filters .reset-filters-btn {
   height: 40px;
   min-height: 40px;
   box-sizing: border-box;
 }
 
 /* React Select internal fix */
-.react-select__control {
+.user-dashboard .dashboard-filters .react-select__control {
   padding: 0;
 }
 
-.react-select__value-container {
+.user-dashboard .dashboard-filters .react-select__value-container {
   height: 40px;
   padding: 0 10px;
   display: flex;
   align-items: center;
 }
 
-.react-select__indicators {
+.user-dashboard .dashboard-filters .react-select__indicators {
   height: 40px;
 }
 
 /* Date input */
-.date-picker {
+.user-dashboard .dashboard-filters .date-picker {
   width: 100%;
   padding: 0 10px;
   border-radius: 6px;
   border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+.user-dashboard .dashboard-filters .date-picker:focus {
+  border-color: var(--primary-teal);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--primary-teal);
+}
+
+/* DailyEntryDashboard.css has a leaked ".dashboard-filters .date-picker:not(:placeholder-shown)"
+   rule that paints a permanent Bootstrap-green (#28a745) border on any date
+   field that has a value, focused or not - that page wants that, this one
+   doesn't. Explicitly reset back to the default grey whenever this page's
+   date field isn't focused, regardless of whether it has a value. */
+.user-dashboard .dashboard-filters .date-picker:not(:focus) {
+  border-color: #ccc;
+  box-shadow: none;
 }
 
 /* Reset button */
-.reset-filters-btn {
+.user-dashboard .dashboard-filters .reset-filters-btn {
   background-color: var(--primary-purple);
   color: #fff;
   font-weight: 600;
@@ -141,37 +205,89 @@
   justify-content: center;
 }
 
-.reset-filters-btn:hover {
+.user-dashboard .dashboard-filters .reset-filters-btn:hover {
   background-color: var(--primary-teal);
 }
 
 /* ==============================
    Table Section
    ============================== */
-.table-wrapper {
+.user-dashboard .table-wrapper {
   width: 100%;
   overflow-x: auto;
   position: relative;
 }
 
-.bookings-table {
+/* Scoped (".user-dashboard .bookings-table", 2 classes) to beat
+   AdminExpensesDashboard.css's plain ".bookings-table" (1 class), which sets
+   "white-space: nowrap" on every cell - if that tie went the other way, every
+   column would refuse to wrap and force the table far wider than its content
+   actually needs, which is what was pushing this table into horizontal
+   scroll despite empty space on either side of it. */
+.user-dashboard .bookings-table {
   width: 100%;
+  min-width: 1100px; /* 13 columns can't be readable below this - let .table-wrapper's
+                         overflow-x:auto scroll horizontally past it instead of every
+                         column (and the Action buttons inside them) getting squeezed
+                         and mid-word-wrapping at narrow viewport widths. */
   border-collapse: collapse;
 }
 
-.bookings-table th,
-.bookings-table td {
+.user-dashboard .bookings-table th,
+.user-dashboard .bookings-table td {
   border: 1px solid #ccc;
-  padding: 8px;
+  padding: 6px 8px;
   font-size: 13px;
-  text-align: center;
+  white-space: normal;
   word-break: break-word;
 }
 
-.bookings-table th {
+.user-dashboard .bookings-table td {
+  text-align: left;
+}
+
+.user-dashboard .bookings-table th {
   background: var(--primary-teal);
   color: #fff;
   font-weight: 600;
+  text-align: left;
+}
+
+/* Edit/Send Confirmation/Cancel used to be bare sibling buttons directly in
+   the <td>, spaced with margin-left on each. Table cells here allow wrapping
+   (white-space: normal above), so at narrow widths each button wrapped onto
+   a new line independently as inline content - since "Send Confirmation" /
+   "Resend Confirmation" is much longer than "Edit"/"Cancel", it was usually
+   the one to wrap first, leaving rows misaligned relative to each other.
+   Split into two explicit groups (stacked as rows) instead of relying on
+   flex-wrap to decide where the break falls: Edit/Send Confirmation always
+   on the first line, Cancel/GST Invoice always together on the second. */
+.user-dashboard .bookings-table .row-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.user-dashboard .bookings-table .row-actions__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Scoped to this table only - the Cancel Booking modal's "Confirm
+   Cancellation" button also uses .btn-cancel and should stay red as a
+   destructive-action warning; only the row-level Cancel action here (which
+   just opens that modal, and isn't destructive by itself) matches Edit's
+   purple instead. ":not(:disabled)" isn't just a nicety here - without it
+   this 4-class selector would outrank the base ".btn-cancel:disabled" rule's
+   lower specificity and silently paint over the greyed-out disabled state. */
+.user-dashboard .bookings-table .row-actions .btn-cancel:not(:disabled) {
+  background: var(--primary-purple);
+}
+
+.user-dashboard .bookings-table .row-actions .btn-cancel:hover:not(:disabled) {
+  background: #660066;
 }
 
 .btn-edit {
@@ -186,12 +302,101 @@
 .btn-edit:hover {
   background: #660066;
 }
+
+.btn-confirm {
+  background: var(--primary-teal);
+  color: #fff;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-confirm:hover:not(:disabled) {
+  background: #006666;
+}
+
+.btn-confirm:disabled {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  background: #d32f2f;
+  color: #fff;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #b71c1c;
+}
+
+.btn-cancel:disabled {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
+}
+
+/* Row expand/collapse toggle for the extra booking details (OTA commission,
+   food preorder amounts, remarks) that don't have their own table columns. */
+.user-dashboard .row-expand-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--primary-teal);
+  padding: 0;
+  width: 20px;
+}
+
+.user-dashboard .row-details td {
+  background: #f4fbfb;
+  text-align: left;
+  padding: 8px 12px;
+}
+
+.user-dashboard .row-details-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.user-dashboard .row-details-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 90px;
+}
+
+/* Created By / GST Amount hold short values ("satyam", "500") that don't
+   need the full 90px column - narrowing just these two tightens up the row
+   enough for Remarks to fit on the same line instead of wrapping below. */
+.user-dashboard .row-details-grid > div.row-details-narrow {
+  min-width: 60px;
+}
+
+.user-dashboard .row-details-remarks {
+  flex: 0 1 auto;
+  max-width: 320px;
+}
+
+.user-dashboard .row-details-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #666;
+}
 /* ==========================================================================
    Calendar Dropdown Z-Index Layering Fix
    ========================================================================== */
 
 /* 1. Ensure the filter section has a higher stacking layer than the table below it */
-.dashboard-filters {
+.user-dashboard .dashboard-filters {
   position: relative;
   z-index: 10; /* Lifts the entire row of filters upward */
 }
@@ -200,6 +405,22 @@
 .react-datepicker-wrapper {
   position: relative;
   z-index: 11;
+}
+
+/* Selected day in the calendar popup - it's portaled to <body> (see
+   portalId="datepicker-portal" on the DatePicker), so it lives outside
+   .user-dashboard entirely and must be targeted globally by the library's
+   own classnames instead of scoped. !important guards against
+   react-datepicker's own default blue (#216ba5) winning the cascade tie. */
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: var(--primary-teal) !important;
+  color: #fff !important;
+}
+
+.react-datepicker__day--selected:not([aria-disabled=true]):hover,
+.react-datepicker__day--keyboard-selected:not([aria-disabled=true]):hover {
+  background-color: var(--primary-purple) !important;
 }
 
 /* 3. Make sure the actual calendar floating card overrides any sticky headers */
@@ -211,7 +432,7 @@
 }
 
 /* 4. Keep your table scrollable, but safely below the open dropdown filters */
-.table-wrapper {
+.user-dashboard .table-wrapper {
   position: relative;
   z-index: 1; /* Lowers the table depth container layer */
 }
@@ -219,12 +440,16 @@
    Responsive
    ============================== */
 @media (max-width: 900px) {
-  .dashboard-filters {
+  .user-dashboard {
+    padding: 0 12px 16px 12px;
+  }
+
+  .user-dashboard .dashboard-filters {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .filter-item {
+  .user-dashboard .dashboard-filters .filter-item {
     width: 100%;
   }
 
@@ -235,9 +460,9 @@
 }
 
 @media (max-width: 480px) {
-  .react-select__control,
-  .date-picker,
-  .reset-filters-btn {
+  .user-dashboard .dashboard-filters .react-select__control,
+  .user-dashboard .dashboard-filters .date-picker,
+  .user-dashboard .dashboard-filters .reset-filters-btn {
     width: 100%;
   }
 }

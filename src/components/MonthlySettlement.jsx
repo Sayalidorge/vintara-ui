@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import Select from "react-select";
 import config from "../config";
 import "./MonthlySettlement.css";
+import { downloadCsv } from "../utils/csv";
+import { isSuperAdmin } from "../utils/auth";
 
 const MonthlySettlement = () => {
 
@@ -11,6 +13,7 @@ const MonthlySettlement = () => {
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [settlement, setSettlement] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [finalizing, setFinalizing] = useState(false);
 
     useEffect(() => {
 
@@ -85,6 +88,73 @@ const MonthlySettlement = () => {
 
     };
 
+    const handleFinalize = async () => {
+        if (!settlement) return;
+        if (!window.confirm("Finalize this settlement? This marks it as approved.")) return;
+
+        setFinalizing(true);
+        try {
+            const response = await fetch(
+                `${config.BASE_URL}/api/settlement/${settlement.id}/finalize`,
+                { method: "POST", headers: config.getHeaders() }
+            );
+            if (!response.ok) {
+                const errBody = await response.json().catch(() => null);
+                throw new Error(errBody?.error || "Unable to finalize settlement");
+            }
+            const data = await response.json();
+            setSettlement(data);
+        } catch (e) {
+            alert(e.message);
+        }
+        setFinalizing(false);
+    };
+
+    const exportSettlement = () => {
+        if (!settlement) return;
+
+        // Marketing models leave the food/property fields null (see the
+        // strategy classes) rather than always emitting every field, so
+        // filter those out instead of hardcoding a field list per model.
+        const rows = [
+            { field: "Resort Turnover", value: settlement.resortTurnover },
+            { field: "Vintara Collection", value: settlement.vintaraCollection },
+            { field: "Property Collection", value: settlement.propertyCollection },
+            { field: "GST Amount", value: settlement.gstAmount },
+            { field: "OTA Commission", value: settlement.otaCommission },
+            { field: "OTA Turnover", value: settlement.otaTurnover },
+            { field: "OTA GST", value: settlement.otaGST },
+            { field: "Marketing Commission", value: settlement.marketingCommission },
+            { field: "Marketing Commission (OTA)", value: settlement.marketingCommissionOTA },
+            { field: "Marketing Commission (Vintara)", value: settlement.marketingCommissionVintara },
+            { field: "Total Marketing Commission", value: settlement.totalMarketingCommission },
+            { field: "Property Expense", value: settlement.propertyExpense },
+            { field: "Vintara Expense", value: settlement.vintaraExpense },
+            { field: "Total Vintara Expense", value: settlement.totalVintaraExpense },
+            { field: "Food Collection", value: settlement.foodCollection },
+            { field: "Food Expense", value: settlement.foodExpense },
+            { field: "Vintara Food Commission", value: settlement.vintaraFoodCommission },
+            { field: "Food Profit / Loss", value: settlement.foodProfitLoss },
+            { field: "Profit Remaining With Vintara", value: settlement.vintaraProfitLoss },
+            { field: "Profit Remaining With Property", value: settlement.propertyProfitLoss },
+            { field: "Total Profit / Loss", value: settlement.totalProfitLoss },
+            { field: "Owner Settlement Amount", value: settlement.ownerSettlementAmount },
+        ].filter((row) => row.value !== null && row.value !== undefined);
+
+        downloadCsv(
+            `settlement_${settlement.resort?.name || "resort"}_${settlement.month}-${settlement.year}.csv`,
+            rows,
+            [
+                { key: "field", header: "Field" },
+                { key: "value", header: "Value" },
+            ]
+        );
+    };
+
+    const isMarketingModel = settlement
+        ? ["GROWTH_MARKETING", "STANDARD_MARKETING"].includes(settlement.commissionModel)
+        : false;
+
     return (
 
         <div className="container-fluid mt-4">
@@ -92,7 +162,7 @@ const MonthlySettlement = () => {
             <div className="card shadow-sm">
 
                 <div className="card-header">
-                    <h4 className="mb-0">Monthly Settlement</h4>
+                    <h4 className="mb-0" style={{ fontSize: "20px", fontWeight: 700, color: "var(--primary-purple)", textAlign: "left", textTransform: "uppercase", letterSpacing: "1px" }}>Monthly Settlement</h4>
                 </div>
 
                 <div className="card-body">
@@ -185,22 +255,27 @@ const MonthlySettlement = () => {
 
                 <small>
                     {settlement.resort?.name} | {settlement.month}/{settlement.year}
+                    {settlement.status === "APPROVED" && (
+                        <span className="badge bg-light text-success ms-2">Finalized</span>
+                    )}
                 </small>
 
             </div>
 
             <div>
 
-                <button className="btn btn-light btn-sm me-2">
-                    Export Excel
-                </button>
+                {isSuperAdmin() && (
+                    <button type="button" className="export-csv-btn me-2" onClick={exportSettlement}>
+                        Export CSV
+                    </button>
+                )}
 
-                <button className="btn btn-danger btn-sm me-2">
-                    Export PDF
-                </button>
-
-                <button className="btn btn-success btn-sm">
-                    Finalize
+                <button
+                    className="btn btn-success btn-sm"
+                    onClick={handleFinalize}
+                    disabled={finalizing || settlement.status === "APPROVED"}
+                >
+                    {settlement.status === "APPROVED" ? "Finalized" : finalizing ? "Finalizing…" : "Finalize"}
                 </button>
 
             </div>
@@ -268,26 +343,56 @@ const MonthlySettlement = () => {
                         </div>
                     </div>
 
-                    <div className="row mb-2">
-                        <div className="col-md-8">Marketing Commission</div>
-                        <div className="col-md-4 text-end">
-                            ₹ {settlement.marketingCommission}
+                    {/* Growth models use a flat marketing commission; Standard
+                        models derive it from actual OTA figures instead -
+                        show whichever the calculator actually populated. */}
+                    {settlement.marketingCommission !== null && settlement.marketingCommission !== undefined ? (
+                        <div className="row mb-2">
+                            <div className="col-md-8">Marketing Commission</div>
+                            <div className="col-md-4 text-end">
+                                ₹ {settlement.marketingCommission}
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <>
+                            <div className="row mb-2">
+                                <div className="col-md-8">Marketing Commission (OTA)</div>
+                                <div className="col-md-4 text-end">
+                                    ₹ {settlement.marketingCommissionOTA}
+                                </div>
+                            </div>
+                            <div className="row mb-2">
+                                <div className="col-md-8">Marketing Commission (Vintara)</div>
+                                <div className="col-md-4 text-end">
+                                    ₹ {settlement.marketingCommissionVintara}
+                                </div>
+                            </div>
+                            <div className="row mb-2">
+                                <div className="col-md-8">Total Marketing Commission</div>
+                                <div className="col-md-4 text-end">
+                                    ₹ {settlement.totalMarketingCommission}
+                                </div>
+                            </div>
+                        </>
+                    )}
 
+                    {!isMarketingModel && (
                     <div className="row mb-2">
                         <div className="col-md-8">Property Expense</div>
                         <div className="col-md-4 text-end">
                             ₹ {settlement.propertyExpense}
                         </div>
                     </div>
+                    )}
 
+                    {!isMarketingModel && (
                     <div className="row mb-2">
                         <div className="col-md-8">Vintara Expense</div>
                         <div className="col-md-4 text-end">
                             ₹ {settlement.vintaraExpense}
                         </div>
                     </div>
+                    )}
 
                     <hr/>
 
@@ -307,7 +412,11 @@ const MonthlySettlement = () => {
 
             </div>
 
-            {/* FOOD */}
+            {/* FOOD + PROFIT/LOSS — Rented/Revenue models only. The two
+                Marketing models don't split property/food at all, they
+                show a single owed-amount instead (see below). */}
+            {!isMarketingModel && (
+            <>
 
             <div className="card mb-4 border-warning">
 
@@ -340,6 +449,20 @@ const MonthlySettlement = () => {
                         </div>
 
                     </div>
+
+                    {settlement.vintaraFoodCommission !== null && settlement.vintaraFoodCommission !== undefined && (
+                    <div className="row mb-2">
+
+                        <div className="col-md-8">
+                            Vintara Food Commission
+                        </div>
+
+                        <div className="col-md-4 text-end">
+                            ₹ {settlement.vintaraFoodCommission}
+                        </div>
+
+                    </div>
+                    )}
 
                     <hr/>
 
@@ -424,6 +547,40 @@ const MonthlySettlement = () => {
                 </div>
 
             </div>
+
+            </>
+            )}
+
+            {/* OWNER SETTLEMENT — Marketing models only. Vintara holds the
+                full collection and either owes the owner or is owed by
+                them, rather than a 3-way property/Vintara/food split. */}
+            {isMarketingModel && settlement.ownerSettlementAmount !== null && settlement.ownerSettlementAmount !== undefined && (
+            <div className={`card border-dark`}>
+
+                <div className="card-header bg-dark text-white">
+                    Owner Settlement
+                </div>
+
+                <div className="card-body">
+
+                    <div
+                        className={`row fw-bold fs-5 ${settlement.ownerSettlementAmount >= 0 ? "text-success" : "text-danger"}`}
+                    >
+                        <div className="col-md-8">
+                            {settlement.ownerSettlementAmount >= 0
+                                ? "Vintara owes the owner"
+                                : "Owner owes Vintara"}
+                        </div>
+
+                        <div className="col-md-4 text-end">
+                            ₹ {Math.abs(settlement.ownerSettlementAmount)}
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+            )}
 
         </div>
 

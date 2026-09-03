@@ -8,34 +8,75 @@
 }
 /* Wrapper for the form card */
 .form-wrapper {
-  max-width: 800px;
+  max-width: 1600px;
   min-width: 400px;
-  width: 90%;
-  margin: 0 auto;
-  padding: 30px;
+  width: 95%;
+  /* Negative top margin cancels out .content-viewport's own padding-top
+     (UserLayout.css) so the card sits flush under the navbar. Top padding
+     is trimmed (no title anymore) so the first section starts right at
+     the card's edge instead of leaving dead space under the navbar. */
+  margin: -24px auto 0;
+  padding: 12px 24px 24px;
   background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(202, 144, 144, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 128, 128, 0.15);
   font-size: 16px;
 }
 
-.form-wrapper h2 {
-  text-align: center;
-  margin-bottom: 30px;
-  font-size: 24px;
-  color: #333;
+.booking-form {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  align-items: start;
 }
 
-.booking-form {
+.booking-form > .submit-btn {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  justify-self: center;
+  width: auto;
+  padding-left: 40px;
+  padding-right: 40px;
+}
+
+/* Section cards */
+.booking-section-card {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(0, 128, 128, 0.06);
 }
 
-/* General form row */
+.booking-section-card.full-width {
+  grid-column: 1 / -1;
+}
+
+.booking-section-title {
+  margin: 0 0 14px 0;
+  padding-bottom: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary-teal);
+  border-bottom: 2px solid rgba(0, 128, 128, 0.15);
+  letter-spacing: 0.2px;
+}
+
+.booking-section-card > *:last-child {
+  margin-bottom: 0;
+}
+
+/* General form row. align-items: flex-end bottom-aligns the actual input
+   boxes regardless of small height differences between react-select's
+   rendered control and native inputs (labels stay readable above each). */
 .booking-form .form-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
+  gap: 12px;
+  align-items: flex-end;
 }
 
 .booking-form .form-row .form-group {
@@ -45,6 +86,13 @@
   min-width: 0; /* prevent overflow */
 }
 
+/* Overrides an unscoped, globally-leaking `.form-group { margin-bottom }`
+   rule from other pages' CSS (CRA bundles all component CSS globally) with
+   an intentional, tighter value scoped to this form. */
+.booking-form .form-group {
+  margin-bottom: 10px;
+}
+
 .booking-form .form-group label {
   font-weight: 500;
   margin-bottom: 5px;
@@ -52,9 +100,30 @@
   color: #555;
 }
 
+/* Checkbox variant: label and box sit on one line instead of stacking,
+   so this takes less vertical space than the old Yes/No dropdown. */
+.booking-form .food-preorder-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.booking-form .food-preorder-toggle input[type="checkbox"] {
+  width: auto;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
 .booking-form input[type="text"],
 .booking-form input[type="number"],
 .booking-form input[type="date"],
+.booking-form textarea,
+.booking-form select,
+.booking-form .date-picker-input,
 .booking-form .react-select__control {
   padding: 10px 12px;
   font-size: 16px;
@@ -63,12 +132,97 @@
   outline: none;
   transition: border-color 0.2s;
   width: 100%;
+  box-sizing: border-box;
+}
+
+/* Fixed-height fields (everything except textarea, which needs to grow)
+   share one height so a row mixing plain inputs with react-select controls
+   lines up instead of the shorter react-select control looking "higher". */
+.booking-form input[type="text"],
+.booking-form input[type="number"],
+.booking-form input[type="date"],
+.booking-form select,
+.booking-form .date-picker-input {
+  height: 40px;
+}
+
+.booking-form textarea {
+  font-family: inherit;
+  resize: vertical;
+}
+
+/* Trim the dropdowns down a bit: react-select's own value-container/indicators
+   padding stacks on top of .react-select__control's padding above, so the
+   control renders taller than the plain text inputs it's grouped with. The
+   dropdown/clear icon buttons each carry their own internal padding too, so
+   those need trimming directly rather than just the wrapping container. */
+.booking-form .react-select__control {
+  padding: 0 12px;
+  min-height: 40px;
+}
+
+.booking-form .react-select__value-container {
+  padding: 0 4px;
+}
+
+.booking-form .react-select__indicators {
+  height: auto;
+}
+
+.booking-form .react-select__dropdown-indicator,
+.booking-form .react-select__clear-indicator {
+  padding: 4px;
+}
+
+.booking-form .react-select__indicator-separator {
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+.booking-form .react-select__input-container,
+.booking-form .react-select__placeholder,
+.booking-form .react-select__single-value {
+  margin: 0;
+  padding: 0;
 }
 
 .booking-form input:focus,
+.booking-form textarea:focus,
+.booking-form select:focus,
 .booking-form .react-select__control--is-focused {
   border-color: #008080;
+  outline: none;
   box-shadow: 0 0 0 2px rgba(0, 128, 128, 0.2);
+}
+
+/* react-select's own default option colors are blue; override with teal to
+   match the app theme. */
+.booking-form .react-select__option--is-focused {
+  background-color: #e6f0f0;
+  color: #333;
+}
+
+.booking-form .react-select__option--is-selected {
+  background-color: var(--primary-teal);
+  color: #fff;
+}
+
+/* Check-in/Check-out render their calendar via portalId="booking-datepicker-portal"
+   (appended to document.body, so the popup can't push this form's layout
+   down), which puts it outside .form-wrapper in the DOM — scope to the
+   portal's own id instead. react-datepicker's own default selected-day
+   color is blue; !important is needed since other pages' global overrides
+   of the same class also use !important — the higher-specificity scoped
+   selector here still wins regardless of stylesheet load order. */
+#booking-datepicker-portal .react-datepicker__day--selected,
+#booking-datepicker-portal .react-datepicker__day--keyboard-selected {
+  background-color: var(--primary-teal) !important;
+  color: #fff !important;
+}
+
+#booking-datepicker-portal .react-datepicker__day--selected:hover,
+#booking-datepicker-portal .react-datepicker__day--keyboard-selected:hover {
+  background-color: var(--primary-purple) !important;
 }
 
 /* Remove number input spin buttons */
@@ -84,34 +238,34 @@
 }
 
 /* Buttons */
-.submit-btn, .back-btn {
+.booking-form .submit-btn, .booking-form .back-btn {
   font-size: 16px;
   padding: 10px 18px;
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
-.submit-btn {
+.booking-form .submit-btn {
   background-color: #008080;
   color: #fff;
   border: none;
   font-weight: 600;
 }
-.submit-btn:hover { background-color: #006666; }
-.back-btn {
+.booking-form .submit-btn:hover { background-color: #006666; }
+.booking-form .back-btn {
   font-size: 14px;
   padding: 6px 12px;
   border: none;
   background-color: #ccc;
 }
-.back-btn:hover { background-color: #006666; color: #fff; }
+.booking-form .back-btn:hover { background-color: #006666; color: #fff; }
 
 /* -----------------------------
    Three-fields row (Customer Info, Check-in/out)
 ----------------------------- */
 .form-row.three-fields {
   display: flex;
-  gap: 15px;
+  gap: 12px;
   flex-wrap: wrap;
   align-items: flex-end; /* aligns labels/inputs uniformly */
 }
@@ -134,33 +288,44 @@
   min-width: 0;
 }
 
-/* PhoneInput adjustment */
-.form-row.three-fields .PhoneInput input {
+/* PhoneInput adjustment: react-phone-input-2's own default CSS hardcodes
+   .form-control to width:300px, so without this it doesn't match the width
+   of the plain input above it in the same card. */
+.booking-section-card .react-tel-input {
+  width: 100%;
+}
+
+.booking-section-card .react-tel-input .form-control {
+  width: 100%;
   height: 40px;
   box-sizing: border-box;
 }
-.add-category-btn {
+/* Add and Remove share one size, matched to the 40px height of the
+   Category/Rooms dropdowns they sit next to. */
+.add-category-btn,
+.remove-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background-color: transparent;
-  color:primary-purple; /* Modern Royal Blue */
-  border: 2px solid var(--button-hover);
-  padding: 10px 20px;
+  height: 40px;
+  padding: 0 20px;
   font-size: 14px;
   font-weight: 600;
   border-radius: 6px;
+  border: none;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  margin: 15px 0;
-  width: auto; /* Keeps it naturally sized, change to 100% if you want it full-width */
+  transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
-/* Hover & Active States */
+.add-category-btn {
+  background-color: var(--primary-teal);
+  color: #fff;
+}
+
 .add-category-btn:hover {
-  background-color: #f0f5ff;
-  border-style: solid;
+  background-color: var(--primary-purple);
 }
 
 .add-category-btn:active {
@@ -169,30 +334,18 @@
 
 /* Disabled state just in case */
 .add-category-btn:disabled {
+  background-color: #e5e7eb;
   color: #9ca3af;
-  border-color: #e5e7eb;
   cursor: not-allowed;
 }
+
 .remove-btn {
-  background-color: var(--primary-purple) !important;
-  color:white!important; /* Soft Crimson Red */
-  border: 1px solid #fca5a5; /* Light Red Border */
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-top: 10px; /* Adjust spacing below the form rows */
-  display: inline-flex;
-  align-items: center;
+  background-color: var(--primary-purple);
+  color: #fff;
 }
 
-/* Hover state turns solid red */
 .remove-btn:hover {
   background-color: var(--primary-teal);
-  color: #ffffff;
-  border-color: var(--primary-teal);
 }
 
 /* Slight scale click effect */
@@ -200,14 +353,42 @@
   transform: scale(0.97);
 }
 .booking-item-card {
-  position: relative; /* Allows layout flexibility */
-  /* Your existing card styles (borders, padding, background, etc.) */
+  position: relative;
+  display: flow-root; /* contains the floated .remove-btn below so it
+                          doesn't bleed past this card's background/border */
+  background-color: #f8fafb;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 16px;
+  margin-bottom: 14px;
 }
 
-/* If you want to push the button right-aligned below the fields */
-.remove-btn {
-  float: right;
-  margin-bottom: 10px;
+/* No labels above Category/Rooms/action buttons in this row, so the
+   .form-group default margin-bottom is just dead space at the card's edge. */
+.booking-item-card .form-row > .form-group {
+  margin-bottom: 0;
+}
+
+.booking-item-card:last-of-type {
+  margin-bottom: 4px;
+}
+
+/* Remove and Add sit inside the Category/Rooms .form-row, next to the
+   Rooms dropdown. */
+.booking-item-card .form-row > .action-buttons {
+  flex: 0 0 auto;
+}
+
+.action-buttons-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* Cap how wide Category/Rooms can grow so they don't crowd out the
+   Add/Remove buttons on wide screens. */
+.booking-item-card .form-row > .form-group:not(.action-buttons) {
+  flex: 1 1 220px;
+  max-width: 380px;
 }
 /* Responsive: stack fields vertically on small screens */
 @media (max-width: 600px) {
@@ -219,12 +400,28 @@
    Responsive Media Queries
    ========================================================================== */
 
+/* Drop the section-card grid from 3 columns to 2 before things get tight
+   (react-select / PhoneInput need real width) — well above the 768px
+   breakpoint where rows/cards go fully single-column. */
+@media screen and (max-width: 1200px) {
+  .booking-form {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* Tablet Breakpoint (768px and down) */
 @media screen and (max-width: 768px) {
   .form-wrapper {
     padding: 15px;
-    margin: 10px auto;
+    /* .content-viewport padding drops to 16px at this breakpoint */
+    margin: -16px auto 10px;
     width: 95%;
+  }
+
+  /* Collapse the section-card grid to a single column */
+  .booking-form {
+    grid-template-columns: 1fr;
+    gap: 15px;
   }
 
   /* Force rows to stack into a single column layout */
@@ -248,7 +445,7 @@
   }
 
   /* Expand submit button to full width for easier mobile tapping */
-  .submit-btn {
+  .booking-form .submit-btn {
     width: 100%;
     padding: 14px;
     font-size: 16px;
@@ -257,14 +454,22 @@
 
 /* Mobile Breakpoint (480px and down) */
 @media screen and (max-width: 480px) {
+  .form-wrapper {
+    /* .content-viewport padding drops to 12px at this breakpoint */
+    margin: -12px auto 10px;
+  }
+
   .booking-item-card {
     padding: 12px;
     border-radius: 6px;
   }
 
-  h2 {
-    font-size: 20px;
-    margin-bottom: 15px;
+  .booking-section-card {
+    padding: 14px 16px;
+  }
+
+  .booking-form {
+    gap: 14px;
   }
 
   button.remove-btn {

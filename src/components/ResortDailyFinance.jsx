@@ -4,6 +4,8 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "./ResortDailyFinance.css";
 import config from "../config";
+import { toLocalDateStr } from "../utils/date";
+import { downloadCsv } from "../utils/csv";
 
 const ResortDailyFinance = () => {
 
@@ -15,10 +17,12 @@ const ResortDailyFinance = () => {
     }
   }, []);
 
+  const isAdminView = ["ADMIN", "SUPER_ADMIN"].includes(user?.role);
+  const isSingleResortRole = ["PROPERTY_MANAGER", "RECEPTION"].includes(user?.role);
+
   const [loading, setLoading] = useState(true);
 
   const [allResorts, setAllResorts] = useState([]);
-  const [assignedResortIds, setAssignedResortIds] = useState([]);
   const [selectedResort, setSelectedResort] = useState(null);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -78,63 +82,10 @@ const ResortDailyFinance = () => {
 
   }, []);
 
-  //---------------------------------------------------------
-  // Load manager assigned resorts
-  //---------------------------------------------------------
-
-  useEffect(() => {
-
-    if (user?.role !== "PROPERTY_MANAGER")
-      return;
-
-    const loadAssigned = async () => {
-
-      try {
-
-        const res = await fetch(
-          `${config.BASE_URL}/api/resorts/manager`,
-          {
-            headers: config.getHeaders(),
-          }
-        );
-
-        if (!res.ok)
-          throw new Error("Unable to fetch manager resorts");
-
-        const data = await res.json();
-
-        setAssignedResortIds(data.map(r => r.id));
-
-      } catch (e) {
-        console.error(e);
-      }
-
-    };
-
-    loadAssigned();
-
-  }, [user]);
-
-  //---------------------------------------------------------
-  // Filter resorts
-  //---------------------------------------------------------
-
-  const resorts = useMemo(() => {
-
-    if (!allResorts.length)
-      return [];
-
-    if (user?.role === "PROPERTY_MANAGER") {
-
-      return allResorts.filter(r =>
-        assignedResortIds.includes(r.value)
-      );
-
-    }
-
-    return allResorts;
-
-  }, [allResorts, assignedResortIds, user]);
+  // Resort list is already scoped server-side (GET /api/resorts/active
+  // filters to the caller's assigned resorts for every non-SUPER_ADMIN role),
+  // so no client-side filtering is needed here.
+  const resorts = allResorts;
 
   //---------------------------------------------------------
   // Auto select first resort
@@ -166,8 +117,8 @@ const ResortDailyFinance = () => {
       const url =
         `${config.BASE_URL}/api/resort-daily-finance` +
         `?resortId=${selectedResort.value}` +
-        `&fromDate=${fromDate.toISOString().split("T")[0]}` +
-        `&toDate=${toDate.toISOString().split("T")[0]}`;
+        `&fromDate=${toLocalDateStr(fromDate)}` +
+        `&toDate=${toLocalDateStr(toDate)}`;
 
       const res = await fetch(url, {
         headers: config.getHeaders(),
@@ -240,7 +191,7 @@ const handleSave = async () => {
 
   const payload = {
     resortId: selectedResort.value,
-    financeDate: selectedDate.toISOString().split("T")[0],
+    financeDate: toLocalDateStr(selectedDate),
     foodBillCollection: Number(foodBillCollection),
     expenseAmount: Number(expenseAmount),
   };
@@ -293,29 +244,51 @@ const totalExpense = financeEntries.reduce(
     0
 );
 
+const exportFinanceEntries = () => {
+  const rows = financeEntries.map((entry) => ({
+    date: formatDate(entry.financeDate),
+    resortName: entry.resortName,
+    foodBillCollection: entry.foodBillCollection,
+    expenseAmount: entry.expenseAmount,
+    profit: Number(entry.foodBillCollection) - Number(entry.expenseAmount),
+  }));
+  downloadCsv(
+    `property-collection_${selectedResort?.label || "resort"}_${toLocalDateStr(fromDate)}_to_${toLocalDateStr(toDate)}.csv`,
+    rows,
+    [
+      { key: "date", header: "Date" },
+      { key: "resortName", header: "Resort" },
+      { key: "foodBillCollection", header: "Food Collection" },
+      { key: "expenseAmount", header: "Expense" },
+      { key: "profit", header: "Profit" },
+    ]
+  );
+};
+
 const totalProfit = totalFoodCollection - totalExpense;
 
     return (
     <div className="finance-wrapper">
 
-      <h2 className="page-title">
-  {user?.role === "ADMIN"
+      <h2 className="page-title" style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-dark)", textAlign: "left", margin: "12px 0 18px", paddingLeft: "10px", borderLeft: "4px solid var(--primary-teal)" }}>
+  {isAdminView
     ? "Food Collection & Expenses"
     : "Resort Daily Finance"}
 </h2>
-{user?.role !== "ADMIN" && (
+{!isAdminView && (
       <div className="filters">
 
         <div className="filter-item">
           <label>Resort</label>
 
           <Select
+            classNamePrefix="react-select"
             options={resorts}
             value={selectedResort}
             onChange={setSelectedResort}
             placeholder="Select Resort"
             isDisabled={
-              user?.role === "PROPERTY_MANAGER" &&
+              isSingleResortRole &&
               resorts.length === 1
             }
           />
@@ -327,7 +300,7 @@ const totalProfit = totalFoodCollection - totalExpense;
           <DatePicker
             selected={selectedDate}
             onChange={(date) => setSelectedDate(date)}
-            dateFormat="yyyy-MM-dd"
+            dateFormat="dd/MM/yyyy"
             className="custom-datepicker"
           />
         </div>
@@ -341,7 +314,7 @@ const totalProfit = totalFoodCollection - totalExpense;
       {/* Form */}
 
 {/* Finance Entry */}
-{user?.role !== "ADMIN" && (
+{!isAdminView && (
     
 <div className="finance-card">
 
@@ -405,7 +378,7 @@ const totalProfit = totalFoodCollection - totalExpense;
     selected={fromDate}
     onChange={(d) => setFromDate(d)}
     maxDate={toDate}
-    dateFormat="yyyy-MM-dd"
+    dateFormat="dd/MM/yyyy"
     className="custom-datepicker"
 />
         </div>
@@ -419,7 +392,7 @@ const totalProfit = totalFoodCollection - totalExpense;
     onChange={(d) => setToDate(d)}
     minDate={fromDate}
     maxDate={new Date()}
-    dateFormat="yyyy-MM-dd"
+    dateFormat="dd/MM/yyyy"
     className="custom-datepicker"
 />
 
@@ -428,16 +401,24 @@ const totalProfit = totalFoodCollection - totalExpense;
           <label>Resort</label>
 
           <Select
+            classNamePrefix="react-select"
             options={resorts}
             value={selectedResort}
             onChange={setSelectedResort}
             placeholder="Select Resort"
             isDisabled={
-              user?.role === "PROPERTY_MANAGER" &&
+              isSingleResortRole &&
               resorts.length === 1
             }
           />
         </div>
+        {user?.role === "SUPER_ADMIN" && (
+          <div className="filter-item">
+            <button type="button" className="export-csv-btn" onClick={exportFinanceEntries}>
+              Export CSV
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -457,7 +438,7 @@ const totalProfit = totalFoodCollection - totalExpense;
               <th>Food Collection</th>
 
               <th>Expense</th>
-{user?.role === "ADMIN" && (
+{isAdminView && (
         <th>Profit</th>
     )}
             </tr>
@@ -511,7 +492,7 @@ const totalProfit = totalFoodCollection - totalExpense;
                     ₹{Number(entry.expenseAmount)
                     .toLocaleString()}
                   </td>
-                  {user?.role === "ADMIN" && (
+                  {isAdminView && (
     <td
         style={{
             color:
@@ -544,7 +525,7 @@ const totalProfit = totalFoodCollection - totalExpense;
 
 <td><strong>₹{totalExpense.toLocaleString()}</strong></td>
 
-{user?.role === "ADMIN" && (
+{isAdminView && (
     <td><strong>₹{totalProfit.toLocaleString()}</strong></td>
 )}
 </tr>

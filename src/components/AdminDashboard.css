@@ -59,11 +59,25 @@
   margin-bottom: 15px;
 }
 
-select {
+.chart-header select {
   padding: 6px 10px;
   border-radius: 6px;
   border: 1px solid #ddd;
   margin-left: 10px;
+}
+
+/* Groups a chart's filter control(s) with its Export CSV button — JSX
+   collapses whitespace-only text between elements on separate lines, so
+   without this the filter and button render flush against each other. */
+.chart-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chart-header-controls select,
+.chart-header-controls input[type="date"] {
+  margin-left: 0;
 }
 
 h3 {

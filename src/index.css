@@ -16,4 +16,38 @@ html, body {
   height: auto;
   min-height: 100%;
   overflow-y: auto;
+  scrollbar-gutter: stable; /* Reserves scrollbar space so popups (e.g. the date picker) don't shift layout when they toggle the scrollbar on/off */
+}
+
+/* Export CSV buttons — Admin Dashboard, Revenue, Expenses, Property
+   Collection, Monthly Settlement. Global since CRA bundles all component
+   CSS together regardless of which file imports it. */
+.export-csv-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--primary-teal);
+  background-color: #ffffff;
+  color: var(--primary-teal);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.export-csv-btn::before {
+  content: "\2B07"; /* down arrow */
+  font-size: 11px;
+}
+
+.export-csv-btn:hover {
+  background-color: var(--primary-teal);
+  color: #ffffff;
+}
+
+.export-csv-btn:active {
+  transform: scale(0.97);
 }

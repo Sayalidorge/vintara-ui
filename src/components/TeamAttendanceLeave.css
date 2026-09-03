@@ -1,0 +1,73 @@
+.team-attendance-leave .attendance-roster-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.attendance-roster-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.section-title {
+  margin: 0;
+  color: var(--primary-purple);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.attendance-roster-header input[type="date"] {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.team-attendance-leave table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.team-attendance-leave th,
+.team-attendance-leave td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.location-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-left: 6px;
+}
+
+.badge-office {
+  background: #e6f7ed;
+  color: #1e7e34;
+}
+
+.badge-remote {
+  background: #fff4e0;
+  color: #b45309;
+}
+
+.badge-unknown {
+  background: #eee;
+  color: #666;
+}
+
+.team-attendance-leave small {
+  display: block;
+  margin-top: 10px;
+  color: #888;
+}

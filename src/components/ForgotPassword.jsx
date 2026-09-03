@@ -24,7 +24,7 @@ const ForgotPassword = () => {
   return (
     <div className="login-container">
       <div className="login-box">
-        <h2>Forgot Password</h2>
+        <h2 style={{ fontSize: "22px", fontWeight: 600, color: "var(--primary-purple)", textAlign: "center", letterSpacing: "0.3px", marginTop: 0, marginBottom: "18px" }}>Forgot Password</h2>
 
         <form onSubmit={handleSubmit}>
           <label>Email</label>

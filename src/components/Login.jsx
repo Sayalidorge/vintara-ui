@@ -39,13 +39,12 @@ const Login = () => {
     localStorage.setItem("user", JSON.stringify(data));
  console.log("Token stored:", localStorage.getItem("token")); // Check if token is saved
     // Redirect based on role
-   // Redirect based on role
-if (data.role === "ADMIN") {
-  navigate("/admin/dashboard");
-} else if (data.role === "PROPERTY_MANAGER") {
-  navigate("/user/inventory"); // Redirect property manager to their daily booking dashboard
+if (data.role === "ADMIN" || data.role === "SUPER_ADMIN") {
+  window.location.href = "/admin/dashboard";
+} else if (data.role === "PROPERTY_MANAGER" || data.role === "RECEPTION") {
+  window.location.href = "/user/inventory";
 } else {
-  navigate("/user/dashboard"); // Other roles
+  window.location.href = "/user/dashboard";
 }
   } catch (err) {
     alert(err.message);

@@ -33,12 +33,16 @@
   gap: 0 !important;
 }
 
-/* Drastically reduces title margins causing the top navigation gap */
-.header-section .page-title,
-.page-title {
-  margin-top: 0 !important;
-  padding-top: 5px !important; /* Minimal spacing below the nav bar */
-  margin-bottom: 5px !important; 
+/* Drastically reduces title margins causing the top navigation gap.
+   Scoped to this page only — a bare, unscoped ".page-title" here used to
+   leak (with !important, so it couldn't even be overridden by inline
+   styles) into every other page in the app that also uses the page-title
+   class, since CRA bundles all component CSS globally. */
+.user-inventory-wrapper .header-section .page-title,
+.user-inventory-wrapper .page-title {
+  margin-top: 5px !important;
+  padding-top: 0 !important;
+  margin-bottom: 20px !important;
 }
 
 .user-info {
@@ -52,6 +56,7 @@
    ========================================================================== */
 .filters {
   display: flex;
+  justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
   margin-bottom: 20px;
@@ -59,10 +64,41 @@
   align-items: flex-end; /* CRITICAL: Aligns all elements flush to the bottom */
 }
 
+.filters-group {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: flex-end; /* Without this it defaults to stretch, letting Resort/Date drift out of sync */
+}
+
 .filter-item {
   display: flex;
   flex-direction: column;
-  min-width: 160px; 
+  min-width: 160px;
+}
+
+/* Perspective view switcher (Room Grid / Active Bookings) */
+.view-switcher-tabs {
+  display: flex;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.view-tab-btn {
+  padding: 10px 20px;
+  cursor: pointer;
+  border: none;
+  background: #fff;
+  color: #333;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.view-tab-btn.active {
+  background: #0d47a1;
+  color: #fff;
 }
 
 .filters label {
@@ -77,6 +113,35 @@
   min-width: 160px;
   height: 38px !important;
   min-height: 38px !important;
+}
+
+/* Replaces react-select's default blue focus/selection theme with the app's purple.
+   Scoped to .user-inventory-wrapper (this page only) since plain CSS imports in
+   CRA are global, and .filter-item/.react-select__* are reused by other pages. */
+.user-inventory-wrapper .filter-item .react-select__control--is-focused {
+  border-color: var(--primary-purple);
+  box-shadow: none;
+}
+
+.user-inventory-wrapper .filter-item .react-select__option--is-focused {
+  background: #f3e6f5;
+  color: var(--text-dark);
+}
+
+/* Placed after --is-focused so it wins when an option is both selected and focused */
+.user-inventory-wrapper .filter-item .react-select__option--is-selected {
+  background: var(--primary-purple);
+  color: #fff;
+}
+
+/* react-datepicker wraps its input in nested inline-block containers
+   (.react-datepicker-wrapper, .react-datepicker__input-container), which
+   reserves baseline/descender line-height space around the input and
+   pushes it a few pixels lower than react-select's control - forcing
+   these to block removes that gap so both filters align. */
+.filter-item .react-datepicker-wrapper,
+.filter-item .react-datepicker__input-container {
+  display: block;
 }
 
 /* Forces HTML & React DatePicker inputs to exactly 38px */
@@ -266,6 +331,10 @@
     align-items: stretch;
   }
 
+  .filters-group {
+    flex-direction: column;
+  }
+
   .filter-item {
     width: 100%;
   }
@@ -273,6 +342,16 @@
   .filter-item .react-select__control {
     width: 100%;
     min-width: 0;
+  }
+
+  .view-switcher-tabs {
+    width: 100%;
+  }
+
+  .view-tab-btn {
+    flex: 1;
+    padding: 10px 8px;
+    font-size: 13px;
   }
 
   .rooms-container {

@@ -3,11 +3,25 @@ import React, { useEffect, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { getLeaveRequestsForMonth } from "../services/LeaveService";
+import {
+  getAttendanceHistory,
+  getMyCorrections,
+  submitCorrection,
+} from "../services/AttendanceService";
+import { toLocalDateStr } from "../utils/date";
 import "./LeaveCalendar.css";
 
-const LeaveCalendar = ({ adminView = false, userId, onDayClick }) => {
+// showAttendance is opt-in (default off) so the other existing caller of this
+// component (plain leave-only usage) is unaffected - only MyAttendanceLeave's
+// self-service view turns this on.
+const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance = false }) => {
   const [leaveRequests, setLeaveRequests] = useState([]);
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [myCorrections, setMyCorrections] = useState([]);
   const [date, setDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [correctionForm, setCorrectionForm] = useState({ status: "PRESENT", reason: "" });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     // Extract month and year safely inside the effect hook
@@ -16,10 +30,8 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick }) => {
 
     async function fetchLeaves() {
       try {
-        const data = adminView
-          ? await getLeaveRequestsForMonth(year, month)
-          : await getLeaveRequestsForMonth(userId, year, month);
-        
+        const data = await getLeaveRequestsForMonth(userId, year, month);
+
         // Ensure data is always an array to prevent .filter crashes
         setLeaveRequests(Array.isArray(data) ? data : []);
       } catch (error) {
@@ -27,9 +39,40 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick }) => {
         setLeaveRequests([]);
       }
     }
-    
+
+    async function fetchAttendance() {
+      try {
+        const [records, corrections] = await Promise.all([
+          getAttendanceHistory(userId, year, month),
+          getMyCorrections(userId),
+        ]);
+        setAttendanceRecords(Array.isArray(records) ? records : []);
+        setMyCorrections(Array.isArray(corrections) ? corrections : []);
+      } catch (error) {
+        console.error("Failed to fetch attendance records:", error);
+        setAttendanceRecords([]);
+        setMyCorrections([]);
+      }
+    }
+
     fetchLeaves();
-  }, [userId, date, adminView]); // Removed redundant month/year parameters to completely avoid state rendering loops
+    if (showAttendance && userId) fetchAttendance();
+  }, [userId, date, adminView, showAttendance]); // Removed redundant month/year parameters to completely avoid state rendering loops
+
+  const refreshAttendance = async () => {
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    try {
+      const [records, corrections] = await Promise.all([
+        getAttendanceHistory(userId, year, month),
+        getMyCorrections(userId),
+      ]);
+      setAttendanceRecords(Array.isArray(records) ? records : []);
+      setMyCorrections(Array.isArray(corrections) ? corrections : []);
+    } catch (error) {
+      console.error("Failed to refresh attendance records:", error);
+    }
+  };
 
   // Helper: returns CSS class based on APPROVED leave type
   const getTileClassName = (tileDate) => {
@@ -50,8 +93,8 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick }) => {
 
     if (leaves.length > 0) {
       // Normalize string to uppercase to avoid spelling mismatches
-      const type = leaves[0].type ? leaves[0].type.toUpperCase() : ""; 
-      
+      const type = leaves[0].type ? leaves[0].type.toUpperCase() : "";
+
       // 2. Map PRIVILAGE_LEAVE or PAID to your primary teal styling
       if (type === "PRIVILAGE_LEAVE" || type === "PAID") return "leave-paid";
       if (type === "UNPAID") return "leave-unpaid";
@@ -60,10 +103,94 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick }) => {
     return "";
   };
 
+  const getAttendanceForDate = (tileDate) => {
+    const dateStr = toLocalDateStr(tileDate);
+    return attendanceRecords.find((r) => r.date === dateStr) || null;
+  };
+
+  const getPendingCorrectionForDate = (tileDate) => {
+    const dateStr = toLocalDateStr(tileDate);
+    return myCorrections.find((c) => c.date === dateStr && c.status === "PENDING") || null;
+  };
+
+  // Attendance is the ground-truth layer, so it takes precedence over the
+  // leave-type coloring when both exist for the same day (shouldn't normally
+  // diverge, since ON_LEAVE records are themselves derived from an approved
+  // leave, but attendance winning is the safer default if they ever do).
+  const getAttendanceClassName = (tileDate) => {
+    if (getPendingCorrectionForDate(tileDate)) return "attendance-pending";
+
+    const record = getAttendanceForDate(tileDate);
+    if (record && record.status) {
+      switch (record.status) {
+        case "PRESENT":
+          return record.checkInLocationType === "OFFICE" ? "attendance-office" : "attendance-remote";
+        case "WFH":
+          return "attendance-remote";
+        case "ON_LEAVE":
+          return ""; // already colored by the leave-type class above
+        case "ABSENT":
+          return "attendance-absent";
+        default:
+          return "";
+      }
+    }
+
+    // No record at all for this date - flag it as a gap if it's in the past,
+    // so a forgotten check-in shows up even before the nightly absence sweep
+    // has run (or for any day predating this feature). Skip it if the day is
+    // already covered by an approved leave, so leave days aren't
+    // double-flagged as "absent" just because no attendance row exists.
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (tileDate < today && !getTileClassName(tileDate)) {
+      return "attendance-absent";
+    }
+    return "";
+  };
+
+  const handleDayClick = (clickedDate) => {
+    if (onDayClick) onDayClick(clickedDate);
+
+    if (!showAttendance || adminView) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (clickedDate >= today) return; // backfill is for past dates only - today uses real check-in
+
+    if (getPendingCorrectionForDate(clickedDate)) {
+      alert("A correction request for this date is already pending approval.");
+      return;
+    }
+
+    setSelectedDate(clickedDate);
+    setCorrectionForm({ status: "PRESENT", reason: "" });
+  };
+
+  const handleSubmitCorrection = async () => {
+    if (!correctionForm.reason.trim()) {
+      alert("Please enter a reason.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await submitCorrection(toLocalDateStr(selectedDate), correctionForm.status, correctionForm.reason);
+      alert("Correction request submitted for approval.");
+      setSelectedDate(null);
+      await refreshAttendance();
+    } catch (err) {
+      alert(err.message || "Failed to submit correction request.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="leave-calendar-container">
       <h2 className="page-title">
-        {adminView ? "Leave Calendar (Admin)" : "My Leave Calendar"}
+        {adminView
+          ? (showAttendance ? "Attendance & Leave Calendar" : "Leave Calendar (Admin)")
+          : "My Leave Calendar"}
       </h2>
       
       {/* Wrapper ensures react-calendar never collapses down to 0px width within existing grid layouts */}
@@ -79,8 +206,13 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick }) => {
             }
           }}
 
-          tileClassName={({ date: tileDate, view }) => view === "month" && getTileClassName(tileDate)}
-          onClickDay={onDayClick}
+          tileClassName={({ date: tileDate, view }) =>
+            view === "month" &&
+            [getTileClassName(tileDate), showAttendance ? getAttendanceClassName(tileDate) : ""]
+              .filter(Boolean)
+              .join(" ")
+          }
+          onClickDay={handleDayClick}
         />
       </div>
 
@@ -98,7 +230,59 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick }) => {
           <span className="legend-box leave-wfh"></span>
           <span>WFH</span>
         </div>
+        {showAttendance && (
+          <>
+            <div className="legend-item">
+              <span className="legend-box attendance-office"></span>
+              <span>Present (Office)</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-box attendance-remote"></span>
+              <span>Present (Remote/WFH)</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-box attendance-absent"></span>
+              <span>Absent</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-box attendance-pending"></span>
+              <span>Correction Pending</span>
+            </div>
+          </>
+        )}
       </div>
+
+      {showAttendance && !adminView && (
+        <p className="attendance-hint">Click a past date with no (or wrong) attendance to request a correction.</p>
+      )}
+
+      {selectedDate && (
+        <div className="correction-panel">
+          <h4>Request correction for {toLocalDateStr(selectedDate)}</h4>
+          <label>Status</label>
+          <select
+            value={correctionForm.status}
+            onChange={(e) => setCorrectionForm({ ...correctionForm, status: e.target.value })}
+          >
+            <option value="PRESENT">Present (worked that day)</option>
+            <option value="WFH">Work From Home</option>
+          </select>
+          <label>Reason</label>
+          <textarea
+            value={correctionForm.reason}
+            onChange={(e) => setCorrectionForm({ ...correctionForm, reason: e.target.value })}
+            placeholder="e.g. Forgot to check in"
+          />
+          <div className="correction-panel-buttons">
+            <button onClick={handleSubmitCorrection} disabled={submitting}>
+              {submitting ? "Submitting..." : "Submit for Approval"}
+            </button>
+            <button className="secondary-btn" onClick={() => setSelectedDate(null)} disabled={submitting}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

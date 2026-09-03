@@ -12,7 +12,7 @@
 /* Form wrapper / card */
 .daily-entry-form-wrapper {
   width: 100%;
-  max-width: 900px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 30px 40px;
   background-color: #fff;
@@ -22,8 +22,6 @@
   flex-direction: column;
   gap: 20px;
   box-sizing: border-box;
-  overflow-y: auto;
-  max-height: 90vh;
 }
 
 /* Page title */
@@ -48,6 +46,27 @@
   flex-direction: column;
   gap: 6px;
   margin-bottom: 12px;
+}
+
+.entry-date-group {
+  width: 200px;
+}
+
+/* The calendar popup is portaled to <body> (portalId="daily-entry-datepicker-portal"
+   on the DatePicker, added to stop it from pushing the table below it down the
+   page), which puts it outside .daily-entry-form-wrapper in the DOM — scope
+   to the portal's own id instead. react-datepicker's own default selected-day
+   color is blue; !important guards against that and against other pages'
+   global overrides of the same class also using !important. */
+#daily-entry-datepicker-portal .react-datepicker__day--selected,
+#daily-entry-datepicker-portal .react-datepicker__day--keyboard-selected {
+  background-color: var(--primary-teal) !important;
+  color: #fff !important;
+}
+
+#daily-entry-datepicker-portal .react-datepicker__day--selected:hover,
+#daily-entry-datepicker-portal .react-datepicker__day--keyboard-selected:hover {
+  background-color: var(--primary-purple) !important;
 }
 
 .form-group label {
@@ -86,49 +105,131 @@
   cursor: pointer;
 }
 
-/* Enquiry entry card */
-.enquiry-entry {
-  padding: 20px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  background: #fafafa;
+/* Shrink react-select dropdowns to match the height/font-size of the plain inputs above */
+.daily-entry-form .react-select__control {
+  min-height: 36px;
+  border-color: #ccc;
+  font-size: 14px;
+}
+
+.daily-entry-form .react-select__control--is-focused {
+  border-color: var(--primary-purple);
+  box-shadow: none;
+}
+
+.daily-entry-form .react-select__value-container {
+  padding: 0 8px;
+}
+
+.daily-entry-form .react-select__indicators {
+  height: 34px;
+}
+
+.daily-entry-form .react-select__placeholder,
+.daily-entry-form .react-select__single-value,
+.daily-entry-form .react-select__input-container {
+  font-size: 14px;
+  margin: 0;
 }
 
 /* Enquiries container */
 .enquiries-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
 
-/* Row wrapper for side-by-side fields */
-.form-row {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
+/* Excel-style entries table: horizontal scroll instead of wrapping, so the
+   grid of columns stays intact no matter how narrow the viewport is. */
+.enquiries-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #ddd;
+  border-radius: 8px;
 }
 
-.form-row .form-group {
-  flex: 1 1 48%;
+.enquiries-table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 960px;
 }
 
-@media (max-width: 600px) {
-  .form-row .form-group {
-    flex: 1 1 100%;
-  }
+.enquiries-table th,
+.enquiries-table td {
+  border: 1px solid #e0e0e0;
+  padding: 6px;
+  vertical-align: middle;
+}
+
+.enquiries-table th {
+  background: var(--primary-teal);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 10px 8px;
+  position: sticky;
+  top: 0;
+}
+
+.enquiries-table tbody tr:nth-child(even) {
+  background: #fafafa;
+}
+
+.enquiries-table tbody tr:hover {
+  background: #e6f0f0;
+}
+
+.enquiries-table .row-number {
+  width: 32px;
+  text-align: center;
+  color: #666;
+  font-weight: 600;
+}
+
+.enquiries-table input {
+  width: 100%;
+  min-width: 90px;
+  height: 34px;
+  padding: 0 8px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.enquiries-table input:focus {
+  outline: none;
+  border-color: var(--primary-purple);
+}
+
+.enquiries-table .react-select__control {
+  min-height: 34px;
+  min-width: 130px;
+  font-size: 13px;
+}
+
+.enquiries-table .row-actions {
+  width: 36px;
+  text-align: center;
+}
+
+.daily-entry-form-wrapper .enquiries-table .remove-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1;
 }
 
 /* Buttons */
-.add-btn,
-.remove-btn,
-.submit-btn {
+.daily-entry-form-wrapper .add-btn,
+.daily-entry-form-wrapper .remove-btn,
+.daily-entry-form-wrapper .submit-btn {
   font-weight: 600;
   cursor: pointer;
   border-radius: 6px;
   transition: background-color 0.3s, transform 0.1s;
 }
 
-.add-btn {
+.daily-entry-form-wrapper .add-btn {
   background-color: var(--primary-teal);
   color: #fff;
   border: none;
@@ -136,11 +237,11 @@
   align-self: flex-start;
 }
 
-.add-btn:hover {
+.daily-entry-form-wrapper .add-btn:hover {
   background-color: var(--primary-purple);
 }
 
-.remove-btn {
+.daily-entry-form-wrapper .remove-btn {
   background-color: #f44336;
   color: #fff;
   border: none;
@@ -148,11 +249,11 @@
   align-self: flex-start;
 }
 
-.remove-btn:hover {
+.daily-entry-form-wrapper .remove-btn:hover {
   background-color: #e53935;
 }
 
-.submit-btn {
+.daily-entry-form-wrapper .submit-btn {
   background-color: var(--primary-purple);
   color: #fff;
   border: none;
@@ -160,11 +261,11 @@
   align-self: flex-start;
 }
 
-.submit-btn:hover {
+.daily-entry-form-wrapper .submit-btn:hover {
   background-color: var(--primary-teal);
 }
 
-.submit-btn:active {
+.daily-entry-form-wrapper .submit-btn:active {
   transform: translateY(1px);
 }
 
@@ -183,9 +284,9 @@
     font-size: 12px;
   }
 
-  .add-btn,
-  .remove-btn,
-  .submit-btn {
+  .daily-entry-form-wrapper .add-btn,
+  .daily-entry-form-wrapper .remove-btn,
+  .daily-entry-form-wrapper .submit-btn {
     padding: 6px 14px;
   }
 }

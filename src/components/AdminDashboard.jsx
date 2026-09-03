@@ -23,19 +23,13 @@ import {
 } from "react-icons/fa";
 import config from "../config";
 import { Link, useNavigate } from "react-router-dom";
+import { toLocalDateStr } from "../utils/date";
+import { downloadCsv } from "../utils/csv";
+import { isSuperAdmin } from "../utils/auth";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
-  const loggedInUsername = "Sayali Dorge";
-
-  // ================= SUMMARY (Keep mock or replace later with API) =================
-  const summaryMock = {
-    totalBookings: 120,
-    otaBookings: 70,
-    directBookings: 50,
-    occupancyRate: 75,
-  };
 
   // ================= BOOKING TREND =================
   const [bookingTrend, setBookingTrend] = useState([]);
@@ -59,7 +53,7 @@ const AdminDashboard = () => {
   const [loadingDaily, setLoadingDaily] = useState(true);
   const [errorDaily, setErrorDaily] = useState(null);
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
+    toLocalDateStr(new Date())
   );
 
   // ================= DASHBOARD CARDS =================
@@ -255,6 +249,48 @@ useEffect(() => {
   };
 
   // =====================================================
+  // CSV EXPORTS
+  // =====================================================
+  const exportDailyOccupancy = () => {
+    downloadCsv(
+      `daily-occupancy_${selectedDate}.csv`,
+      dailyOccupancy,
+      [
+        { key: "resortName", header: "Resort" },
+        { key: "bookedRooms", header: "Booked Rooms" },
+        { key: "availableRooms", header: "Available Rooms" },
+      ]
+    );
+  };
+
+  const exportBookingTrend = () => {
+    downloadCsv(
+      `booking-trend_${trendView}.csv`,
+      bookingTrend,
+      [
+        { key: "label", header: "Period" },
+        { key: "otaBookings", header: "OTA Bookings" },
+        { key: "directBookings", header: "Direct Bookings" },
+      ]
+    );
+  };
+
+  const exportOccupancyTrend = () => {
+    const resortName =
+      resorts.find((r) => r.id.toString() === selectedResort)?.name || "resort";
+    downloadCsv(
+      `occupancy-trend_${resortName}_${occupancyView}.csv`,
+      occupancyData,
+      [
+        { key: "label", header: "Period" },
+        { key: "totalRooms", header: "Total Rooms" },
+        { key: "bookedRooms", header: "Booked Rooms" },
+        { key: "availableRooms", header: "Available Rooms" },
+      ]
+    );
+  };
+
+  // =====================================================
   // UI
   // =====================================================
   return (
@@ -293,11 +329,18 @@ useEffect(() => {
 <div className="chart-container">
   <div className="chart-header">
     <h3>Resort-wise Daily Occupancy</h3>
-    <input
-      type="date"
-      value={selectedDate}
-      onChange={(e) => setSelectedDate(e.target.value)}
-    />
+    <div className="chart-header-controls">
+      <input
+        type="date"
+        value={selectedDate}
+        onChange={(e) => setSelectedDate(e.target.value)}
+      />
+      {isSuperAdmin() && (
+        <button type="button" className="export-csv-btn" onClick={exportDailyOccupancy}>
+          Export CSV
+        </button>
+      )}
+    </div>
   </div>
 
   {loadingDaily ? (
@@ -330,14 +373,21 @@ useEffect(() => {
         <div className="chart-container">
           <div className="chart-header">
             <h3>Booking Trend</h3>
-            <select
-              value={trendView}
-              onChange={(e) => setTrendView(e.target.value)}
-            >
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-            </select>
+            <div className="chart-header-controls">
+              <select
+                value={trendView}
+                onChange={(e) => setTrendView(e.target.value)}
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+              {isSuperAdmin() && (
+                <button type="button" className="export-csv-btn" onClick={exportBookingTrend}>
+                  Export CSV
+                </button>
+              )}
+            </div>
           </div>
 
           {loadingTrend ? (
@@ -374,7 +424,7 @@ useEffect(() => {
           <div className="chart-header">
             <h3>Resort Occupancy Trend</h3>
 
-            <div>
+            <div className="chart-header-controls">
               <select
                 value={selectedResort}
                 onChange={(e) => setSelectedResort(e.target.value)}
@@ -398,6 +448,12 @@ useEffect(() => {
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
               </select>
+
+              {isSuperAdmin() && (
+                <button type="button" className="export-csv-btn" onClick={exportOccupancyTrend}>
+                  Export CSV
+                </button>
+              )}
             </div>
           </div>
 

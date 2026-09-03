@@ -14,6 +14,8 @@ import {
 import { getYearlyRevenue, getDailyRevenue, getResortYearlyRevenue, getResortDailyRevenue } from "../services/RevenueService";
 import config from "../config";
 import "./RevenueDashboard.css";
+import { downloadCsv } from "../utils/csv";
+import { isSuperAdmin } from "../utils/auth";
 
 const RevenueDashboard = () => {
   const currentYear = new Date().getFullYear();
@@ -113,21 +115,45 @@ const RevenueDashboard = () => {
 
   const getTotal = (arr) => arr.reduce((acc, d) => acc + d.otaRevenue + d.directRevenue, 0);
 
+  const exportRevenue = (filename, data) => {
+    const rows = data.map((d) => ({ ...d, total: d.otaRevenue + d.directRevenue }));
+    downloadCsv(filename, rows, [
+      { key: "label", header: "Period" },
+      { key: "otaRevenue", header: "OTA Revenue" },
+      { key: "directRevenue", header: "Direct Revenue" },
+      { key: "total", header: "Total" },
+    ]);
+  };
+
+  const selectedResortName =
+    resorts.find((r) => r.id.toString() === selectedResort)?.name || "resort";
+
   // ================= RENDER =================
   return (
     <div className="page-container revenue-dashboard">
-      <h2 className="page-title">Revenue Dashboard</h2>
+      <h2 className="page-title" style={{ fontSize: "28px", fontWeight: 700, color: "var(--primary-teal)", textAlign: "left", marginTop: "8px", marginBottom: "24px" }}>Revenue Dashboard</h2>
 
       {/* Yearly Revenue */}
       <section className="revenue-section">
         <div className="section-header">
           <h3>Yearly Revenue</h3>
-          <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
-            {Array.from({ length: 5 }).map((_, i) => {
-              const yr = currentYear - i;
-              return <option key={yr} value={yr}>{yr}</option>;
-            })}
-          </select>
+          <div className="filters">
+            <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
+              {Array.from({ length: 5 }).map((_, i) => {
+                const yr = currentYear - i;
+                return <option key={yr} value={yr}>{yr}</option>;
+              })}
+            </select>
+            {isSuperAdmin() && (
+              <button
+                type="button"
+                className="export-csv-btn"
+                onClick={() => exportRevenue(`yearly-revenue_${selectedYear}.csv`, yearlyRevenueData)}
+              >
+                Export CSV
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="cards">
@@ -177,11 +203,22 @@ const RevenueDashboard = () => {
 <section className="revenue-section">
   <div className="section-header">
     <h3>Overall Daily Revenue</h3>
-    <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
-      {monthLabels.map((m, idx) => (
-        <option key={idx + 1} value={idx + 1}>{m}</option>
-      ))}
-    </select>
+    <div className="filters">
+      <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
+        {monthLabels.map((m, idx) => (
+          <option key={idx + 1} value={idx + 1}>{m}</option>
+        ))}
+      </select>
+      {isSuperAdmin() && (
+        <button
+          type="button"
+          className="export-csv-btn"
+          onClick={() => exportRevenue(`daily-revenue_${monthLabels[selectedMonth - 1]}-${selectedYear}.csv`, dailyRevenueData)}
+        >
+          Export CSV
+        </button>
+      )}
+    </div>
   </div>
 
   <div className="cards">
@@ -242,6 +279,15 @@ const RevenueDashboard = () => {
                 return <option key={yr} value={yr}>{yr}</option>;
               })}
             </select>
+            {isSuperAdmin() && (
+              <button
+                type="button"
+                className="export-csv-btn"
+                onClick={() => exportRevenue(`resort-yearly-revenue_${selectedResortName}_${selectedYear}.csv`, resortYearlyData)}
+              >
+                Export CSV
+              </button>
+            )}
           </div>
         </div>
 
@@ -302,6 +348,15 @@ const RevenueDashboard = () => {
           <option key={idx + 1} value={idx + 1}>{m}</option>
         ))}
       </select>
+      {isSuperAdmin() && (
+        <button
+          type="button"
+          className="export-csv-btn"
+          onClick={() => exportRevenue(`resort-daily-revenue_${selectedResortName}_${monthLabels[selectedMonth - 1]}-${selectedYear}.csv`, resortDailyData)}
+        >
+          Export CSV
+        </button>
+      )}
     </div>
   </div>
 

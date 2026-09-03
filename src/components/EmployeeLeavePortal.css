@@ -93,7 +93,6 @@
 }
 
 .apply-leave-form input,
-.apply-leave-form select,
 .apply-leave-form textarea {
   width: 100%;
   padding: 8px 10px;
@@ -196,16 +195,13 @@
   font-weight: 600;
   z-index: 999;
 }
-/* Make select align perfectly with inputs */
-.apply-leave-form select {
+/* Make the Leave Type react-select align with the other inputs
+   (its own control styling lives in the `styles` prop in the JSX,
+   not here, since react-select doesn't respect plain CSS reliably) */
+.apply-leave-form .leave-type-select {
   width: 100%;
-  padding: 8px 10px;       /* match input padding */
+  margin-bottom: 10px;
   font-size: 14px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  margin-bottom: 10px;     /* same as inputs */
-  box-sizing: border-box;   /* ensures padding is included in width */
-  appearance: none;         /* removes default browser styling that may shift it */
 }
 
 /* Unified heading color using theme */
@@ -223,7 +219,7 @@
   }
   
   .apply-leave-form input,
-  .apply-leave-form select,
+  .apply-leave-form .leave-type-select,
   .apply-leave-form textarea {
     font-size: 13px;
   }

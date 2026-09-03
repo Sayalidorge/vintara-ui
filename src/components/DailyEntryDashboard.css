@@ -5,12 +5,14 @@
   --text-dark: #333;
 }
 
-.daily-entry-dashboard-container {
-  padding: 20px;
-  background-color: var(--bg-light);
-  color: var(--text-dark);
-  min-height: 100vh;
-  font-family: Arial, sans-serif;
+.daily-entries-page .page-header {
+  margin: 0 0 15px;
+  padding: 0;
+  border-bottom: none;
+}
+
+.daily-entries-page .page-header h2 {
+  margin: 0;
 }
 
 .header-section {
@@ -45,6 +47,14 @@
   flex-wrap: wrap;
   margin-bottom: 20px;
   align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+/* react-datepicker portals its calendar to <body>, so this can't be scoped
+   under .daily-entries-page — it must target the library's real class name. */
+.react-datepicker-popper {
+  z-index: 1000;
 }
 
 .dashboard-filters label {
@@ -52,26 +62,62 @@
   margin-right: 5px;
 }
 
-.resort-select,
-.date-picker {
+.dashboard-filters .resort-select,
+.dashboard-filters .date-picker {
   width: 150px;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
 }
 
-.reset-filters-btn {
-  background-color: var(--primary-teal);
+/* Teal border when focused (clicked into), and once a date has actually
+   been picked (not just showing the placeholder) — overrides the browser's
+   native blue focus outline/border. */
+.dashboard-filters .date-picker:focus,
+.dashboard-filters .date-picker:not(:placeholder-shown) {
+  border-color: var(--primary-teal);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 128, 128, 0.15);
+}
+
+/* react-datepicker isn't portaled here (no portalId), so the popup renders
+   inside .daily-entries-page and can be scoped normally. !important is still
+   needed: UserDashboard.css has a global (unscoped) !important override of
+   the same class for its own page (also teal) — among tied !important rules
+   the higher-specificity scoped selector wins, so this still deterministically
+   beats it regardless of stylesheet load order. */
+.daily-entries-page .react-datepicker__day--selected,
+.daily-entries-page .react-datepicker__day--keyboard-selected {
+  background-color: var(--primary-teal) !important;
+  color: #fff !important;
+}
+
+.daily-entries-page .react-datepicker__day--selected:hover,
+.daily-entries-page .react-datepicker__day--keyboard-selected:hover {
+  background-color: var(--primary-purple) !important;
+}
+
+.dashboard-filters .reset-filters-btn {
+  background-color: var(--primary-purple);
   color: white;
   border: none;
-  padding: 5px 12px;
+  padding: 0 12px;
+  height: 40px;
   border-radius: 4px;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
-.reset-filters-btn:hover {
-  background-color: var(--primary-purple);
+.dashboard-filters .reset-filters-btn:hover {
+  background-color: var(--primary-teal);
 }
 
 .table-wrapper {
   overflow-x: auto;
+  position: relative;
+  z-index: 1;
 }
 
 .daily-entries-table {
@@ -130,27 +176,17 @@
   gap: 10px;
 }
 
-/* ===============================
-   Status Dropdown Styled
-================================ */
-.dashboard-filters select {
-  padding: 8px 14px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 14px;
-  font-weight: 600;
-  background-color: #fff;
-  cursor: pointer;
+/* Status dropdown (react-select) sizing/colors are set via the `styles` prop
+   in the JSX, not CSS: this class name is fought over by five other
+   stylesheets in this app (theme.css, AdminExpensesDashboard.css x2,
+   UserDashboard.css, ResortDailyFinance.css), each with its own colors/sizes
+   at the same specificity tier, so plain class overrides here would keep
+   losing an unpredictable cascade battle against react-select's own
+   runtime-injected styles. Inline styles via the `styles` prop always win. */
+.dashboard-filters .status-filter-select {
   min-width: 150px;
-
-  transition: all 0.2s ease;
 }
 
-.dashboard-filters select:focus {
-  outline: none;
-  border-color: var(--primary-purple);
-  box-shadow: 0 0 0 2px rgba(128, 0, 128, 0.15);
-}
 .status-dropdown {
   padding: 6px 10px;
   border-radius: 5px;
@@ -163,8 +199,8 @@
 }
 
 .status-dropdown:hover {
-  border-color: var(--primary-purple);
-  box-shadow: 0 0 4px rgba(128, 0, 128, 0.2);
+  border-color: var(--primary-teal);
+  box-shadow: 0 0 4px rgba(0, 128, 128, 0.2);
 }
 
 .status-dropdown:focus {
@@ -190,9 +226,9 @@
     align-items: stretch;
   }
 
-  .resort-select,
-  .date-picker,
-  .dashboard-filters select {
+  .dashboard-filters .resort-select,
+  .dashboard-filters .date-picker,
+  .dashboard-filters .status-filter-select {
     width: 100%;
     max-width: none;
     min-width: 0;

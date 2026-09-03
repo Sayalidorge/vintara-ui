@@ -1,8 +1,62 @@
 // src/components/EmployeeLeavePortal.jsx
 import React, { useEffect, useState } from "react";
+import Select from "react-select";
 import LeaveCalendar from "./LeaveCalendar";
 import { getLeaveBalance, getLeaveRequests, applyLeaveRequest } from "../services/LeaveService";
 import "./EmployeeLeavePortal.css";
+import { toLocalDateStr } from "../utils/date";
+
+// Native <select> option-list hover/highlight colors are drawn by the OS and
+// can't be styled with CSS (same limitation as the daily-entries Status
+// filter), so this uses react-select + the `styles` prop (real inline
+// styles) instead, themed to match this page's purple/teal accents.
+const leaveTypeSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: 38,
+    height: 38,
+    // The plain <input>/<textarea> fields on this form use box-sizing:
+    // border-box (see .apply-leave-form input in the CSS), so their 1px
+    // border is included in their declared height. react-select's control
+    // defaults to content-box, so without this its border adds on top of
+    // the 38px above instead of being part of it, rendering ~2-3px taller.
+    boxSizing: "border-box",
+    borderRadius: 4,
+    borderColor: state.isFocused ? "var(--primary-purple)" : "#ccc",
+    boxShadow: "none",
+    cursor: "pointer",
+    ":hover": {
+      borderColor: "var(--primary-purple)",
+    },
+  }),
+  // Only trim the padding here - don't touch height/display. react-select
+  // overlays the placeholder/selected text and its hidden input in the same
+  // cell via gridArea, which only works with the default display:grid; a
+  // fixed height clips that grid's own centering, and switching to flex
+  // breaks the gridArea overlay outright (text vanishes on selection).
+  // control's own alignItems:center already centers this natural-height
+  // block within its fixed 38px, so nothing else is needed here.
+  valueContainer: (base) => ({
+    ...base,
+    padding: "0 10px",
+  }),
+  input: (base) => ({ ...base, margin: 0, padding: 0 }),
+  placeholder: (base) => ({ ...base, margin: 0 }),
+  singleValue: (base) => ({ ...base, margin: 0 }),
+  indicatorsContainer: (base) => ({ ...base, height: 36 }),
+  dropdownIndicator: (base) => ({ ...base, padding: "0 8px" }),
+  indicatorSeparator: (base) => ({ ...base, marginTop: 8, marginBottom: 8 }),
+  option: (base, state) => ({
+    ...base,
+    backgroundColor: state.isSelected
+      ? "var(--primary-purple)"
+      : state.isFocused
+      ? "#f3e6f5"
+      : "#fff",
+    color: state.isSelected ? "#fff" : "#333",
+    cursor: "pointer",
+  }),
+};
 
 const EmployeeLeavePortal = () => {
   const currentUser = JSON.parse(localStorage.getItem("user"));
@@ -25,6 +79,13 @@ const EmployeeLeavePortal = () => {
   const [loading, setLoading] = useState(false);
 
   const paidLeavesLeft = balance.accruedPaidLeaves - balance.paidLeavesUsed;
+
+  const leaveTypeOptions = balance.allowedLeaveTypes.map(type => {
+    const cleanedType = (type || "").trim();
+    return { value: cleanedType, label: cleanedType };
+  });
+  const selectedLeaveTypeOption =
+    leaveTypeOptions.find(opt => opt.value === form.type) || null;
 
   // Fetch leave balance and requests
   useEffect(() => {
@@ -113,7 +174,7 @@ const EmployeeLeavePortal = () => {
     }
   };
 
-  const today = new Date().toISOString().split("T")[0]; // min date for input
+  const today = toLocalDateStr(new Date()); // min date for input
 
   return (
     <div className="page-container leave-portal">
@@ -135,21 +196,14 @@ const EmployeeLeavePortal = () => {
           <h2>Apply for Leave</h2>
 
           <label>Leave Type</label>
-          {/* Added style overlay to explicitly clean up text indentations and inner alignment box paddings */}
-          <select
-            value={form.type}
-            onChange={(e) => setForm({ ...form, type: e.target.value })}
-            style={{ textIndent: "0px", paddingLeft: "4px", paddingRight: "4px", boxSizing: "border-box" }}
-          >
-            {balance.allowedLeaveTypes.map(type => {
-              const cleanedType = (type || "").trim();
-              return (
-                <option key={cleanedType} value={cleanedType}>
-                  {cleanedType}
-                </option>
-              );
-            })}
-          </select>
+          <Select
+            className="leave-type-select"
+            styles={leaveTypeSelectStyles}
+            options={leaveTypeOptions}
+            value={selectedLeaveTypeOption}
+            onChange={(opt) => setForm({ ...form, type: opt.value })}
+            isSearchable={false}
+          />
 
           <label>Start Date</label>
           <input
@@ -191,13 +245,13 @@ const EmployeeLeavePortal = () => {
             onClick={handleApply}
             disabled={!form.startDate || !form.endDate || loading}
           >
-            Apply Leave
+            Apply
           </button>
         </div>
 
         {/* Calendar */}
         <div className="leave-calendar-section">
-          <LeaveCalendar adminView={false} userId={userId} leaveData={leaveRequests} showTitle={false}/>
+          <LeaveCalendar adminView={false} userId={userId} leaveData={leaveRequests} showTitle={false} showAttendance={true}/>
         </div>
       </div>
 

@@ -14,7 +14,14 @@ const safeFetch = async (url, options = {}) => {
   if (!res.ok) {
     const errorText = await res.text();
     console.error("API Error:", errorText);
-    throw new Error(errorText || "API request failed");
+    let message = errorText;
+    try {
+      const parsed = JSON.parse(errorText);
+      message = parsed.message || errorText;
+    } catch {
+      // not JSON - fall back to raw text
+    }
+    throw new Error(message || "API request failed");
   }
 
   if (!contentType || !contentType.includes("application/json")) {
@@ -86,6 +93,23 @@ export const getUsers = async () => {
 
   return res.json(); // returns array of { id, name, userId }
 };
+/**
+ * Fetch USER + SUPER_USER accounts (the roles that generate attendance
+ * records) - for the SUPER_ADMIN "view any employee's attendance calendar" picker.
+ */
+export const getAttendanceEligibleUsers = async () => {
+  const url = `${config.BASE_URL}/users/attendance-users`;
+  const res = await fetch(url, { headers: config.getHeaders() });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("Failed to fetch attendance-eligible users:", errorText);
+    throw new Error(errorText || "API request failed");
+  }
+
+  return res.json();
+};
+
 /**
  * Get All Leave Requests (Admin)
  */

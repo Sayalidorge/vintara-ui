@@ -1,10 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Select from "react-select";
+import CreatableSelect from "react-select/creatable";
 import config from "../config";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import "./CreateBookingForm.css";
+
+// Formats a Date as "yyyy-MM-dd" using local Y/M/D (not toISOString, which
+// converts to UTC and can shift the date across a day boundary depending on
+// the browser's timezone).
+const toLocalDateString = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
 
 const CreateBookingForm = () => {
   const navigate = useNavigate();
@@ -12,7 +25,13 @@ const CreateBookingForm = () => {
   const location = useLocation();
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
-  const today = new Date().toISOString().split("T")[0];
+  const today = toLocalDateString(new Date());
+
+  const oneMonthAgo = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return toLocalDateString(d);
+  })();
 
   // -----------------------------
   // Prefill
@@ -40,10 +59,29 @@ const CreateBookingForm = () => {
 
   const [customerName, setCustomerName] = useState("");
   const [customerContact, setCustomerContact] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [phoneError, setPhoneError] = useState("");
 
-  const [numberOfPeople, setNumberOfPeople] = useState("");
   const [numberOfNights, setNumberOfNights] = useState(0);
+
+  const [adults, setAdults] = useState(null);
+  const [kids, setKids] = useState({ value: 0, label: "0" });
+  const [remarks, setRemarks] = useState("");
+
+
+  const [foodPreorder, setFoodPreorder] = useState(false);
+  const [totalFoodAmount, setTotalFoodAmount] = useState("");
+  const [advanceFoodAmount, setAdvanceFoodAmount] = useState("");
+  const [foodBalanceAmount, setFoodBalanceAmount] = useState(0);
+
+  const adultsOptions = Array.from({ length: 50 }, (_, i) => ({
+    value: i + 1,
+    label: String(i + 1),
+  }));
+  const kidsOptions = Array.from({ length: 11 }, (_, i) => ({
+    value: i,
+    label: String(i),
+  }));
 
   const [totalAmount, setTotalAmount] = useState("");
   const [advanceAmount, setAdvanceAmount] = useState("");
@@ -51,9 +89,15 @@ const CreateBookingForm = () => {
 
   const [gstPercent, setGstPercent] = useState("5");
   const [gstAmount, setGstAmount] = useState(0);
+  const [transactionId, setTransactionId] = useState("");
 
-  const [bookingSource, setBookingSource] = useState("");
+  const [bookingSource, setBookingSource] = useState("CALL");
   const [bookingSourceOptions, setBookingSourceOptions] = useState([]);
+
+  // Derived from the backend's BookingSource.isOta() (via /api/bookings/sources)
+  // instead of a hardcoded list here, which had drifted out of sync (a
+  // "GOIBIBO" entry that isn't a real source, and was missing EASEMYTRIP).
+  const isOTA = bookingSourceOptions.find((opt) => opt.value === bookingSource)?.isOta ?? false;
 
   const [showGstFields, setShowGstFields] = useState(false);
   const [showGstPercent, setShowGstPercent] = useState(true);
@@ -136,6 +180,7 @@ const CreateBookingForm = () => {
           data.map((src) => ({
             value: src.value,
             label: src.label,
+            isOta: src.isOta,
           }))
         );
       } catch (err) {
@@ -209,11 +254,6 @@ const CreateBookingForm = () => {
         setGstAmount(((total * percent) / 100).toFixed(2));
         break;
 
-      case "BOOKING_COM":
-        const bPercent = total <= 7500 ? 5 : 18;
-        setGstAmount(((total * bPercent) / (100 + bPercent)).toFixed(2));
-        break;
-
       case "WALKIN":
         if (walkinGstApplied) {
           const gst = (total * percent) / 100;
@@ -227,6 +267,14 @@ const CreateBookingForm = () => {
         break;
 
       default:
+        // All OTA sources (Booking.com, MMT, Agoda, Airbnb, EaseMyTrip):
+        // fixed 5% inclusive default - editable below, since the entered
+        // amount is the whole booking (possibly multiple rooms), not a
+        // per-room amount, so the 7500 slab can't be applied reliably here.
+        // Staff overrides it directly when a room needs the 18% slab.
+        if (isOTA) {
+          setGstAmount(((total * 5) / 105).toFixed(2));
+        }
         break;
     }
   }, [
@@ -235,9 +283,10 @@ const CreateBookingForm = () => {
     advanceAmount,
     gstPercent,
     walkinGstApplied,
+    isOTA,
   ]);
 
-  
+
   // -----------------------------
   // Load Resorts
   // -----------------------------
@@ -305,20 +354,32 @@ const CreateBookingForm = () => {
 
         setCustomerName(data.customerName || "");
         setCustomerContact(data.customerContactNumber || "");
+        setCustomerEmail(data.customerEmail || "");
 
         setCheckInDate(data.checkInDate || "");
         setCheckOutDate(data.checkOutDate || "");
 
-        setNumberOfPeople(data.numberOfPeople || "");
+        setAdults(
+          data.adults ? { value: data.adults, label: String(data.adults) } : null
+        );
+        setKids(
+          data.kids != null ? { value: data.kids, label: String(data.kids) } : null
+        );
+        setRemarks(data.remarks || "");
 
         setTotalAmount(data.totalAmount || "");
         setAdvanceAmount(data.advanceAmount || 0);
 
         setGstPercent(data.gstPercentage || "5");
+        setTransactionId(data.transactionId || "");
 
         setBookingSource(data.source || "");
 
         setOtaCommission(data.otaCommission || "");
+
+        setFoodPreorder(!!data.foodPreorder);
+        setTotalFoodAmount(data.totalFoodAmount || "");
+        setAdvanceFoodAmount(data.advanceFoodAmount || "");
 
         // MULTI ROOM PREFILL
 if (data.bookingItems?.length > 0) {
@@ -421,6 +482,16 @@ if (data.bookingItems?.length > 0) {
   }, [totalAmount, advanceAmount]);
 
   // -----------------------------
+  // Food Balance
+  // -----------------------------
+  useEffect(() => {
+    const total = parseFloat(totalFoodAmount) || 0;
+    const advance = parseFloat(advanceFoodAmount) || 0;
+
+    setFoodBalanceAmount(total - advance >= 0 ? total - advance : 0);
+  }, [totalFoodAmount, advanceFoodAmount]);
+
+  // -----------------------------
   // Submit
   // -----------------------------
   const handleSubmit = async (e) => {
@@ -454,12 +525,15 @@ if (data.bookingItems?.length > 0) {
 
       customerName,
       customerContactNumber: customerContact,
+      customerEmail,
 
       checkInDate,
       checkOutDate,
 
-      numberOfPeople,
       numberOfNights,
+      adults: adults?.value ?? 0,
+      kids: kids?.value ?? 0,
+      remarks,
 
       totalAmount: parseFloat(totalAmount) || 0,
       advanceAmount: parseFloat(advanceAmount) || 0,
@@ -467,6 +541,7 @@ if (data.bookingItems?.length > 0) {
 
       gstPercentage: parseFloat(gstPercent) || 0,
       gstAmount: parseFloat(gstAmount) || 0,
+      transactionId,
 
       source: bookingSource,
 
@@ -474,6 +549,11 @@ if (data.bookingItems?.length > 0) {
       editedByUserId: currentUser?.id,
 
       walkinGstApplied,
+
+      foodPreorder,
+      totalFoodAmount: foodPreorder ? (parseFloat(totalFoodAmount) || 0) : 0,
+      advanceFoodAmount: foodPreorder ? (parseFloat(advanceFoodAmount) || 0) : 0,
+      foodBalanceAmount: foodPreorder ? (parseFloat(foodBalanceAmount) || 0) : 0,
 
       otaCommission: parseFloat(otaCommission) || 0,
 
@@ -503,7 +583,8 @@ console.log(JSON.stringify(bookingDataToSend, null, 2));
       }
 
       if (!res.ok) {
-        throw new Error("Failed to save booking");
+        const errBody = await res.json().catch(() => null);
+        throw new Error(errBody?.error || "Failed to save booking");
       }
 
       navigate("/user/dashboard", {
@@ -516,47 +597,45 @@ console.log(JSON.stringify(bookingDataToSend, null, 2));
       alert(err.message);
     }
   };
-
-  const isOTA = [
-  "BOOKING_COM",
-  "AGODA",
-  "MMT",
-  "GOIBIBO",
-  "AIRBNB"
-].includes(bookingSource);
   // -----------------------------
   // JSX
   // -----------------------------
   return (
     <div className="form-wrapper">
-      <h2>{bookingId ? "Edit Booking" : "Create Booking"}</h2>
-
       <form onSubmit={handleSubmit} className="booking-form">
 
-        {/* Resort */}
-        <div className="form-group">
-          <label>Resort</label>
+        {/* CARD 1: Room & Stay Details */}
+        <div className="booking-section-card full-width">
+          <h3 className="booking-section-title">Room & Stay Details</h3>
 
-          <Select
-            options={resortOptions}
-            value={resort}
-            onChange={setResort}
-            placeholder="Select Resort"
-          />
-        </div>
-
-        {/* Dates */}
+        {/* Resort + Dates */}
         <div className="form-row">
+
+          <div className="form-group">
+            <label>Resort</label>
+
+            <Select
+              classNamePrefix="react-select"
+              options={resortOptions}
+              value={resort}
+              onChange={setResort}
+              placeholder="Select Resort"
+            />
+          </div>
 
           <div className="form-group">
             <label>Check-in</label>
 
-            <input
-              type="date"
-              min={today}
-              value={checkInDate}
-              onChange={(e) => {
-                const newCheckIn = e.target.value;
+            <DatePicker
+              className="date-picker-input"
+              dateFormat="yyyy-MM-dd"
+              placeholderText="Select check-in date"
+              portalId="booking-datepicker-portal"
+              selected={checkInDate ? new Date(checkInDate) : null}
+              minDate={new Date(oneMonthAgo)}
+              onChange={(date) => {
+                if (!date) return;
+                const newCheckIn = toLocalDateString(date);
 
                 setCheckInDate(newCheckIn);
 
@@ -568,7 +647,7 @@ console.log(JSON.stringify(bookingDataToSend, null, 2));
 
                   nextDay.setDate(nextDay.getDate() + 1);
 
-                  setCheckOutDate(nextDay.toISOString().split("T")[0]);
+                  setCheckOutDate(toLocalDateString(nextDay));
                 }
               }}
               required
@@ -578,17 +657,38 @@ console.log(JSON.stringify(bookingDataToSend, null, 2));
           <div className="form-group">
             <label>Check-out</label>
 
-            <input
-              type="date"
-              min={checkInDate || today}
-              value={checkOutDate}
-              onChange={(e) => setCheckOutDate(e.target.value)}
+            <DatePicker
+              className="date-picker-input"
+              dateFormat="yyyy-MM-dd"
+              placeholderText="Select check-out date"
+              portalId="booking-datepicker-portal"
+              selected={checkOutDate ? new Date(checkOutDate) : null}
+              minDate={
+                checkInDate
+                  ? (() => {
+                      const nextDay = new Date(checkInDate);
+                      nextDay.setDate(nextDay.getDate() + 1);
+                      return nextDay;
+                    })()
+                  : new Date(today)
+              }
+              onChange={(date) => {
+                if (!date) return;
+                const newCheckOut = toLocalDateString(date);
+                if (checkInDate && new Date(newCheckOut) <= new Date(checkInDate)) {
+                  const nextDay = new Date(checkInDate);
+                  nextDay.setDate(nextDay.getDate() + 1);
+                  setCheckOutDate(toLocalDateString(nextDay));
+                } else {
+                  setCheckOutDate(newCheckOut);
+                }
+              }}
               required
             />
           </div>
 
           <div className="form-group">
-            <label>No. of Nights</label>
+            <label>Nights</label>
 
             <input type="text" value={numberOfNights} readOnly />
           </div>
@@ -618,7 +718,7 @@ const normalizeRooms = (rooms = []) =>
   rooms.map((r) => ({
     value: r.value || r.id,
     label: r.label || r.roomNumber,
-  }));  
+  }));
 
 // merge selected rooms so React-Select never loses them
 
@@ -641,9 +741,8 @@ const roomOptions = Array.from(roomOptionsMap.values());
               <div className="form-row">
 
                 <div className="form-group">
-                  <label>Category</label>
-
                   <Select
+                    classNamePrefix="react-select"
                     options={categoryOptions}
                     value={item.category}
                     onChange={(category) =>
@@ -655,9 +754,8 @@ const roomOptions = Array.from(roomOptionsMap.values());
                 </div>
 
                 <div className="form-group">
-                  <label>Rooms</label>
-
                  <Select
+  classNamePrefix="react-select"
   options={roomOptions}
   value={item.rooms}
   onChange={(rooms) => updateRooms(index, rooms)}
@@ -668,32 +766,44 @@ const roomOptions = Array.from(roomOptionsMap.values());
 />
                 </div>
 
-              </div>
+                {(bookingItems.length > 1 ||
+                  index === bookingItems.length - 1) && (
+                  <div className="form-group action-buttons">
+                    <div className="action-buttons-row">
+                      {bookingItems.length > 1 && (
+                        <button
+                          type="button"
+                          className="remove-btn"
+                          onClick={() => removeBookingItem(index)}
+                        >
+                          Remove
+                        </button>
+                      )}
 
-              {bookingItems.length > 1 && (
-                <button
-                  type="button"
-                  className="remove-btn"
-                  onClick={() => removeBookingItem(index)}
-                >
-                  Remove
-                </button>
-              )}
+                      {index === bookingItems.length - 1 && (
+                        <button
+                          type="button"
+                          className="add-category-btn"
+                          onClick={addBookingItem}
+                        >
+                          + Add
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+              </div>
 
             </div>
           );
         })}
 
-        <button
-          type="button"
-          className="add-category-btn"
-          onClick={addBookingItem}
-        >
-          + Add Another Category
-        </button>
+        </div>
 
-        {/* Customer Info */}
-        <div className="form-row three-fields">
+        {/* CARD 2: Customer Details */}
+        <div className="booking-section-card">
+          <h3 className="booking-section-title">Customer Details</h3>
 
           <div className="form-group">
             <label>Customer Name</label>
@@ -715,6 +825,32 @@ const roomOptions = Array.from(roomOptionsMap.values());
                 setCustomerContact(phone);
                 validatePhone(phone, country);
               }}
+              inputProps={{
+                onPaste: (e) => {
+                  const pasted = e.clipboardData.getData("text");
+                  // react-phone-input-2 counts pasted spaces/dashes as
+                  // characters toward its digit mask, which pushes the
+                  // trailing digit past the mask length and drops it.
+                  // Stripping to digits-only before the library sees it
+                  // avoids that.
+                  if (/\D/.test(pasted)) {
+                    e.preventDefault();
+                    const rawDigits = pasted.replace(/\D/g, "");
+                    // The library's value always includes the country's
+                    // dial code (e.g. typing a national number normally
+                    // yields "91XXXXXXXXXX"). A bare 10-digit paste has no
+                    // dial code, so without prepending it the library
+                    // misreads the leading digit(s) as some other
+                    // country's code (e.g. "7" -> Russia).
+                    const digitsOnly =
+                      rawDigits.startsWith("91") && rawDigits.length > 10
+                        ? rawDigits
+                        : `91${rawDigits}`;
+                    setCustomerContact(digitsOnly);
+                    validatePhone(digitsOnly, { dialCode: "91", countryCode: "in" });
+                  }
+                },
+              }}
             />
 
             {phoneError && (
@@ -725,142 +861,246 @@ const roomOptions = Array.from(roomOptionsMap.values());
           </div>
 
           <div className="form-group">
-            <label>No. of People</label>
-
-<input
-  type="text"
-  placeholder="e.g., 2 adults"
-  value={numberOfPeople}
-  onChange={(e) => setNumberOfPeople(e.target.value)}
-/>
-          </div>
-
-        </div>
-
-        {/* Booking Source */}
-        <div className="form-group">
-
-          <label>Booking Source</label>
-
-          <Select
-            options={bookingSourceOptions}
-            value={bookingSourceOptions.find(
-              (option) => option.value === bookingSource
-            )}
-            onChange={(selected) =>
-              setBookingSource(selected?.value)
-            }
-            placeholder="Select Booking Source"
-          />
-
-        </div>
-          {isOTA && (
-  <div className="form-group">
-    <label>OTA Commission</label>
-
-    <input
-      type="number"
-      min="0"
-      value={otaCommission}
-      onChange={(e) => setOtaCommission(e.target.value)}
-      placeholder="Enter OTA Commission"
-    />
-  </div>
-)}
-        {/* Walkin GST */}
-        {bookingSource === "WALKIN" && (
-          <div className="form-group">
-
-            <label>Apply GST?</label>
-
-            <select
-              value={walkinGstApplied}
-              onChange={(e) =>
-                setWalkinGstApplied(e.target.value === "true")
-              }
-            >
-              <option value="false">No</option>
-              <option value="true">Yes</option>
-            </select>
-
-          </div>
-        )}
-
-        {/* Amounts */}
-        <div className="form-row">
-
-          <div className="form-group">
-            <label>Total Amount</label>
+            <label>Customer Email</label>
 
             <input
-              type="text"
-              value={totalAmount}
-              onChange={(e) => setTotalAmount(e.target.value)}
+              type="email"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              placeholder="Customer Email (optional)"
             />
           </div>
 
-          {showAdvance && (
-            <div className="form-group">
-              <label>Advance</label>
-
-              <input
-                type="text"
-                value={advanceAmount}
-                onChange={(e) => setAdvanceAmount(e.target.value)}
-              />
-            </div>
-          )}
-
-          {showBalanceAmount && (
-            <div className="form-group">
-              <label>Balance</label>
-
-              <input type="text" value={balanceAmount} readOnly />
-            </div>
-          )}
-
-          {showFinalAmount && (
-            <div className="form-group">
-              <label>Final Amount</label>
-
-              <input type="text" value={finalAmount} readOnly />
-            </div>
-          )}
-
-        </div>
-
-        {/* GST */}
-        {showGstFields && (
+          {/* Adults / Kids */}
           <div className="form-row">
 
-            {showGstPercent && (
-              <div className="form-group">
-
-                <label>GST %</label>
-
-                <input
-                  type="number"
-                  value={gstPercent}
-                  onChange={(e) => setGstPercent(e.target.value)}
-                />
-
-              </div>
-            )}
+            <div className="form-group">
+              <label>Adults</label>
+              <CreatableSelect
+                classNamePrefix="react-select"
+                options={adultsOptions}
+                value={adults}
+                onChange={setAdults}
+                onCreateOption={(inputValue) => {
+                  const parsed = parseInt(inputValue, 10);
+                  if (!Number.isInteger(parsed) || parsed <= 0) return;
+                  setAdults({ value: parsed, label: String(parsed) });
+                }}
+                isValidNewOption={(inputValue) => {
+                  const parsed = parseInt(inputValue, 10);
+                  return Number.isInteger(parsed) && parsed > 0 && String(parsed) === inputValue.trim();
+                }}
+                formatCreateLabel={(inputValue) => `Use ${inputValue} adults`}
+                placeholder="Select or type"
+              />
+            </div>
 
             <div className="form-group">
-
-              <label>GST Amount</label>
-
-              <input
-                type="text"
-                value={gstAmount}
-                readOnly
+              <label>Kids</label>
+              <Select
+                classNamePrefix="react-select"
+                options={kidsOptions}
+                value={kids}
+                onChange={setKids}
+                placeholder="Select Kids"
               />
-
             </div>
 
           </div>
-        )}
+        </div>
+
+        {/* CARD 3: Booking Source & Payment */}
+        <div className="booking-section-card">
+          <h3 className="booking-section-title">Booking Source &amp; Payment</h3>
+
+          <div className="form-group">
+
+            <label>Booking Source</label>
+
+            <Select
+              classNamePrefix="react-select"
+              options={bookingSourceOptions}
+              value={bookingSourceOptions.find(
+                (option) => option.value === bookingSource
+              )}
+              onChange={(selected) =>
+                setBookingSource(selected?.value)
+              }
+              placeholder="Select Booking Source"
+            />
+
+          </div>
+          {isOTA && (
+            <div className="form-group">
+              <label>OTA Commission</label>
+
+              <input
+                type="text"
+                value={otaCommission}
+                onChange={(e) => setOtaCommission(e.target.value)}
+                placeholder="Enter OTA Commission"
+              />
+            </div>
+          )}
+          {bookingSource === "WALKIN" && (
+            <div className="form-group">
+
+              <label>Apply GST?</label>
+
+              <select
+                value={walkinGstApplied}
+                onChange={(e) =>
+                  setWalkinGstApplied(e.target.value === "true")
+                }
+              >
+                <option value="false">No</option>
+                <option value="true">Yes</option>
+              </select>
+
+            </div>
+          )}
+
+          <div className="form-row">
+
+            <div className="form-group">
+              <label>Total Amount</label>
+
+              <input
+                type="text"
+                value={totalAmount}
+                onChange={(e) => setTotalAmount(e.target.value)}
+              />
+            </div>
+
+            {showAdvance && (
+              <div className="form-group">
+                <label>Advance</label>
+
+                <input
+                  type="text"
+                  value={advanceAmount}
+                  onChange={(e) => setAdvanceAmount(e.target.value)}
+                />
+              </div>
+            )}
+
+            {showBalanceAmount && (
+              <div className="form-group">
+                <label>Balance</label>
+
+                <input type="text" value={balanceAmount} readOnly />
+              </div>
+            )}
+
+            {showFinalAmount && (
+              <div className="form-group">
+                <label>Final Amount</label>
+
+                <input type="text" value={finalAmount} readOnly />
+              </div>
+            )}
+
+          </div>
+
+          {showGstFields && (
+            <div className="form-row">
+
+              {showGstPercent && (
+                <div className="form-group">
+
+                  <label>GST %</label>
+
+                  <input
+                    type="number"
+                    value={gstPercent}
+                    onChange={(e) => setGstPercent(e.target.value)}
+                  />
+
+                </div>
+              )}
+
+              <div className="form-group">
+
+                <label>GST Amount {isOTA && "(Editable)"}</label>
+
+                <input
+                  type="text"
+                  value={gstAmount}
+                  onChange={isOTA ? (e) => setGstAmount(e.target.value) : undefined}
+                  readOnly={!isOTA}
+                />
+
+              </div>
+
+            </div>
+          )}
+
+          {["CALL", "CALLS_GST", "BOOKING_COM", "WALKIN"].includes(bookingSource) && (
+            <div className="form-group">
+              <label>Transaction ID</label>
+
+              <input
+                type="text"
+                value={transactionId}
+                onChange={(e) => setTransactionId(e.target.value)}
+                placeholder="Payment reference / UTR (optional)"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* CARD 4: Additional Details */}
+        <div className="booking-section-card">
+          <h3 className="booking-section-title">Additional Details</h3>
+
+          <div className="form-group food-preorder-toggle">
+            <label>
+              <input
+                type="checkbox"
+                checked={foodPreorder}
+                onChange={(e) => setFoodPreorder(e.target.checked)}
+              />
+              Food Preorder
+            </label>
+          </div>
+
+          {foodPreorder && (
+            <div className="form-row">
+              <div className="form-group">
+                <label>Total</label>
+                <input
+                  type="text"
+                  value={totalFoodAmount}
+                  onChange={(e) => setTotalFoodAmount(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Advance</label>
+                <input
+                  type="text"
+                  value={advanceFoodAmount}
+                  onChange={(e) => setAdvanceFoodAmount(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Balance</label>
+                <input type="text" value={foodBalanceAmount} readOnly />
+              </div>
+            </div>
+          )}
+
+          <div className="form-group">
+            <label>Remarks</label>
+            <textarea
+              rows={3}
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              placeholder="Any special requests or notes"
+            />
+          </div>
+        </div>
 
         <button type="submit" className="submit-btn">
           {bookingId ? "Update Booking" : "Create Booking"}

@@ -1,6 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import classnames from "classnames";
+import {
+    FaExclamationTriangle,
+    FaHashtag,
+    FaUser,
+    FaHotel,
+    FaCalendarAlt,
+    FaCalendarCheck,
+    FaUsers,
+    FaCrown,
+    FaUserPlus,
+    FaCheckCircle,
+    FaMobileAlt,
+    FaVenusMars,
+    FaCar,
+    FaTimes,
+    FaPlus,
+} from "react-icons/fa";
 import config from "../../config";
+import "../../css/theme.css";
 import "./GuestCheckInPage.css";
 
 const GuestCheckInPage = () => {
@@ -15,6 +34,25 @@ const GuestCheckInPage = () => {
 
     // Maintain an array of form objects for all guests (expected + any extra added)
     const [guestForms, setGuestForms] = useState([]);
+
+    // Helper to safely format file URLs to use the backend file controller.
+    // The backend sometimes returns the raw local upload path (or that path
+    // appended after a URL prefix) instead of a bare filename, so always pull
+    // out just the last path segment and rebuild a clean URL from it.
+    const getFileViewUrl = (filePathOrName) => {
+        if (!filePathOrName) return "";
+        // Backend appends a short-lived "?access=<signed-token>" - split it off
+        // before extracting the path, then reattach as a real query string.
+        // Documents are stored under resort/date subfolders now, so the whole
+        // relative path (not just the last segment) must be preserved - encode
+        // each segment individually so "/" stays literal (encoding the full
+        // path at once would turn "/" into "%2F", which Spring Security's
+        // strict firewall rejects in request paths).
+        const [pathPart, queryPart] = filePathOrName.split("?");
+        const encodedPath = pathPart.split("/").map((s) => encodeURIComponent(s)).join("/");
+        const base = `${config.BASE_URL}/api/files/${encodedPath}`;
+        return queryPart ? `${base}?${queryPart}` : base;
+    };
 
     useEffect(() => {
         loadBooking();
@@ -31,7 +69,7 @@ const GuestCheckInPage = () => {
 
             const expected = data.expectedGuests || 1;
             const submittedList = data.guests || [];
-            
+
             // Determine total slots needed: max of expected guests OR already submitted guests
             const totalSlots = Math.max(expected, submittedList.length);
 
@@ -46,6 +84,7 @@ const GuestCheckInPage = () => {
                         submitted: existingGuest ? true : (prevForm.submitted || false),
                         name: existingGuest ? existingGuest.name : (prevForm.name || (i === 0 ? data.customerName || "" : "")),
                         mobile: existingGuest ? (existingGuest.contactNumber || "") : (prevForm.mobile || (i === 0 ? data.contactNumber || "" : "")),
+                        vehicleNumber: existingGuest ? (existingGuest.vehicleNumber || "") : (prevForm.vehicleNumber || ""),
                         gender: existingGuest ? existingGuest.gender || "" : (prevForm.gender || ""),
                         leadGuest: i === 0,
                         primaryDocumentUrl: existingGuest ? existingGuest.primaryDocumentUrl : prevForm.primaryDocumentUrl,
@@ -66,11 +105,25 @@ const GuestCheckInPage = () => {
     };
 
     if (loading) {
-        return <h3 style={{ padding: "40px" }}>Loading...</h3>;
+        return (
+            <div className="guest-page">
+                <div className="state-card">
+                    <span className="spinner" />
+                    <p>Loading your check-in details…</p>
+                </div>
+            </div>
+        );
     }
 
     if (!booking) {
-        return <h3 style={{ padding: "40px" }}>Booking not found.</h3>;
+        return (
+            <div className="guest-page">
+                <div className="state-card">
+                    <FaExclamationTriangle className="state-icon" />
+                    <p>Booking not found or link expired.</p>
+                </div>
+            </div>
+        );
     }
 
     const handleFormChange = (index, field, value) => {
@@ -121,7 +174,7 @@ const GuestCheckInPage = () => {
 
         try {
             const formData = new FormData();
-            
+
             if (form.guestId) {
                 formData.append("guestId", form.guestId);
             }
@@ -129,6 +182,9 @@ const GuestCheckInPage = () => {
             formData.append("mobile", form.mobile || "");
             formData.append("gender", form.gender || "");
             formData.append("leadGuest", form.leadGuest || false);
+            if (form.leadGuest) {
+                formData.append("vehicleNumber", (form.vehicleNumber || "").trim());
+            }
 
             if (form.primaryDocument instanceof File) {
                 formData.append("primaryDocument", form.primaryDocument);
@@ -137,7 +193,7 @@ const GuestCheckInPage = () => {
                 formData.append("secondaryDocument", form.secondaryDocument);
             }
 
-            const url = form.guestId 
+            const url = form.guestId
                 ? `${config.BASE_URL}/api/checkin/${token}/guest-with-docs/${form.guestId}`
                 : `${config.BASE_URL}/api/checkin/${token}/guest-with-docs`;
 
@@ -152,7 +208,7 @@ const GuestCheckInPage = () => {
             }
 
             alert(`Guest ${index + 1} details saved successfully.`);
-            await loadBooking(); 
+            await loadBooking();
 
         } catch (e) {
             console.error(e);
@@ -164,62 +220,176 @@ const GuestCheckInPage = () => {
 
     const handleEnableReupload = (index) => {
         const updated = [...guestForms];
-        updated[index].submitted = false; 
+        updated[index].submitted = false;
         setGuestForms(updated);
     };
+
+    const progressPct = Math.min(
+        100,
+        Math.round((guests.length / Math.max(booking.expectedGuests || 1, 1)) * 100)
+    );
+    const progressComplete = guests.length >= booking.expectedGuests;
 
     return (
         <div className="guest-page">
             <div className="booking-card">
-                <h2>Online Check-In</h2>
-                <p><strong>Booking ID :</strong> {booking.bookingId}</p>
-                <p><strong>Lead Guest :</strong> {booking.customerName}</p>
-                <p><strong>Resort :</strong> {booking.resortName}</p>
-                <p><strong>Check In :</strong> {booking.checkInDate}</p>
-                <p><strong>Check Out :</strong> {booking.checkOutDate}</p>
-                <p><strong>Expected Guests :</strong> {booking.expectedGuests}</p>
-                <p><strong>Submitted Guests :</strong> {guests.length}</p>
+                <h2 className="booking-card__title">Online Check-In</h2>
+                <p className="booking-card__welcome">
+                    Welcome to {booking.resortName}, {booking.customerName}!
+                </p>
+
+                <div className="booking-info-grid">
+                    <div className="booking-info-item">
+                        <FaHashtag className="booking-info-icon" />
+                        <div>
+                            <span className="booking-info-label">Booking ID</span>
+                            <span className="booking-info-value">{booking.bookingId}</span>
+                        </div>
+                    </div>
+                    <div className="booking-info-item">
+                        <FaUser className="booking-info-icon" />
+                        <div>
+                            <span className="booking-info-label">Lead Guest</span>
+                            <span className="booking-info-value">{booking.customerName}</span>
+                        </div>
+                    </div>
+                    <div className="booking-info-item">
+                        <FaHotel className="booking-info-icon" />
+                        <div>
+                            <span className="booking-info-label">Resort</span>
+                            <span className="booking-info-value">{booking.resortName}</span>
+                        </div>
+                    </div>
+                    <div className="booking-info-item">
+                        <FaUsers className="booking-info-icon" />
+                        <div>
+                            <span className="booking-info-label">Expected Guests</span>
+                            <span className="booking-info-value">{booking.expectedGuests}</span>
+                        </div>
+                    </div>
+                    <div className="booking-info-item">
+                        <FaCalendarAlt className="booking-info-icon" />
+                        <div>
+                            <span className="booking-info-label">Check In</span>
+                            <span className="booking-info-value">{booking.checkInDate}</span>
+                        </div>
+                    </div>
+                    <div className="booking-info-item">
+                        <FaCalendarCheck className="booking-info-icon" />
+                        <div>
+                            <span className="booking-info-label">Check Out</span>
+                            <span className="booking-info-value">{booking.checkOutDate}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="checkin-progress">
+                    <div className="checkin-progress__label">
+                        <span>Guest Check-In Progress</span>
+                        <span>{guests.length} / {booking.expectedGuests}</span>
+                    </div>
+                    <div className="progress-track">
+                        <div
+                            className={classnames("progress-fill", { "progress-fill--complete": progressComplete })}
+                            style={{ width: `${progressPct}%` }}
+                        />
+                    </div>
+                </div>
             </div>
 
-            <h3>Guest Details</h3>
+            <h3 className="section-heading">
+                <FaUsers /> Guest Details
+            </h3>
 
-            {guestForms.map((form, index) => (
-                <div key={index} className="guest-form-card" style={{ marginBottom: "20px", border: form.submitted ? "2px solid #28a745" : "1px solid #ccc" }}>
-                    <h3>
-                        Guest {index + 1} 
-                        {form.leadGuest && <span style={{ color: "#007bff", fontSize: "0.8em", marginLeft: "10px" }}>(Lead Guest)</span>}
-                        {index >= booking.expectedGuests && <span style={{ color: "#ffc107", fontSize: "0.8em", marginLeft: "10px" }}>(Extra Guest)</span>}
-                        {form.submitted && <span style={{ color: "green", float: "right" }}>✔ Submitted</span>}
-                    </h3>
+            {guestForms.map((form, index) => {
+                const primaryPreviewSrc = form.primaryDocument
+                    ? URL.createObjectURL(form.primaryDocument)
+                    : getFileViewUrl(form.primaryDocumentUrl) || null;
+                const secondaryPreviewSrc = form.secondaryDocument
+                    ? URL.createObjectURL(form.secondaryDocument)
+                    : getFileViewUrl(form.secondaryDocumentUrl) || null;
+                const isExtraGuest = index >= booking.expectedGuests;
+
+                return (
+                <div
+                    key={index}
+                    className={classnames("guest-form-card", { "guest-form-card--submitted": form.submitted })}
+                >
+                    <div className="guest-card-header">
+                        <div className="guest-card-header__title">
+                            <span className="guest-avatar">{index + 1}</span>
+                            <h3>Guest {index + 1}</h3>
+                        </div>
+                        <div className="guest-card-header__badges">
+                            {form.leadGuest && (
+                                <span className="badge badge--lead"><FaCrown /> Lead Guest</span>
+                            )}
+                            {isExtraGuest && (
+                                <span className="badge badge--extra"><FaUserPlus /> Extra Guest</span>
+                            )}
+                            {form.submitted && (
+                                <span className="badge badge--submitted"><FaCheckCircle /> Submitted</span>
+                            )}
+                        </div>
+                    </div>
 
                     {form.submitted ? (
-                        <div style={{ padding: "10px 0" }}>
-                            <p><strong>Name:</strong> {form.name}</p>
-                            <p><strong>Mobile:</strong> {form.mobile || "-"}</p>
-                            <p><strong>Gender:</strong> {form.gender || "-"}</p>
-                            
-                            <div style={{ margin: "10px 0", background: "#f8f9fa", padding: "10px", borderRadius: "4px" }}>
-                                <div style={{ display: "flex", gap: "15px", flexWrap: "wrap" }}>
+                        <div>
+                            <div className="guest-summary-grid">
+                                <div className="guest-summary-item">
+                                    <FaUser className="guest-summary-icon" />
+                                    <div>
+                                        <span className="guest-summary-label">Name</span>
+                                        <span className="guest-summary-value">{form.name}</span>
+                                    </div>
+                                </div>
+                                <div className="guest-summary-item">
+                                    <FaMobileAlt className="guest-summary-icon" />
+                                    <div>
+                                        <span className="guest-summary-label">Mobile</span>
+                                        <span className="guest-summary-value">{form.mobile || "-"}</span>
+                                    </div>
+                                </div>
+                                <div className="guest-summary-item">
+                                    <FaVenusMars className="guest-summary-icon" />
+                                    <div>
+                                        <span className="guest-summary-label">Gender</span>
+                                        <span className="guest-summary-value">{form.gender || "-"}</span>
+                                    </div>
+                                </div>
+                                {form.leadGuest && (
+                                    <div className="guest-summary-item">
+                                        <FaCar className="guest-summary-icon" />
+                                        <div>
+                                            <span className="guest-summary-label">Vehicle Number</span>
+                                            <span className="guest-summary-value">{form.vehicleNumber || "-"}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="guest-documents-box">
+                                <div className="guest-documents-row">
                                     {form.primaryDocumentUrl && (
                                         <div>
-                                            <p style={{ fontSize: "12px", marginBottom: "4px", fontWeight: "bold" }}>Front Side</p>
-                                            <img 
-                                                src={form.primaryDocumentUrl} 
-                                                alt="Primary Document" 
-                                                style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "4px", cursor: "pointer", border: "1px solid #ccc" }}
-                                                onClick={() => setPreviewUrl(form.primaryDocumentUrl)}
+                                            <p className="doc-thumb-label">Front Side</p>
+                                            <img
+                                                src={getFileViewUrl(form.primaryDocumentUrl)}
+                                                alt="Primary Document"
+                                                className="doc-thumb"
+                                                onClick={() => setPreviewUrl(getFileViewUrl(form.primaryDocumentUrl))}
                                                 title="Click to preview"
                                             />
                                         </div>
                                     )}
                                     {form.secondaryDocumentUrl && (
                                         <div>
-                                            <p style={{ fontSize: "12px", marginBottom: "4px", fontWeight: "bold" }}>Back Side</p>
-                                            <img 
-                                                src={form.secondaryDocumentUrl} 
-                                                alt="Secondary Document" 
-                                                style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "4px", cursor: "pointer", border: "1px solid #ccc" }}
-                                                onClick={() => setPreviewUrl(form.secondaryDocumentUrl)}
+                                            <p className="doc-thumb-label">Back Side</p>
+                                            <img
+                                                src={getFileViewUrl(form.secondaryDocumentUrl)}
+                                                alt="Secondary Document"
+                                                className="doc-thumb"
+                                                onClick={() => setPreviewUrl(getFileViewUrl(form.secondaryDocumentUrl))}
                                                 title="Click to preview"
                                             />
                                         </div>
@@ -227,12 +397,11 @@ const GuestCheckInPage = () => {
                                 </div>
                             </div>
 
-                            <p style={{ color: "green", fontWeight: "bold" }}>Details verified & saved.</p>
+                            <p className="verified-text"><FaCheckCircle /> Details verified & saved.</p>
 
-                            <button 
-                                className="secondary-btn"
+                            <button
+                                className="secondary-btn secondary-btn--sm"
                                 onClick={() => handleEnableReupload(index)}
-                                style={{ fontSize: "12px", padding: "5px 10px", marginTop: "5px" }}
                             >
                                 Edit Details / Re-upload Documents
                             </button>
@@ -246,7 +415,6 @@ const GuestCheckInPage = () => {
                                 value={form.name}
                                 disabled={form.leadGuest}
                                 onChange={(e) => handleFormChange(index, "name", e.target.value)}
-                                style={form.leadGuest ? { backgroundColor: "#e9ecef", cursor: "not-allowed" } : {}}
                             />
 
                             <label>Mobile Number {form.leadGuest && "(Locked for Lead Guest)"}</label>
@@ -256,7 +424,6 @@ const GuestCheckInPage = () => {
                                 value={form.mobile}
                                 disabled={form.leadGuest}
                                 onChange={(e) => handleFormChange(index, "mobile", e.target.value)}
-                                style={form.leadGuest ? { backgroundColor: "#e9ecef", cursor: "not-allowed" } : {}}
                             />
 
                             <label>Gender</label>
@@ -270,23 +437,44 @@ const GuestCheckInPage = () => {
                                 <option value="OTHER">Other</option>
                             </select>
 
+                            {form.leadGuest && (
+                                <>
+                                    <label>Vehicle Number (Optional)</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. MH12AB1234"
+                                        value={form.vehicleNumber || ""}
+                                        onChange={(e) => handleFormChange(index, "vehicleNumber", e.target.value.toUpperCase())}
+                                    />
+                                </>
+                            )}
+
                             <label>Primary Document</label>
-                            {form.primaryDocumentUrl ? (
-                                <div style={{ marginBottom: "8px", background: "#f1f3f5", padding: "8px", borderRadius: "4px", display: "flex", alignItems: "center", gap: "10px" }}>
-                                    <img 
-                                        src={form.primaryDocumentUrl} 
-                                        alt="Current Primary" 
-                                        style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "4px", cursor: "pointer", border: "1px solid #ccc" }}
-                                        onClick={() => setPreviewUrl(form.primaryDocumentUrl)}
+                            {primaryPreviewSrc ? (
+                                <div className="doc-preview-box">
+                                    <img
+                                        src={primaryPreviewSrc}
+                                        alt={form.primaryDocument ? "Selected Primary" : "Current Primary"}
+                                        className="doc-thumb doc-thumb--sm"
+                                        onClick={() => setPreviewUrl(primaryPreviewSrc)}
                                         title="Click to preview"
                                     />
-                                    <div>
-                                        <span style={{ fontSize: "13px", color: "#495057", display: "block" }}>Current file uploaded</span>
-                                        <span style={{ fontSize: "11px", color: "#6c757d" }}>(Upload a new file below only to replace)</span>
+                                    <div className="doc-preview-meta">
+                                        {form.primaryDocument ? (
+                                            <>
+                                                <span className="doc-preview-status">New file selected</span>
+                                                <span className="doc-preview-hint">{form.primaryDocument.name}</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="doc-preview-status">Current file uploaded</span>
+                                                <span className="doc-preview-hint">(Upload a new file below only to replace)</span>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
-                                <div style={{ fontSize: "12px", color: "#dc3545", marginBottom: "5px" }}>No primary document uploaded yet.</div>
+                                <div className="doc-missing-warning">No primary document uploaded yet.</div>
                             )}
                             <input
                                 type="file"
@@ -295,22 +483,31 @@ const GuestCheckInPage = () => {
                             />
 
                             <label style={{ marginTop: "10px" }}>Secondary Document (Optional)</label>
-                            {form.secondaryDocumentUrl ? (
-                                <div style={{ marginBottom: "8px", background: "#f1f3f5", padding: "8px", borderRadius: "4px", display: "flex", alignItems: "center", gap: "10px" }}>
-                                    <img 
-                                        src={form.secondaryDocumentUrl} 
-                                        alt="Current Secondary" 
-                                        style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "4px", cursor: "pointer", border: "1px solid #ccc" }}
-                                        onClick={() => setPreviewUrl(form.secondaryDocumentUrl)}
+                            {secondaryPreviewSrc ? (
+                                <div className="doc-preview-box">
+                                    <img
+                                        src={secondaryPreviewSrc}
+                                        alt={form.secondaryDocument ? "Selected Secondary" : "Current Secondary"}
+                                        className="doc-thumb doc-thumb--sm"
+                                        onClick={() => setPreviewUrl(secondaryPreviewSrc)}
                                         title="Click to preview"
                                     />
-                                    <div>
-                                        <span style={{ fontSize: "13px", color: "#495057", display: "block" }}>Current secondary file uploaded</span>
-                                        <span style={{ fontSize: "11px", color: "#6c757d" }}>(Upload a new file below only to replace)</span>
+                                    <div className="doc-preview-meta">
+                                        {form.secondaryDocument ? (
+                                            <>
+                                                <span className="doc-preview-status">New file selected</span>
+                                                <span className="doc-preview-hint">{form.secondaryDocument.name}</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="doc-preview-status">Current secondary file uploaded</span>
+                                                <span className="doc-preview-hint">(Upload a new file below only to replace)</span>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
-                                <div style={{ fontSize: "12px", color: "#6c757d", marginBottom: "5px" }}>No secondary document uploaded yet.</div>
+                                <div className="doc-missing-note">No secondary document uploaded yet.</div>
                             )}
                             <input
                                 type="file"
@@ -322,75 +519,41 @@ const GuestCheckInPage = () => {
                                 className="primary-btn"
                                 onClick={() => saveSpecificGuest(index)}
                                 disabled={savingIndex === index}
-                                style={{ marginTop: "15px" }}
                             >
                                 {savingIndex === index ? "Saving..." : `Save Guest ${index + 1}`}
                             </button>
                         </>
                     )}
                 </div>
-            ))}
+                );
+            })}
 
-            <div style={{ margin: "20px 0", textAlign: "center" }}>
-                <button 
-                    onClick={handleAddExtraGuest}
-                    style={{ padding: "10px 20px", background: "#6c757d", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" }}
-                >
-                    + Add Extra Guest
+            <div className="add-guest-wrapper">
+                <button className="add-guest-btn" onClick={handleAddExtraGuest}>
+                    <FaPlus /> Add Extra Guest
                 </button>
             </div>
 
             {/* In-Page Image Preview Modal */}
             {previewUrl && (
-                <div 
+                <div
+                    className="doc-preview-modal-overlay"
                     onClick={() => setPreviewUrl(null)}
-                    style={{
-                        position: "fixed",
-                        top: 0,
-                        left: 0,
-                        width: "100vw",
-                        height: "100vh",
-                        backgroundColor: "rgba(0, 0, 0, 0.8)",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        zIndex: 1000,
-                        cursor: "pointer"
-                    }}
                 >
-                    <div 
-                        style={{ position: "relative", maxWidth: "90%", maxHeight: "90%" }}
+                    <div
+                        className="doc-preview-modal-content"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <button 
+                        <button
+                            className="doc-preview-modal-close"
                             onClick={() => setPreviewUrl(null)}
-                            style={{
-                                position: "absolute",
-                                top: "-40px",
-                                right: "0px",
-                                background: "#fff",
-                                color: "#000",
-                                border: "none",
-                                borderRadius: "50%",
-                                width: "30px",
-                                height: "30px",
-                                fontSize: "16px",
-                                fontWeight: "bold",
-                                cursor: "pointer"
-                            }}
                         >
-                            ✕
+                            <FaTimes />
                         </button>
-                        <img 
-                            src={previewUrl} 
-                            alt="Document Preview" 
-                            style={{ 
-                                maxWidth: "100%", 
-                                maxHeight: "85vh", 
-                                objectFit: "contain", 
-                                borderRadius: "4px", 
-                                background: "#fff" 
-                            }} 
+                        <img
+                            src={previewUrl}
+                            alt="Document Preview"
+                            className="doc-preview-modal-image"
                         />
                     </div>
                 </div>

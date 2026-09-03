@@ -1,5 +1,6 @@
 // src/components/ApplyLeaveForm.jsx
 import React, { useState, useEffect } from "react";
+import { toLocalDateStr } from "../utils/date";
 
 const ApplyLeaveForm = ({ baseBalance = 1, history = [], onLeaveApplied }) => {
   const [startDate, setStartDate] = useState("");
@@ -46,7 +47,7 @@ const ApplyLeaveForm = ({ baseBalance = 1, history = [], onLeaveApplied }) => {
     if (!startDate || dynamicAvailableBalance <= 0) return startDate;
     const start = new Date(startDate);
     start.setDate(start.getDate() + (dynamicAvailableBalance - 1));
-    return start.toISOString().split("T")[0];
+    return toLocalDateStr(start);
   };
 
   const handleSubmit = (e) => {

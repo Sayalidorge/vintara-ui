@@ -4,6 +4,17 @@ import { getUsers, getAllLeaveRequests, approveLeave, rejectLeave } from "../ser
 import "./AdminLeaveDashboard.css";
 
 const AdminLeaveDashboard = () => {
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+
+  // Mirrors the backend hierarchy rule in LeaveService.assertCanActOnLeave:
+  // nobody can approve their own leave, and only SUPER_ADMIN can act on a
+  // SUPER_USER's leave request.
+  const canActOn = (leave) => {
+    if (leave.userId === currentUser.userId) return false;
+    if (leave.userRole === "SUPER_USER" && currentUser.role !== "SUPER_ADMIN") return false;
+    return true;
+  };
+
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [statusFilter, setStatusFilter] = useState("PENDING"); // default filter
   const [userIdFilter, setUserIdFilter] = useState("");
@@ -47,13 +58,21 @@ useEffect(() => {
   }, [statusFilter, userIdFilter]);
 
   const handleApprove = async (id) => {
-    await approveLeave(id);
-    fetchLeaves();
+    try {
+      await approveLeave(id);
+      fetchLeaves();
+    } catch (err) {
+      alert(err.message || "Failed to approve.");
+    }
   };
 
   const handleReject = async (id) => {
-    await rejectLeave(id);
-    fetchLeaves();
+    try {
+      await rejectLeave(id);
+      fetchLeaves();
+    } catch (err) {
+      alert(err.message || "Failed to reject.");
+    }
   };
 
   const handleResetFilters = () => {
@@ -65,7 +84,9 @@ useEffect(() => {
     <div className="page-container admin-leave-dashboard">
       {loading && <div className="loading-overlay">Loading...</div>}
 
-      <h2 className="page-title">Admin Leave Dashboard</h2>
+      <div className="attendance-roster-header">
+        <h2 className="section-title">Admin Leave Dashboard</h2>
+      </div>
 
       {/* Filters */}
       <div className="filters-section">
@@ -110,6 +131,7 @@ useEffect(() => {
               <th>Days</th>
               <th>Reason</th>
               <th>Status</th>
+              <th>Approved By</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -134,29 +156,38 @@ useEffect(() => {
                   >
                     {l.status}
                   </td>
+                  <td>{l.approvedBy || "--"}</td>
                   <td>
                     {l.status === "PENDING" && (
-                      <>
-                        <button
-                          className="btn-approve"
-                          onClick={() => handleApprove(l.id)}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          className="btn-reject"
-                          onClick={() => handleReject(l.id)}
-                        >
-                          Reject
-                        </button>
-                      </>
+                      canActOn(l) ? (
+                        <>
+                          <button
+                            className="btn-approve"
+                            onClick={() => handleApprove(l.id)}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            className="btn-reject"
+                            onClick={() => handleReject(l.id)}
+                          >
+                            Reject
+                          </button>
+                        </>
+                      ) : (
+                        <span className="leave-action-hint">
+                          {l.userRole === "SUPER_USER"
+                            ? "Requires Super Admin"
+                            : "Not actionable"}
+                        </span>
+                      )
                     )}
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="8" style={{ textAlign: "center" }}>
+                <td colSpan="9" style={{ textAlign: "center" }}>
                   No leave requests found
                 </td>
               </tr>

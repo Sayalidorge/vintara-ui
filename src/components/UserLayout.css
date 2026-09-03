@@ -191,6 +191,9 @@
   border-radius: 6px;
   flex-shrink: 0;
   transition: background-color 0.2s;
+  /* Stay above the fixed sidebar drawer so it's always reachable to close it */
+  position: relative;
+  z-index: 1001;
 }
 
 .menu-toggle-hamburger:hover {

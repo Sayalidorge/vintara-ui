@@ -1,0 +1,188 @@
+/* Scoped to .admin-bookings-dashboard throughout, same defensive pattern as
+   the rest of the app: CRA bundles all component CSS globally, and several
+   other pages (UserDashboard.css, DailyEntryDashboard.css, ViewBookingEnquiry.css)
+   also define plain ".dashboard-filters" / ".filter-item" / ".date-picker" /
+   ".reset-filters-btn" with 1-2 class specificity - a same-specificity rule
+   here would tie and the winner would depend on unpredictable bundle order. */
+.admin-bookings-dashboard {
+  padding: 0 20px 20px 20px;
+  background: #f4f4f4;
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-bookings-dashboard .page-header {
+  margin: 0 0 15px 0;
+  padding: 0;
+  border-bottom: none;
+}
+
+.admin-bookings-dashboard .page-header h2 {
+  margin: 0;
+}
+
+/* ==============================
+   Filters
+   ============================== */
+.admin-bookings-dashboard .dashboard-filters {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+.admin-bookings-dashboard .dashboard-filters .filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 200px;
+  flex: 0 0 auto;
+}
+
+.admin-bookings-dashboard .dashboard-filters .filter-item:first-child {
+  min-width: 240px; /* Resort slightly wider */
+}
+
+.admin-bookings-dashboard .dashboard-filters .filter-item label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  text-align: left;
+}
+
+.admin-bookings-dashboard .dashboard-filters .react-select__control,
+.admin-bookings-dashboard .dashboard-filters .date-picker,
+.admin-bookings-dashboard .dashboard-filters select,
+.admin-bookings-dashboard .dashboard-filters .reset-filters-btn,
+.admin-bookings-dashboard .dashboard-filters .export-csv-btn {
+  height: 40px;
+  min-height: 40px;
+  box-sizing: border-box;
+}
+
+.admin-bookings-dashboard .dashboard-filters .react-select__control {
+  padding: 0;
+  border-color: var(--primary-teal);
+}
+
+.admin-bookings-dashboard .dashboard-filters .react-select__value-container {
+  height: 40px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+}
+
+.admin-bookings-dashboard .dashboard-filters .react-select__indicators {
+  height: 40px;
+}
+
+.admin-bookings-dashboard .dashboard-filters select {
+  width: 100%;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.admin-bookings-dashboard .dashboard-filters select:focus {
+  border-color: var(--primary-teal);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--primary-teal);
+}
+
+.admin-bookings-dashboard .dashboard-filters .date-picker {
+  width: 100%;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+.admin-bookings-dashboard .dashboard-filters .date-picker:focus {
+  border-color: var(--primary-teal);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--primary-teal);
+}
+
+.admin-bookings-dashboard .dashboard-filters .reset-filters-btn {
+  background-color: var(--primary-purple);
+  color: #fff;
+  font-weight: 600;
+  padding: 0 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.admin-bookings-dashboard .dashboard-filters .reset-filters-btn:hover {
+  background-color: var(--primary-teal);
+}
+
+.admin-bookings-dashboard .dashboard-filters .export-csv-btn {
+  background-color: var(--primary-teal);
+  color: #fff;
+  font-weight: 600;
+  padding: 0 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.admin-bookings-dashboard .dashboard-filters .export-csv-btn:hover {
+  background-color: var(--primary-purple);
+}
+
+/* ==============================
+   Table
+   ============================== */
+.admin-bookings-dashboard .table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.admin-bookings-dashboard .bookings-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-bookings-dashboard .bookings-table th,
+.admin-bookings-dashboard .bookings-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  font-size: 13px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.admin-bookings-dashboard .bookings-table th {
+  background: var(--primary-teal);
+  color: #fff;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.admin-bookings-dashboard .bookings-table tfoot td {
+  background: #f4fbfb;
+  border-top: 2px solid var(--primary-teal);
+}
+
+@media (max-width: 900px) {
+  .admin-bookings-dashboard .dashboard-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

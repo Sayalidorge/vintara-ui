@@ -30,7 +30,7 @@ try {
   return (
     <div className="login-container">
       <div className="login-box">
-        <h2>Reset Password</h2>
+        <h2 style={{ fontSize: "24px", fontWeight: 700, color: "var(--primary-teal)", textAlign: "center", marginTop: 0, marginBottom: "24px" }}>Reset Password</h2>
 
         <form onSubmit={handleSubmit}>
           <label>New Password</label>

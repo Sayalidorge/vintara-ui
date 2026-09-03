@@ -1,5 +1,5 @@
 // src/components/ManageResorts.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Select from "react-select"; 
 import config from "../config";
@@ -11,44 +11,40 @@ const ManageResorts = () => {
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [googleMapLink, setGoogleMapLink] = useState("");
-  const [propertyManager, setPropertyManager] = useState("");
-  const [managerContact, setManagerContact] = useState("");
+  const [propertyContact, setPropertyContact] = useState("");
   const [roomCategories, setRoomCategories] = useState([]);
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
   const navigate = useNavigate();
+  const currentUser = JSON.parse(localStorage.getItem("user") || "null");
+  const isSuperUser = currentUser?.role === "SUPER_USER";
+  const formSectionRef = useRef(null);
+  const nameInputRef = useRef(null);
   const [locations, setLocations] = useState([]);
   const [newLocation, setNewLocation] = useState("");
-  const [managers, setManagers] = useState([]);
   const [contactError, setContactError] = useState("");
   const [commissionModel, setCommissionModel] = useState("");
   const [commissionPercentage, setCommissionPercentage] = useState("");
+  const [paymentAccounts, setPaymentAccounts] = useState([]);
+  const [selectedAccountIds, setSelectedAccountIds] = useState([]);
 const STANDARD_CATEGORIES = [
-  { label: "Standard Room", value: "Standard Room", prefix: "ST" },
-  { label: "Deluxe Suite", value: "Deluxe Suite", prefix: "DX" },
-  { label: "Executive Club", value: "Executive Club", prefix: "EX" },
-  { label: "Luxury Villa", value: "Luxury Villa", prefix: "VL" },
-  { label: "Presidential Suite", value: "Presidential Suite", prefix: "PR" },
+  { label: "Standard Room", value: "Standard Room", prefix: "S" },
+  { label: "Deluxe Room", value: "Deluxe Room", prefix: "D" },
+  { label: "Family Room", value: "Family Room", prefix: "F" },
+  { label: "Premium Room", value: "Premium Room", prefix: "P" },
+  { label: "Private Villa", value: "Private Villa", prefix: "PV" },
+  { label: "Deluxe Room + Balcony", value: "Deluxe Room + Balcony", prefix: "DB" },
+  { label: "Standard Room + Balcony", value: "Standard Room + Balcony", prefix: "SB" },
+  { label: "Villa Room", value: "Villa Room", prefix: "V" },
+  { label: "3BHK Apartment", value: "3BHK Apartment", prefix: "3BHK" },
+  { label: "Family Room + Balcony", value: "Family Room + Balcony", prefix: "FB" },
+  { label: "Premium Room + Balcony", value: "Premium Room + Balcony", prefix: "PB" },
   { label: "Other / Custom...", value: "CUSTOM", prefix: "" }
 ];
-
-  // Fetch managers
-  useEffect(() => {
-    const fetchManagers = async () => {
-      try {
-        const res = await fetch(`${config.BASE_URL}/users/property-managers`, {
-          headers: config.getHeaders(),
-        });
-        const data = await res.json();
-        setManagers(data);
-      } catch (err) {
-        console.error("Failed to fetch property managers", err);
-      }
-    };
-    fetchManagers();
-  }, []);
 
   // Fetch locations
   useEffect(() => {
@@ -75,6 +71,23 @@ const STANDARD_CATEGORIES = [
     fetchLocations();
   }, [editId, resorts]);
 
+  // Fetch payment accounts (for the per-resort assignment checkboxes)
+  useEffect(() => {
+    const fetchPaymentAccounts = async () => {
+      try {
+        const res = await fetch(`${config.BASE_URL}/api/payment-accounts`, {
+          headers: config.getHeaders(),
+        });
+        if (!res.ok) throw new Error("Failed to fetch payment accounts");
+        const data = await res.json();
+        setPaymentAccounts(data.filter((a) => a.active));
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchPaymentAccounts();
+  }, []);
+
   // Fetch resorts
   const fetchResorts = async () => {
     try {
@@ -88,9 +101,7 @@ const STANDARD_CATEGORIES = [
       const normalized = data.map((r) => ({
         ...r,
         roomCategories: r.categories || [],
-        propertyManagerName: r.propertyManager?.name || "-",
-        propertyManagerId: r.propertyManager?.userId || "",
-        managerContact: r.managerContact || "-",
+        propertyContact: r.propertyContact || "",
       }));
 
       setResorts(normalized);
@@ -106,15 +117,26 @@ const STANDARD_CATEGORIES = [
     fetchResorts();
   }, []);
 
+  // Scroll/focus the form whenever it opens (Create or Edit) - the form is
+  // conditionally rendered now, so the ref isn't attached until after the
+  // showForm state change re-renders it, hence this runs as an effect
+  // rather than inline in the click handlers.
+  useEffect(() => {
+    if (showForm) {
+      formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      nameInputRef.current?.focus();
+    }
+  }, [showForm, editId]);
+
   // Map choices for React-Select format
   const locationOptions = locations.map((loc) => ({
     value: loc.name,
     label: loc.name,
   }));
 
-  const managerOptions = managers.map((m) => ({
-    value: m.userId,
-    label: `${m.name} (${m.userId})`,
+  const paymentAccountOptions = paymentAccounts.map((account) => ({
+    value: account.id,
+    label: account.name,
   }));
 
   const COMMISSION_MODELS = [
@@ -146,6 +168,9 @@ const COMMISSION_PERCENTAGES = [
   { value: 15, label: "15%" },
   { value: 20, label: "20%" },
 ];
+
+const getCommissionModelLabel = (value) =>
+  COMMISSION_MODELS.find((m) => m.value === value)?.label || value;
   // Room category handlers
   const addRoomCategoryRow = () =>
     setRoomCategories([...roomCategories, { name: "", roomPrefix: "", totalRooms: 0, startNumber: 1 }]);
@@ -167,12 +192,23 @@ const COMMISSION_PERCENTAGES = [
     e.preventDefault();
     if (!name || !location) return alert("Please fill resort name and location");
 
+    const categoryNames = roomCategories.map((c) => (c.name || "").trim().toLowerCase());
+    const duplicateName = categoryNames.find((n, i) => n && categoryNames.indexOf(n) !== i);
+    if (duplicateName) {
+      return alert(`Duplicate room category name "${duplicateName}". Each category must be unique.`);
+    }
+
+    const categoryPrefixes = roomCategories.map((c) => (c.roomPrefix || "").trim().toUpperCase());
+    const duplicatePrefix = categoryPrefixes.find((p, i) => p && categoryPrefixes.indexOf(p) !== i);
+    if (duplicatePrefix) {
+      return alert(`Duplicate room prefix "${duplicatePrefix}". Each category must have a unique prefix.`);
+    }
+
  const payload = {
   name,
   location,
   googleMapLink,
-  propertyManager,
-  managerContact,
+  propertyContact,
   active,
   commissionModel,
   commissionPercentage,
@@ -205,17 +241,41 @@ const COMMISSION_PERCENTAGES = [
           body: JSON.stringify(payload),
         });
       }
-      if (!res.ok) throw new Error("Failed to save resort");
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
+        throw new Error(errBody?.error || "Failed to save resort");
+      }
+
+    const savedResort = await res.json();
+
+    try {
+      const paymentAccountsRes = await fetch(`${config.BASE_URL}/api/resorts/${savedResort.id}/payment-accounts`, {
+        method: "PUT",
+        headers: {
+          ...config.getHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ accountIds: selectedAccountIds }),
+      });
+      if (!paymentAccountsRes.ok) {
+        const errBody = await paymentAccountsRes.json().catch(() => null);
+        throw new Error(errBody?.error || "Failed to assign payment accounts");
+      }
+    } catch (err) {
+      console.error("Failed to assign payment accounts", err);
+      alert(err.message || "Resort saved, but failed to update its payment accounts.");
+    }
 
     setName("");
     setLocation("");
     setGoogleMapLink("");
-    setPropertyManager("");
-    setManagerContact("");
+    setPropertyContact("");
     setCommissionModel("");
     setCommissionPercentage("");
     setRoomCategories([]);
+    setSelectedAccountIds([]);
     setEditId(null);
+    setShowForm(false);
 
     fetchResorts();
     } catch (err) {
@@ -225,13 +285,12 @@ const COMMISSION_PERCENTAGES = [
   };
 
   // Edit resort
-  const handleEdit = (resort) => {
+  const handleEdit = async (resort) => {
     setEditId(resort.id);
     setName(resort.name);
     setLocation(resort.location || "");
     setGoogleMapLink(resort.googleMapLink || "");
-    setPropertyManager(resort.propertyManagerId || "");
-    setManagerContact(resort.managerContact || "");
+    setPropertyContact(resort.propertyContact || "");
     setCommissionModel(resort.commissionModel || "");
     setCommissionPercentage(resort.commissionPercentage || "");
     setRoomCategories(
@@ -242,10 +301,24 @@ const COMMISSION_PERCENTAGES = [
         startNumber: c.startNumber || 1,
       })) || []
     );
+    setShowForm(true);
+
+    try {
+      const res = await fetch(`${config.BASE_URL}/api/resorts/${resort.id}/payment-accounts`, {
+        headers: config.getHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to fetch assigned payment accounts");
+      const data = await res.json();
+      setSelectedAccountIds(data.map((a) => a.id));
+    } catch (err) {
+      console.error(err);
+      setSelectedAccountIds([]);
+    }
   };
 
   // Delete resort
   const handleDelete = async (id) => {
+    if (isSuperUser) return;
     if (!window.confirm("Are you sure you want to delete this resort?")) return;
     try {
       const res = await fetch(`${config.BASE_URL}/api/resorts/${id}`, {
@@ -268,6 +341,7 @@ const COMMISSION_PERCENTAGES = [
       borderRadius: "4px",
       border: "1px solid #ccc",
       boxShadow: "none",
+      boxSizing: "border-box",
       "&:hover": { border: "1px solid #999" }
     }),
     valueContainer: (base) => ({
@@ -281,34 +355,90 @@ const COMMISSION_PERCENTAGES = [
     }),
     indicatorsContainer: (base) => ({
       ...base,
-      height: "38px"
+      height: "38px",
+      padding: "0 8px"
+    }),
+    container: (base) => ({
+      ...base,
+      boxSizing: "border-box",
+      margin: 0
     }),
     menuPortal: (base) => ({ ...base, zIndex: 9999 })
   };
 
+  // Multi-select variant: lets the control grow to fit multiple chips instead of clipping at 38px
+  const multiSelectStyles = {
+    ...customSelectStyles,
+    control: (base) => ({
+      ...customSelectStyles.control(base),
+      height: "auto",
+      minHeight: "38px",
+    }),
+    valueContainer: (base) => ({
+      ...customSelectStyles.valueContainer(base),
+      height: "auto",
+      flexWrap: "wrap",
+    }),
+  };
+
+  const filteredResorts = resorts.filter((resort) => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      resort.name?.toLowerCase().includes(q) ||
+      resort.location?.toLowerCase().includes(q) ||
+      String(resort.id).includes(q)
+    );
+  });
+
   return (
     <div className="resorts-page-container" style={{ padding: "0px 20px 20px 20px", boxSizing: "border-box" }}>
-      <div className="page-header" style={{ marginBottom: "20px" }}>
-        <h2>Manage Resorts</h2>
-      </div>    
+      <div className="page-header">
+        <h2 style={{ fontSize: "26px", fontWeight: 700, color: "var(--text-dark)", textAlign: "left", marginTop: "6px", marginBottom: "20px", paddingBottom: "8px", borderBottom: "3px solid var(--primary-teal)" }}>Manage Resorts</h2>
+      </div>
 
-      <div className="user-management-section" style={{ border: "1px solid #ccc", padding: "25px", borderRadius: "6px", marginBottom: "30px", background: "#fff", boxSizing: "border-box" }}>
+      {!showForm && (
+        <div style={{ marginBottom: "20px" }}>
+          <button
+            type="button"
+            onClick={() => {
+              setEditId(null);
+              setName("");
+              setLocation("");
+              setGoogleMapLink("");
+              setPropertyContact("");
+              setCommissionModel("");
+              setCommissionPercentage("");
+              setRoomCategories([]);
+              setSelectedAccountIds([]);
+              setShowForm(true);
+            }}
+            style={{ padding: "10px 20px", cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", fontSize: "14px" }}
+          >
+            + Create Resort
+          </button>
+        </div>
+      )}
+
+      {showForm && (
+      <div className="user-management-section" ref={formSectionRef} style={{ border: "1px solid #ccc", padding: "25px", borderRadius: "6px", marginBottom: "30px", background: "#fff", boxSizing: "border-box" }}>
         <h3 style={{ marginTop: 0, marginBottom: "20px", color: "#333" }}>
           {editId ? `Modify Resort Properties (ID: #${editId})` : "Create New Resort Listing"}
         </h3>
-        
+
         <form className="resort-form" onSubmit={handleAddOrEdit}>
           
           {/* ROW 1 */}
           <div className="form-row" style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
               <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Resort Name *</label>
-              <input 
-                type="text" 
-                placeholder="Enter resort name" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
-                required 
+              <input
+                type="text"
+                ref={nameInputRef}
+                placeholder="Enter resort name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
                 style={{ width: "100%", padding: "8px 12px", height: "38px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
               />
             </div>
@@ -340,7 +470,7 @@ const COMMISSION_PERCENTAGES = [
 
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
               <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Or Create New Location</label>
-              <div style={{ display: "flex", gap: "8px", width: "100%" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
                 <input
                   type="text"
                   placeholder="Type new location name"
@@ -348,9 +478,9 @@ const COMMISSION_PERCENTAGES = [
                   onChange={(e) => setNewLocation(e.target.value)}
                   style={{ flex: 1, padding: "8px 12px", height: "38px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
                 />
-                <button 
-                  type="button" 
-                  style={{ height: "38px", padding: "0 18px", cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }} 
+                <button
+                  type="button"
+                  style={{ height: "38px", boxSizing: "border-box", padding: "0 18px", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}
                   onClick={async () => {
                     if (!newLocation.trim()) return alert("Enter a location");
                     try {
@@ -379,28 +509,15 @@ const COMMISSION_PERCENTAGES = [
           {/* ROW 3 */}
           <div className="form-row" style={{ display: "flex", gap: "20px", marginBottom: "25px" }}>
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Property Manager</label>
-              <Select
-                options={managerOptions}
-                value={managerOptions.find(o => o.value === propertyManager) || null}
-                onChange={(selected) => setPropertyManager(selected ? selected.value : "")}
-                placeholder="Select Property Manager..."
-                menuPortalTarget={document.body}
-                styles={customSelectStyles}
-                isClearable
-              />
-            </div>
-
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Manager Contact Number</label>
+              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Property Contact Number</label>
               <input
                 type="text"
                 placeholder="10 digit phone number"
-                value={managerContact}
+                value={propertyContact}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, ""); 
+                  const val = e.target.value.replace(/\D/g, "");
                   if (val.length <= 10) {
-                    setManagerContact(val);
+                    setPropertyContact(val);
                   }
                   if (val.length > 0 && val.length < 10) {
                     setContactError("Contact number must be 10 digits");
@@ -411,6 +528,23 @@ const COMMISSION_PERCENTAGES = [
                 style={{ width: "100%", padding: "8px 12px", height: "38px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
               />
               {contactError && <span style={{ color: "red", fontSize: "12px", marginTop: "2px" }}>{contactError}</span>}
+            </div>
+
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Payment Accounts</label>
+              {paymentAccounts.length === 0 ? (
+                <p style={{ fontSize: "13px", color: "#999", margin: 0 }}>No payment accounts configured yet.</p>
+              ) : (
+                <Select
+                  isMulti
+                  options={paymentAccountOptions}
+                  value={paymentAccountOptions.filter((opt) => selectedAccountIds.includes(opt.value))}
+                  onChange={(selected) => setSelectedAccountIds((selected || []).map((opt) => opt.value))}
+                  placeholder="Select payment accounts..."
+                  menuPortalTarget={document.body}
+                  styles={multiSelectStyles}
+                />
+              )}
             </div>
           </div>
 {/* ROW 4 - Commission */}
@@ -588,10 +722,11 @@ const COMMISSION_PERCENTAGES = [
             >
               {editId ? "Update Resort Entry" : "Save Resort Profile"}
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => {
-                setEditId(null); setName(""); setLocation(""); setGoogleMapLink(""); setPropertyManager(""); setManagerContact(""); setCommissionModel("");setCommissionPercentage("");setRoomCategories([]);
+                setEditId(null); setName(""); setLocation(""); setGoogleMapLink(""); setPropertyContact(""); setCommissionModel("");setCommissionPercentage("");setRoomCategories([]);setSelectedAccountIds([]);
+                setShowForm(false);
               }}
               style={{ padding: "0 24px", height: "40px", cursor: "pointer", backgroundColor: "var(--primary-teal)", border: "1px solid #ccc", borderRadius: "4px", color: "#ffffff", fontSize: "14px", display: "inline-block", width: "auto" }}
             >
@@ -600,49 +735,77 @@ const COMMISSION_PERCENTAGES = [
           </div>
         </form>
       </div>
+      )}
 
       {/* Resorts Table */}
-      <h3>Configured Resort Properties Registry</h3>
+      <h3>Configured Resort Properties Registry ({resorts.length} resort{resorts.length === 1 ? "" : "s"})</h3>
+      <div style={{ marginBottom: "14px", maxWidth: "320px" }}>
+        <input
+          type="text"
+          placeholder="Search by name, location, or ID..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ width: "100%", padding: "8px 12px", height: "38px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
+        />
+      </div>
       {loading ? <p>Loading resorts...</p> : (
         <div className="table-wrapper" style={{ overflowX: "auto" }}>
           <table className="resorts-table" style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#f2f2f2", textAlign: "left" }}>
+                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>ID</th>
                 <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Name</th>
                 <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Location</th>
-                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Property Manager</th>
-                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Manager Contact</th>
-                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Google Map Link</th>
+                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Property Contact</th>
+                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Google Map</th>
                 <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Room Categories</th>
-                <th>Commission Model</th>
-              <th>Commission %</th>
+                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Commission</th>
                 <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Status</th>
                 <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {resorts.length === 0 ? (
-                <tr><td colSpan="8" style={{ textAlign: "center", padding: "20px" }}>No resorts available</td></tr>
+              {filteredResorts.length === 0 ? (
+                <tr><td colSpan="9" style={{ textAlign: "center", padding: "20px" }}>{resorts.length === 0 ? "No resorts available" : "No resorts match your search"}</td></tr>
               ) : (
-                resorts.map((resort) => (
+                filteredResorts.map((resort) => {
+                  const totalRooms = resort.roomCategories?.reduce((sum, c) => sum + (c.totalRooms || 0), 0) || 0;
+                  return (
                   <tr key={resort.id} style={{ borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: "10px" }}>{resort.id}</td>
                     <td style={{ padding: "10px" }}>{resort.name}</td>
                     <td style={{ padding: "10px" }}>{resort.location}</td>
-                    <td style={{ padding: "10px" }}>{resort.propertyManagerName}</td>
-                    <td style={{ padding: "10px" }}>{resort.managerContact}</td>
-                    <td style={{ padding: "10px" }}>{resort.googleMapLink || "-"}</td>
-                    <td style={{ padding: "10px", fontSize: "13px", maxWidth: "250px" }}>
-                      {resort.roomCategories?.length > 0
-                        ? resort.roomCategories.map(c => `${c.name} (${c.totalRooms}) [${c.rooms?.map(r => r.roomNumber).join(", ")}]`).join("; ")
+                    <td style={{ padding: "10px" }}>{resort.propertyContact || "-"}</td>
+                    <td style={{ padding: "10px", maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {resort.googleMapLink ? (
+                        <a
+                          href={/^https?:\/\//i.test(resort.googleMapLink) ? resort.googleMapLink : `https://${resort.googleMapLink}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={resort.googleMapLink}
+                          style={{ color: "var(--primary-purple)" }}
+                        >
+                          {resort.googleMapLink}
+                        </a>
+                      ) : "-"}
+                    </td>
+                    <td style={{ padding: "10px", fontSize: "13px", maxWidth: "220px" }}>
+                      {resort.roomCategories?.length > 0 ? (
+                        <details>
+                          <summary style={{ cursor: "pointer", color: "var(--primary-purple)", fontWeight: "bold" }}>
+                            {resort.roomCategories.length} categories · {totalRooms} rooms
+                          </summary>
+                          <div style={{ marginTop: "6px", color: "#555" }}>
+                            {resort.roomCategories.map(c => `${c.name} (${c.totalRooms}) [${c.rooms?.map(r => r.roomNumber).join(", ")}]`).join("; ")}
+                          </div>
+                        </details>
+                      ) : "-"}
+                    </td>
+                    <td style={{ padding: "10px" }}>
+                      {resort.commissionModel
+                        ? `${getCommissionModelLabel(resort.commissionModel)}${resort.commissionPercentage ? ` (${resort.commissionPercentage}%)` : ""}`
                         : "-"}
                     </td>
-                    <td>{resort.commissionModel || "-"}</td>
-
-<td>
-  {resort.commissionPercentage
-    ? `${resort.commissionPercentage}%`
-    : "-"}
-</td>
                     <td style={{ padding: "10px" }}>
                       <select
                         value={resort.active ? "ACTIVE" : "INACTIVE"}
@@ -684,16 +847,19 @@ const COMMISSION_PERCENTAGES = [
                       >
                         Edit
                       </button>
-                      <button 
-                        className="delete-btn" 
+                      <button
+                        className="delete-btn"
                         onClick={() => handleDelete(resort.id)}
-                        style={{ padding: "6px 14px", cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}
+                        disabled={isSuperUser}
+                        title={isSuperUser ? "You do not have permission to delete resorts" : undefined}
+                        style={{ padding: "6px 14px", cursor: isSuperUser ? "not-allowed" : "pointer", backgroundColor: isSuperUser ? "#ccc" : "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}
                       >
                         Delete
                       </button>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

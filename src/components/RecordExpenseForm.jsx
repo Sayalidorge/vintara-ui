@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../css/theme.css";
 import "./RecordExpenseForm.css";
+import { toLocalDateStr } from "../utils/date";
 
 const RecordExpenseForm = () => {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ const RecordExpenseForm = () => {
   const [description, setDescription] = useState(expenseToEdit?.description || "");
   const [amount, setAmount] = useState(expenseToEdit?.amount || 0);
   const [expenseDate, setExpenseDate] = useState(
-    expenseToEdit?.expenseDate || new Date().toISOString().split("T")[0]
+    expenseToEdit?.expenseDate || toLocalDateStr(new Date())
   );
   const [paidBy, setPaidBy] = useState(expenseToEdit?.paidBy || "AJAY");
 
@@ -41,7 +42,7 @@ const RecordExpenseForm = () => {
 
   return (
     <div className="form-wrapper">
-      <h2>{expenseToEdit ? "Edit Expense" : "Record New Expense"}</h2>
+      <h2 style={{ fontSize: "20px", fontWeight: 600, color: "var(--primary-purple)", textAlign: "center", letterSpacing: "0.3px", marginTop: 0, marginBottom: "16px" }}>{expenseToEdit ? "Edit Expense" : "Record New Expense"}</h2>
 
       {/* Back to Expenses Dashboard Button */}
       <button

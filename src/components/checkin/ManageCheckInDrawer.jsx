@@ -7,16 +7,12 @@ import Select from "react-select";
 
 const ManageCheckInDrawer = ({
     booking,
-    onClose,
-    onCompleted
+    onClose
 }) => {
 
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
 
     const [guests, setGuests] = useState([]);
-const [creditDestinations, setCreditDestinations] = useState([]);
-const [selectedCreditDestination, setSelectedCreditDestination] = useState(null);
 
     const [expandedGuest, setExpandedGuest] = useState(null);
 
@@ -39,25 +35,18 @@ const [selectedCreditDestination, setSelectedCreditDestination] = useState(null)
     // Helper to safely format file URLs to use the backend file controller
     const getFileViewUrl = (filePathOrName) => {
         if (!filePathOrName) return "";
-        // Extract just the filename if a full local path (e.g. C:/.../file.jpg) is returned
-        const filename = filePathOrName.split(/[/\\]/).pop();
-        return `${config.BASE_URL}/api/files/${encodeURIComponent(filename)}`;
+        // Backend appends a short-lived "?access=<signed-token>" - split it off
+        // before extracting the path, then reattach as a real query string.
+        // Documents are stored under resort/date subfolders now, so the whole
+        // relative path (not just the last segment) must be preserved - encode
+        // each segment individually so "/" stays literal (encoding the full
+        // path at once would turn "/" into "%2F", which Spring Security's
+        // strict firewall rejects in request paths).
+        const [pathPart, queryPart] = filePathOrName.split("?");
+        const encodedPath = pathPart.split("/").map((s) => encodeURIComponent(s)).join("/");
+        const base = `${config.BASE_URL}/api/files/${encodedPath}`;
+        return queryPart ? `${base}?${queryPart}` : base;
     };
-useEffect(() => {
-    const fetchCreditDestinations = async () => {
-        try {
-            const res = await fetch(`${config.BASE_URL}/api/drop-down/credit-destination`, {
-                headers: config.getHeaders(),
-            });
-            if (!res.ok) throw new Error("Failed to fetch credit destinations");
-            const data = await res.json();
-            setCreditDestinations(data);
-        } catch (err) {
-            console.error(err);
-        }
-    };
-    fetchCreditDestinations();
-}, []);
     const loadGuests = async () => {
 
         try {
@@ -231,68 +220,6 @@ useEffect(() => {
 
     };
 
-    const completeCheckIn = async () => {
-
-        if (guests.length === 0) {
-            alert("Cannot complete check-in with no guests added.");
-            return;
-        }
-
-        const pendingGuests = guests.filter(g =>
-            g.verificationStatus !== "APPROVED"
-        );
-
-        if (pendingGuests.length > 0) {
-
-            alert(
-                "All guest documents must be approved before check-in."
-            );
-
-            return;
-
-        }
-
-        try {
-
-            setSaving(true);
-
-            const response = await fetch(
-
-                `${config.BASE_URL}/api/checkin/${booking.id}/complete`,
-
-                {
-
-                    method: "PUT",
-
-                    headers: config.getHeaders()
-
-                }
-
-            );
-
-            if (!response.ok)
-                throw new Error();
-
-            const updatedBooking = await response.json();
-
-            alert("Check-In completed successfully.");
-
-            onCompleted(updatedBooking);
-
-        } catch (e) {
-
-            console.error(e);
-
-            alert("Unable to complete check-in.");
-
-        } finally {
-
-            setSaving(false);
-
-        }
-
-    };
-
     const getStatusColor = status => {
 
         switch (status) {
@@ -390,13 +317,13 @@ useEffect(() => {
 
                     <div>
                         <label>Guests</label>
-                        <span>{booking.numberOfPeople}</span>
+                        <span>{booking.adults ?? 0} Adults, {booking.kids ?? 0} Kids</span>
                     </div>
 
                     <div>
                         <label>Balance</label>
-                        <span>
-                            ₹{booking.balanceAmount}
+                        <span style={{ color: (booking.status === "CHECKED_IN" || booking.balanceAmount === 0) ? "green" : "red", fontWeight: "bold" }}>
+                            ₹{booking.status === "CHECKED_IN" ? 0 : booking.balanceAmount}
                         </span>
                     </div>
 
@@ -516,6 +443,15 @@ useEffect(() => {
 
                                             <div>
 
+                                                {guest.leadGuest && (
+                                                    <>
+                                                        <label>Vehicle Number</label>
+
+                                                        <span>
+                                                            {guest.vehicleNumber || "-"}
+                                                        </span>
+                                                    </>
+                                                )}
 
                                             </div>
 
@@ -634,6 +570,14 @@ useEffect(() => {
                                                 });
                                             }}
                                         />
+
+                                        <label
+                                            htmlFor={`primary-file-${guest.guestId}`}
+                                            className="replace-doc-btn"
+                                            style={{ cursor: "pointer", display: "inline-block", textAlign: "center" }}
+                                        >
+                                            📷 Upload Primary Document
+                                        </label>
 
                                         {primaryFiles[guest.guestId] && (
                                             <div className="selected-preview-card" style={{ marginTop: "10px" }}>
@@ -757,6 +701,14 @@ useEffect(() => {
                                             }}
                                         />
 
+                                        <label
+                                            htmlFor={`secondary-file-${guest.guestId}`}
+                                            className="replace-doc-btn"
+                                            style={{ cursor: "pointer", display: "inline-block", textAlign: "center" }}
+                                        >
+                                            📷 Upload Secondary Document
+                                        </label>
+
                                         {secondaryFiles[guest.guestId] && (
                                             <div className="selected-preview-card" style={{ marginTop: "10px" }}>
                                                 {secondaryFiles[guest.guestId].type.startsWith("image/") ? (
@@ -778,9 +730,9 @@ useEffect(() => {
                             </div>    
                 </div>
 
-                                        {/* Upload Button shows if documents are missing OR if replacement mode is active */}
+                                        {/* Upload Button shows if either document is missing, replacement mode is active, or a new file has been staged */}
                                         {
-                                            (!guest.primaryDocumentUrl || replacingPrimary[guest.guestId] || replacingSecondary[guest.guestId]) &&
+                                            (!guest.primaryDocumentUrl || !guest.secondaryDocumentUrl || replacingPrimary[guest.guestId] || replacingSecondary[guest.guestId] || primaryFiles[guest.guestId] || secondaryFiles[guest.guestId]) &&
 
                                             <button
 
@@ -961,30 +913,7 @@ useEffect(() => {
 
                     </button>
 
-                    <button
-
-                        className="primary-btn"
-
-                        disabled={saving}
-
-                        onClick={completeCheckIn}
-
-                    >
-
-                        {
-
-                            saving
-
-                                ? "Completing..."
-
-                                : "Complete Check-In"
-
-                        }
-
-                    </button>
-
                 </div>
-
             </div>
 
             {/* Document Preview Popup Modal */}
@@ -1016,40 +945,10 @@ useEffect(() => {
                             )}
                         </div>
                     </div>
-                    {/* Payment Collection Section inside Drawer Footer / Bottom */}
-{booking.balanceAmount > 0 && (
-    <div style={{ background: "#f8f9fa", padding: "15px", borderRadius: "6px", marginBottom: "15px", border: "1px solid #ddd" }}>
-        <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#333" }}>Collect Balance Payment</h4>
-        <p style={{ margin: "0 0 10px 0", fontSize: "13px", color: "#555" }}>
-            Outstanding Balance Due: <strong style={{ color: "red" }}>₹{booking.balanceAmount}</strong>
-        </p>
-        <label style={{ display: "block", marginBottom: "4px", fontSize: "12px", fontWeight: "bold" }}>Credit Account Destination:</label>
-        <Select
-            options={creditDestinations}
-            value={selectedCreditDestination}
-            onChange={setSelectedCreditDestination}
-            placeholder="Select payment collection ledger..."
-            menuPlacement="top" // since it's at the bottom of the drawer
-        />
-    </div>
-)}
-
-<div className="drawer-footer">
-    <button
-        className="primary-btn complete-checkin-btn"
-        disabled={saving}
-        onClick={completeCheckIn}
-    >
-        {saving ? "Completing..." : "Complete Check-In"}
-    </button>
-</div>
                 </div>
             )}
-
         </div>
-
     );
-
 };
 
 export default ManageCheckInDrawer;

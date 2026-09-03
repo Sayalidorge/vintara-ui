@@ -42,9 +42,13 @@
 }
 
 .page-header {
-  margin-top: 0; /* remove extra gap */
-  padding: 12px 0;
-  border-bottom: 1px solid #ccc;
+  margin: 0 0 15px 0;
+  padding: 0;
+  border-bottom: none;
+}
+
+.page-header h2 {
+  margin: 0;
 }
 .daily-entry-dashboard-container {
   padding: 16px 24px;
