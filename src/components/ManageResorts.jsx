@@ -325,7 +325,10 @@ const getCommissionModelLabel = (value) =>
         method: "DELETE",
         headers: config.getHeaders(),
       });
-      if (!res.ok) throw new Error("Failed to delete resort");
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || "Failed to delete resort");
+      }
       fetchResorts();
     } catch (err) {
       console.error(err);
