@@ -16,13 +16,12 @@ const ManageResorts = () => {
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [active, setActive] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
 
   const navigate = useNavigate();
   const currentUser = JSON.parse(localStorage.getItem("user") || "null");
-  const isSuperUser = currentUser?.role === "SUPER_USER";
+  const isSuperAdmin = currentUser?.role === "SUPER_ADMIN";
   const formSectionRef = useRef(null);
   const nameInputRef = useRef(null);
   const [locations, setLocations] = useState([]);
@@ -211,7 +210,6 @@ const getCommissionModelLabel = (value) =>
   location,
   googleMapLink,
   propertyContact,
-  active,
   commissionModel,
   commissionPercentage,
   // Clean, lean payload mapping to your updated backend structure
@@ -318,26 +316,6 @@ const getCommissionModelLabel = (value) =>
     } catch (err) {
       console.error(err);
       setSelectedAccountIds([]);
-    }
-  };
-
-  // Delete resort
-  const handleDelete = async (id) => {
-    if (isSuperUser) return;
-    if (!window.confirm("Are you sure you want to delete this resort?")) return;
-    try {
-      const res = await fetch(`${config.BASE_URL}/api/resorts/${id}`, {
-        method: "DELETE",
-        headers: config.getHeaders(),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.error || "Failed to delete resort");
-      }
-      fetchResorts();
-    } catch (err) {
-      console.error(err);
-      alert(err.message);
     }
   };
 
@@ -817,13 +795,22 @@ const getCommissionModelLabel = (value) =>
                     </td>
                     <td style={{ padding: "10px" }}>
                       <select
-                        value={resort.active ? "ACTIVE" : "INACTIVE"}
-                        className={`status-dropdown ${resort.active ? "active-status" : "inactive-status"}`}
+                        value={resort.status}
+                        className={`status-dropdown ${
+                          resort.status === "ACTIVE" ? "active-status" :
+                          resort.status === "REMOVED" ? "removed-status" : "inactive-status"
+                        }`}
                         onChange={async (e) => {
-                          const newStatus = e.target.value === "ACTIVE";
+                          const newStatus = e.target.value;
+                          if (newStatus === "REMOVED") {
+                            const ok = window.confirm(
+                              `Mark "${resort.name}" as Removed? It will no longer appear in booking or expense dropdowns.`
+                            );
+                            if (!ok) return;
+                          }
                           try {
                             const res = await fetch(
-                              `${config.BASE_URL}/api/resorts/${resort.id}/status?active=${newStatus}`,
+                              `${config.BASE_URL}/api/resorts/${resort.id}/status?status=${newStatus}`,
                               {
                                 method: "PUT",
                                 headers: config.getHeaders(),
@@ -833,7 +820,7 @@ const getCommissionModelLabel = (value) =>
 
                             setResorts((prev) =>
                               prev.map((r) =>
-                                r.id === resort.id ? { ...r, active: newStatus } : r
+                                r.id === resort.id ? { ...r, status: newStatus } : r
                               )
                             );
                           } catch (err) {
@@ -845,25 +832,23 @@ const getCommissionModelLabel = (value) =>
                       >
                         <option value="ACTIVE">Active</option>
                         <option value="INACTIVE">Inactive</option>
+                        <option
+                          value="REMOVED"
+                          disabled={!isSuperAdmin}
+                          title={!isSuperAdmin ? "Only Super Admin can remove a resort" : undefined}
+                        >
+                          Removed
+                        </option>
                       </select>
                     </td>
-                    
+
                     <td className="actions" style={{ padding: "10px", whiteSpace: "nowrap" }}>
-                      <button 
-                        className="edit-btn" 
+                      <button
+                        className="edit-btn"
                         onClick={() => handleEdit(resort)}
                         style={{ marginRight: "8px", padding: "6px 14px", cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}
                       >
                         Edit
-                      </button>
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(resort.id)}
-                        disabled={isSuperUser}
-                        title={isSuperUser ? "You do not have permission to delete resorts" : undefined}
-                        style={{ padding: "6px 14px", cursor: isSuperUser ? "not-allowed" : "pointer", backgroundColor: isSuperUser ? "#ccc" : "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}
-                      >
-                        Delete
                       </button>
                     </td>
                   </tr>
