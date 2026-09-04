@@ -15,6 +15,7 @@ const ManageResorts = () => {
   const [roomCategories, setRoomCategories] = useState([]);
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [active, setActive] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -190,6 +191,7 @@ const getCommissionModelLabel = (value) =>
   // Add/Edit resort
   const handleAddOrEdit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!name || !location) return alert("Please fill resort name and location");
 
     const categoryNames = roomCategories.map((c) => (c.name || "").trim().toLowerCase());
@@ -220,6 +222,7 @@ const getCommissionModelLabel = (value) =>
   })),
 };
 
+    setIsSubmitting(true);
     try {
       let res;
       if (editId) {
@@ -281,6 +284,8 @@ const getCommissionModelLabel = (value) =>
     } catch (err) {
       console.error(err);
       alert(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -719,11 +724,12 @@ const getCommissionModelLabel = (value) =>
 
           {/* FIXED SUBMIT & CANCEL BUTTON SIZES */}
           <div className="button-group" style={{ display: "flex", gap: "12px", justifyContent: "flex-start" }}>
-            <button 
+            <button
               type="submit"
-              style={{ padding: "0 24px", height: "40px", cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", fontSize: "14px", display: "inline-block", width: "auto" }}
+              disabled={isSubmitting}
+              style={{ padding: "0 24px", height: "40px", cursor: isSubmitting ? "not-allowed" : "pointer", backgroundColor: isSubmitting ? "#ccc" : "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", fontSize: "14px", display: "inline-block", width: "auto" }}
             >
-              {editId ? "Update Resort Entry" : "Save Resort Profile"}
+              {isSubmitting ? "Saving..." : editId ? "Update Resort Entry" : "Save Resort Profile"}
             </button>
             <button
               type="button"
