@@ -7,8 +7,88 @@
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   border: 1px solid #eaeaea;
-  max-width: 450px; /* Keeps the calendar layout compact and professional */
+  max-width: 760px; /* Wide enough for the calendar + this-month-leaves side panel */
   margin: 0 auto;
+}
+
+/* 1b. Calendar (left) + this month's leaves summary (right), stacking below ~700px */
+.calendar-and-summary {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.calendar-main {
+  flex: 1 1 340px;
+  min-width: 300px;
+}
+
+.month-leaves-panel {
+  flex: 1 1 260px;
+  min-width: 240px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-left: 20px;
+  border-left: 1px solid #f0f0f0;
+}
+
+.month-leaves-panel h3 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333333;
+}
+
+.month-leaves-panel .no-leaves-text {
+  font-size: 13px;
+  color: #888888;
+}
+
+.leave-summary-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.leave-summary-list .leave-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #333333;
+}
+
+.leave-summary-list .leave-row-type {
+  font-weight: 600;
+  flex: 1 1 auto;
+}
+
+.leave-summary-list .leave-row-dates {
+  color: #666666;
+}
+
+.leave-summary-list .leave-row-days {
+  color: #888888;
+  font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  .calendar-and-summary {
+    flex-direction: column;
+  }
+
+  .month-leaves-panel {
+    border-left: none;
+    border-top: 1px solid #f0f0f0;
+    padding-left: 0;
+    padding-top: 16px;
+    max-height: none;
+  }
 }
 
 /* 2. Page Header Title Typography */

@@ -11,6 +11,21 @@ import {
 import { toLocalDateStr } from "../utils/date";
 import "./LeaveCalendar.css";
 
+const LEAVE_TYPE_LABEL = {
+  PRIVILAGE_LEAVE: "Privilege Leave",
+  PAID: "Privilege Leave",
+  UNPAID: "Unpaid Leave",
+  WFH: "WFH",
+  SICK: "Sick Leave",
+  CASUAL: "Casual Leave",
+};
+
+// WFH leave requests share the "remote/wfh" purple with attendance's own
+// remote coloring; everything else shares the single "leave" teal - mirrors
+// getTileClassName's own two-color grouping so the dot next to each row in
+// the summary panel matches what's actually colored on the grid.
+const leaveDotClass = (type) => ((type || "").toUpperCase() === "WFH" ? "leave-wfh" : "leave-paid");
+
 // showAttendance is opt-in (default off) so the other existing caller of this
 // component (plain leave-only usage) is unaffected - only MyAttendanceLeave's
 // self-service view turns this on.
@@ -73,6 +88,13 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
       console.error("Failed to refresh attendance records:", error);
     }
   };
+
+  // Approved leaves for whichever month is currently in view, for the
+  // summary panel beside the calendar - same source data as the tile
+  // coloring below, so the two always stay in sync.
+  const thisMonthLeaves = leaveRequests
+    .filter((l) => l.status === "APPROVED")
+    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
   // Helper: returns CSS class based on APPROVED leave type
   const getTileClassName = (tileDate) => {
@@ -195,76 +217,94 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
           : "My Leave Calendar"}
       </h2>
       
-      {/* Wrapper ensures react-calendar never collapses down to 0px width within existing grid layouts */}
-      <div className="calendar-wrapper" style={{ width: "100%", overflow: "hidden" }}>
-        <Calendar
-          onChange={setDate}
-          value={date}
-          
-          // CRITICAL FIX: Tracks when an admin or employee clicks previous/next month arrows
-          onActiveStartDateChange={({ activeStartDate }) => {
-            if (activeStartDate) {
-              setDate(activeStartDate);
-            }
-          }}
+      <div className="calendar-and-summary">
+        <div className="calendar-main">
+          {/* Wrapper ensures react-calendar never collapses down to 0px width within existing grid layouts */}
+          <div className="calendar-wrapper" style={{ width: "100%", overflow: "hidden" }}>
+            <Calendar
+              onChange={setDate}
+              value={date}
 
-          tileClassName={({ date: tileDate, view }) =>
-            view === "month" &&
-            [getTileClassName(tileDate), showAttendance ? getAttendanceClassName(tileDate) : ""]
-              .filter(Boolean)
-              .join(" ")
-          }
-          onClickDay={handleDayClick}
-        />
+              // CRITICAL FIX: Tracks when an admin or employee clicks previous/next month arrows
+              onActiveStartDateChange={({ activeStartDate }) => {
+                if (activeStartDate) {
+                  setDate(activeStartDate);
+                }
+              }}
+
+              tileClassName={({ date: tileDate, view }) =>
+                view === "month" &&
+                [getTileClassName(tileDate), showAttendance ? getAttendanceClassName(tileDate) : ""]
+                  .filter(Boolean)
+                  .join(" ")
+              }
+              onClickDay={handleDayClick}
+            />
+          </div>
+
+          {/* Structured flex legend layout elements to line up perfectly beneath the main grid */}
+          <div className="leave-legend">
+            <div className="legend-item">
+              <span className="legend-box leave-paid"></span>
+              <span>Leave</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-box leave-wfh"></span>
+              <span>WFH</span>
+            </div>
+            {showAttendance && (
+              <>
+                <div className="legend-item">
+                  <span className="legend-box attendance-office"></span>
+                  <span>Present (Office)</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-box attendance-remote"></span>
+                  <span>Present (Remote/WFH)</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-box attendance-absent"></span>
+                  <span>Absent</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-box attendance-pending"></span>
+                  <span>Correction Pending</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {showAttendance && !adminView && (
+            <p className="attendance-hint">Click a past date with no (or wrong) attendance to request a correction.</p>
+          )}
+        </div>
+
+        {/* This month's approved leaves at a glance - same source data as the
+            tile coloring above, so it always matches what's on the grid. */}
+        <div className="month-leaves-panel">
+          <h3>This Month's Leaves</h3>
+          {thisMonthLeaves.length === 0 ? (
+            <p className="no-leaves-text">No leaves this month.</p>
+          ) : (
+            <ul className="leave-summary-list">
+              {thisMonthLeaves.map((l) => (
+                <li key={l.id} className="leave-row">
+                  <span className={`legend-box ${leaveDotClass(l.type)}`}></span>
+                  <span className="leave-row-type">
+                    {LEAVE_TYPE_LABEL[(l.type || "").toUpperCase()] || l.type}
+                  </span>
+                  <span className="leave-row-dates">
+                    {l.startDate === l.endDate ? l.startDate : `${l.startDate} – ${l.endDate}`}
+                  </span>
+                  <span className="leave-row-days">
+                    {l.leaveDays} day{l.leaveDays === 1 ? "" : "s"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
-
-      {/* Structured flex legend layout elements to line up perfectly beneath the main grid */}
-      <div className="leave-legend">
-        <div className="legend-item">
-          <span className="legend-box leave-paid"></span>
-          <span>Paid Leave</span>
-        </div>
-        <div className="legend-item">
-          <span className="legend-box leave-unpaid"></span>
-          <span>Unpaid Leave</span>
-        </div>
-        <div className="legend-item">
-          <span className="legend-box leave-wfh"></span>
-          <span>WFH</span>
-        </div>
-        <div className="legend-item">
-          <span className="legend-box leave-sick"></span>
-          <span>Sick Leave</span>
-        </div>
-        <div className="legend-item">
-          <span className="legend-box leave-casual"></span>
-          <span>Casual Leave</span>
-        </div>
-        {showAttendance && (
-          <>
-            <div className="legend-item">
-              <span className="legend-box attendance-office"></span>
-              <span>Present (Office)</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-box attendance-remote"></span>
-              <span>Present (Remote/WFH)</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-box attendance-absent"></span>
-              <span>Absent</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-box attendance-pending"></span>
-              <span>Correction Pending</span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {showAttendance && !adminView && (
-        <p className="attendance-hint">Click a past date with no (or wrong) attendance to request a correction.</p>
-      )}
 
       {selectedDate && (
         <div className="correction-panel">
