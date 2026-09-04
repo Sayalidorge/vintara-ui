@@ -17,6 +17,7 @@ const ManageResorts = () => {
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ACTIVE");
   const [showForm, setShowForm] = useState(false);
 
   const navigate = useNavigate();
@@ -368,6 +369,8 @@ const getCommissionModelLabel = (value) =>
   };
 
   const filteredResorts = resorts.filter((resort) => {
+    if (statusFilter !== "ALL" && resort.status !== statusFilter) return false;
+
     const q = searchTerm.trim().toLowerCase();
     if (!q) return true;
     return (
@@ -726,14 +729,24 @@ const getCommissionModelLabel = (value) =>
 
       {/* Resorts Table */}
       <h3>Configured Resort Properties Registry ({resorts.length} resort{resorts.length === 1 ? "" : "s"})</h3>
-      <div style={{ marginBottom: "14px", maxWidth: "320px" }}>
+      <div style={{ marginBottom: "14px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
         <input
           type="text"
           placeholder="Search by name, location, or ID..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ width: "100%", padding: "8px 12px", height: "38px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
+          style={{ width: "100%", maxWidth: "320px", padding: "8px 12px", height: "38px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
         />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{ padding: "8px 12px", height: "38px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
+        >
+          <option value="ALL">All Statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="INACTIVE">Inactive</option>
+          <option value="REMOVED">Removed</option>
+        </select>
       </div>
       {loading ? <p>Loading resorts...</p> : (
         <div className="table-wrapper" style={{ overflowX: "auto" }}>
@@ -804,7 +817,7 @@ const getCommissionModelLabel = (value) =>
                           const newStatus = e.target.value;
                           if (newStatus === "REMOVED") {
                             const ok = window.confirm(
-                              `Mark "${resort.name}" as Removed? It will no longer appear in booking or expense dropdowns.`
+                              `Delete "${resort.name}"? It will no longer appear in booking or expense dropdowns.`
                             );
                             if (!ok) return;
                           }
@@ -835,9 +848,9 @@ const getCommissionModelLabel = (value) =>
                         <option
                           value="REMOVED"
                           disabled={!isSuperAdmin}
-                          title={!isSuperAdmin ? "Only Super Admin can remove a resort" : undefined}
+                          title={!isSuperAdmin ? "Only Super Admin can delete a resort" : undefined}
                         >
-                          Removed
+                          Delete
                         </option>
                       </select>
                     </td>
