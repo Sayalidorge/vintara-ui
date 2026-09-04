@@ -9,6 +9,16 @@ import { downloadCsv } from "../utils/csv";
 import { toLocalDateStr } from "../utils/date";
 import { isSuperAdmin } from "../utils/auth";
 
+// Mirrors SettlementService.EXPENSE_EDIT_WINDOW_DAYS on the backend - kept in
+// sync manually since there's no shared source of truth between the two apps.
+const EXPENSE_EDIT_WINDOW_DAYS = 40;
+
+const isWithinEditableWindow = (dateStr) => {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - EXPENSE_EDIT_WINDOW_DAYS);
+  return new Date(dateStr) >= cutoff;
+};
+
 const AdminExpensesDashboard = () => {
   const [expenses, setExpenses] = useState([]);
   const [description, setDescription] = useState("");
@@ -131,7 +141,10 @@ const AdminExpensesDashboard = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Failed to save expense");
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
+        throw new Error(errBody?.error || "Failed to save expense");
+      }
       const data = await res.json();
 
       setExpenses(prev => editId ? prev.map(e => e.id === editId ? data : e) : [...prev, data]);
@@ -151,6 +164,8 @@ const AdminExpensesDashboard = () => {
   };
 
   const handleEdit = (exp) => {
+    if (!isWithinEditableWindow(exp.expenseDate)) return;
+
     setEditId(exp.id);
     setDescription(exp.description);
     setAmount(exp.amount);
@@ -189,15 +204,19 @@ const AdminExpensesDashboard = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (exp) => {
+    if (!isWithinEditableWindow(exp.expenseDate)) return;
     if (!window.confirm("Delete this expense?")) return;
     try {
-      const res = await fetch(`${config.BASE_URL}/api/expenses/${id}`, {
+      const res = await fetch(`${config.BASE_URL}/api/expenses/${exp.id}`, {
         method: "DELETE",
         headers: config.getHeaders(),
       });
-      if (!res.ok) throw new Error("Failed to delete expense");
-      setExpenses(prev => prev.filter(e => e.id !== id));
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
+        throw new Error(errBody?.error || "Failed to delete expense");
+      }
+      setExpenses(prev => prev.filter(e => e.id !== exp.id));
       fetchTotal();
     } catch (err) {
       console.error(err);
@@ -348,8 +367,16 @@ const AdminExpensesDashboard = () => {
                   <td>{exp.paidBy}</td>
                   <td>{exp.resortName || "-"}</td> {/* resortName directly from DTO */}
                   <td className="actions">
-                    <button className="edit-booking-btn" onClick={() => handleEdit(exp)}>Edit</button>
-                    <button className="delete-booking-btn" onClick={() => handleDelete(exp.id)}>Delete</button>
+                    {(() => {
+                      const editable = isWithinEditableWindow(exp.expenseDate);
+                      const title = editable ? undefined : `This expense is more than ${EXPENSE_EDIT_WINDOW_DAYS} days old and can no longer be edited or deleted.`;
+                      return (
+                        <>
+                          <button className="edit-booking-btn" onClick={() => handleEdit(exp)} disabled={!editable} title={title}>Edit</button>
+                          <button className="delete-booking-btn" onClick={() => handleDelete(exp)} disabled={!editable} title={title}>Delete</button>
+                        </>
+                      );
+                    })()}
                   </td>
                 </tr>
               ))
