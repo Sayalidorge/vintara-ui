@@ -275,7 +275,6 @@ const totalProfit = totalFoodCollection - totalExpense;
     ? "Food Collection & Expenses"
     : "Resort Daily Finance"}
 </h2>
-{!isAdminView && (
       <div className="filters">
 
         <div className="filter-item">
@@ -306,7 +305,6 @@ const totalProfit = totalFoodCollection - totalExpense;
         </div>
 
       </div>
-)}
       {/* Tabs */}
 
 
@@ -314,8 +312,7 @@ const totalProfit = totalFoodCollection - totalExpense;
       {/* Form */}
 
 {/* Finance Entry */}
-{!isAdminView && (
-    
+
 <div className="finance-card">
 
   <div className="finance-entry-row">
@@ -362,7 +359,7 @@ const totalProfit = totalFoodCollection - totalExpense;
   </div>
 
 </div>
-)}
+
       {/* Search */}
 
       <div
