@@ -99,6 +99,10 @@ const CreateBookingForm = () => {
   // "GOIBIBO" entry that isn't a real source, and was missing EASEMYTRIP).
   const isOTA = bookingSourceOptions.find((opt) => opt.value === bookingSource)?.isOta ?? false;
 
+  // Contact number is only mandatory for Call / Call+GST / Walk-in - OTA
+  // bookings often don't have the guest's number available at time of entry.
+  const contactRequired = ["CALL", "CALLS_GST", "WALKIN"].includes(bookingSource);
+
   const [showGstFields, setShowGstFields] = useState(false);
   const [showGstPercent, setShowGstPercent] = useState(true);
   const [showAdvance, setShowAdvance] = useState(true);
@@ -513,7 +517,7 @@ if (data.bookingItems?.length > 0) {
 
     if (
       !customerName ||
-      !customerContact ||
+      (contactRequired && !customerContact) ||
       !checkInDate ||
       !checkOutDate
     ) {
@@ -816,7 +820,7 @@ const roomOptions = Array.from(roomOptionsMap.values());
           </div>
 
           <div className="form-group">
-            <label>Contact Number</label>
+            <label>Contact Number{contactRequired ? " *" : " (Optional)"}</label>
 
             <PhoneInput
               country="in"
