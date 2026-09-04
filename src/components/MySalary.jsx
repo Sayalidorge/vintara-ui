@@ -114,6 +114,14 @@ const MySalary = () => {
               <span className="net-pay-label">Deduction Amount</span>
               <span className="net-pay-value deduction">-{formatAmount(payslip.deductionAmount)}</span>
             </div>
+            <div className="net-pay-box">
+              <span className="net-pay-label">Health Insurance</span>
+              <span className="net-pay-value deduction">-{formatAmount(payslip.healthInsuranceCost)}</span>
+            </div>
+            <div className="net-pay-box">
+              <span className="net-pay-label">Professional Tax</span>
+              <span className="net-pay-value deduction">-{formatAmount(payslip.professionalTax)}</span>
+            </div>
             <div className="net-pay-box net-pay-final">
               <span className="net-pay-label">Net Pay</span>
               <span className="net-pay-value">{formatAmount(payslip.netPay)}</span>

@@ -27,10 +27,10 @@ const safeFetch = async (url, options = {}) => {
 };
 
 /** Admin-only. effectiveFrom is optional (YYYY-MM-DD) - defaults to today server-side if omitted. */
-export const setSalary = async (userId, monthlySalary, permanentWfh, effectiveFrom) => {
+export const setSalary = async (userId, monthlySalary, healthInsuranceCost, professionalTax, permanentWfh, effectiveFrom) => {
   return safeFetch(`${config.BASE_URL}/api/salary/set`, {
     method: "POST",
-    body: JSON.stringify({ userId, monthlySalary, permanentWfh, effectiveFrom }),
+    body: JSON.stringify({ userId, monthlySalary, healthInsuranceCost, professionalTax, permanentWfh, effectiveFrom }),
   });
 };
 

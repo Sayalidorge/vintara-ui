@@ -18,6 +18,8 @@ import {
   FaCog,
   FaBook,
   FaHistory,
+  FaMoneyCheckAlt,
+  FaCoins,
 } from "react-icons/fa";
 
 // Single source of truth for the sidebar. Each item is shown only if the
@@ -37,11 +39,13 @@ const MENU_CONFIG = [
     activePaths: ["/user/daily-entries", "/user/record-daily-entry"],
   },
   { label: "Attendance & Leave", path: "/user/user-leave", icon: FaUmbrellaBeach, requiredPermission: "view_leave_portal" },
+  { label: "My Salary", path: "/user/salary", icon: FaCoins, requiredPermission: "view_salary" },
   { label: "Resorts", path: "/admin/resorts", icon: FaHotel, requiredPermission: "manage_resorts" },
   { label: "Users", path: "/admin/users", icon: FaUsers, requiredPermission: "manage_users" },
   { label: "Payment Accounts", path: "/admin/payment-accounts", icon: FaWallet, requiredPermission: "manage_payment_accounts" },
   { label: "Enquiries", path: "/admin/enquiries", icon: FaEnvelope, requiredPermission: "view_enquiries" },
   { label: "Team Attendance & Leave", path: "/admin/leaves", icon: FaCalendarCheck, requiredPermission: "manage_leaves" },
+  { label: "Salary", path: "/admin/salary", icon: FaMoneyCheckAlt, requiredPermission: "manage_salary" },
   { label: "Revenue", path: "/admin/revenue", icon: FaDollarSign, requiredPermission: "view_revenue" },
   { label: "Expenses", path: "/admin/expenses", icon: FaReceipt, requiredPermission: "view_expenses" },
   {

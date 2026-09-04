@@ -22,6 +22,8 @@ const AdminSalaryManagement = () => {
   const [form, setForm] = useState({
     userId: "",
     monthlySalary: "",
+    healthInsuranceCost: "",
+    professionalTax: "",
     permanentWfh: false,
     effectiveFrom: toLocalDateStr(new Date()),
   });
@@ -59,9 +61,23 @@ const AdminSalaryManagement = () => {
     }
     setSaving(true);
     try {
-      await setSalary(form.userId, Number(form.monthlySalary), form.permanentWfh, form.effectiveFrom);
+      await setSalary(
+        form.userId,
+        Number(form.monthlySalary),
+        Number(form.healthInsuranceCost) || 0,
+        Number(form.professionalTax) || 0,
+        form.permanentWfh,
+        form.effectiveFrom
+      );
       alert("Salary saved.");
-      setForm({ userId: "", monthlySalary: "", permanentWfh: false, effectiveFrom: toLocalDateStr(new Date()) });
+      setForm({
+        userId: "",
+        monthlySalary: "",
+        healthInsuranceCost: "",
+        professionalTax: "",
+        permanentWfh: false,
+        effectiveFrom: toLocalDateStr(new Date()),
+      });
       await loadSalaries();
     } catch (err) {
       alert(err.message || "Failed to save salary.");
@@ -115,6 +131,22 @@ const AdminSalaryManagement = () => {
             placeholder="e.g. 25000"
           />
 
+          <label>Health Insurance Cost (Optional)</label>
+          <input
+            type="number"
+            value={form.healthInsuranceCost}
+            onChange={(e) => setForm({ ...form, healthInsuranceCost: e.target.value })}
+            placeholder="e.g. 500"
+          />
+
+          <label>Professional Tax (Optional)</label>
+          <input
+            type="number"
+            value={form.professionalTax}
+            onChange={(e) => setForm({ ...form, professionalTax: e.target.value })}
+            placeholder="e.g. 200"
+          />
+
           <label>Effective From</label>
           <input
             type="date"
@@ -145,6 +177,8 @@ const AdminSalaryManagement = () => {
             <tr>
               <th>Employee</th>
               <th>Monthly Salary</th>
+              <th>Health Insurance</th>
+              <th>Professional Tax</th>
               <th>Permanent WFH</th>
               <th>Effective From</th>
               <th>Actions</th>
@@ -156,6 +190,8 @@ const AdminSalaryManagement = () => {
                 <tr key={s.userId}>
                   <td>{s.userName || s.userId}</td>
                   <td>{formatAmount(s.monthlySalary)}</td>
+                  <td>{formatAmount(s.healthInsuranceCost)}</td>
+                  <td>{formatAmount(s.professionalTax)}</td>
                   <td>{s.permanentWfh ? "Yes" : "No"}</td>
                   <td>{s.effectiveFrom || "Not set"}</td>
                   <td>
@@ -167,7 +203,7 @@ const AdminSalaryManagement = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="5" style={{ textAlign: "center" }}>No employees found</td>
+                <td colSpan="7" style={{ textAlign: "center" }}>No employees found</td>
               </tr>
             )}
           </tbody>
@@ -208,6 +244,8 @@ const AdminSalaryManagement = () => {
                 <tr><td>Excess WFH Days</td><td>{payslip.excessWfhDays}</td></tr>
                 <tr className="total-deduction-row"><td>Total Deduction Days</td><td>{payslip.totalDeductionDays}</td></tr>
                 <tr><td>Deduction Amount</td><td>-{formatAmount(payslip.deductionAmount)}</td></tr>
+                <tr><td>Health Insurance</td><td>-{formatAmount(payslip.healthInsuranceCost)}</td></tr>
+                <tr><td>Professional Tax</td><td>-{formatAmount(payslip.professionalTax)}</td></tr>
                 <tr className="total-deduction-row"><td>Net Pay</td><td>{formatAmount(payslip.netPay)}</td></tr>
               </tbody>
             </table>
