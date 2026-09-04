@@ -34,14 +34,28 @@
 }
 
 .leave-calendar-container .react-calendar__tile.leave-unpaid {
-  background-color: var(--primary-red, #e74c3c) !important;
+  background-color: var(--primary-teal, #2ecc71) !important;
   color: #ffffff !important;
   border-radius: 50% !important;
   font-weight: 600;
 }
 
 .leave-calendar-container .react-calendar__tile.leave-wfh {
-  background-color: var(--primary-purple, #3498db) !important;
+  background-color: var(--primary-purple, #8e44ad) !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  font-weight: 600;
+}
+
+.leave-calendar-container .react-calendar__tile.leave-sick {
+  background-color: var(--primary-teal, #2ecc71) !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  font-weight: 600;
+}
+
+.leave-calendar-container .react-calendar__tile.leave-casual {
+  background-color: var(--primary-teal, #2ecc71) !important;
   color: #ffffff !important;
   border-radius: 50% !important;
   font-weight: 600;
@@ -50,7 +64,9 @@
 /* 5. Clean up interaction states on marked days */
 .leave-calendar-container .react-calendar__tile.leave-paid:hover,
 .leave-calendar-container .react-calendar__tile.leave-unpaid:hover,
-.leave-calendar-container .react-calendar__tile.leave-wfh:hover {
+.leave-calendar-container .react-calendar__tile.leave-wfh:hover,
+.leave-calendar-container .react-calendar__tile.leave-sick:hover,
+.leave-calendar-container .react-calendar__tile.leave-casual:hover {
   filter: brightness(90%) !important;
 }
 
@@ -81,11 +97,19 @@
 }
 
 .leave-calendar-container .legend-box.leave-unpaid {
-  background-color: var(--primary-red, #e74c3c) !important;
+  background-color: var(--primary-teal, #2ecc71) !important;
 }
 
 .leave-calendar-container .legend-box.leave-wfh {
-  background-color: var(--primary-purple, #3498db) !important;
+  background-color: var(--primary-purple, #8e44ad) !important;
+}
+
+.leave-calendar-container .legend-box.leave-sick {
+  background-color: var(--primary-teal, #2ecc71) !important;
+}
+
+.leave-calendar-container .legend-box.leave-casual {
+  background-color: var(--primary-teal, #2ecc71) !important;
 }
 
 .leave-calendar-container .leave-legend span {
@@ -104,14 +128,14 @@
 }
 
 .leave-calendar-container .react-calendar__tile.attendance-remote {
-  background-color: #f39c12 !important;
+  background-color: var(--primary-purple, #8e44ad) !important;
   color: #ffffff !important;
   border-radius: 50% !important;
   font-weight: 600;
 }
 
 .leave-calendar-container .react-calendar__tile.attendance-absent {
-  background-color: #7f8c8d !important;
+  background-color: var(--primary-red, #e74c3c) !important;
   color: #ffffff !important;
   border-radius: 50% !important;
   font-weight: 600;
@@ -130,11 +154,11 @@
 }
 
 .leave-calendar-container .legend-box.attendance-remote {
-  background-color: #f39c12 !important;
+  background-color: var(--primary-purple, #8e44ad) !important;
 }
 
 .leave-calendar-container .legend-box.attendance-absent {
-  background-color: #7f8c8d !important;
+  background-color: var(--primary-red, #e74c3c) !important;
 }
 
 .leave-calendar-container .legend-box.attendance-pending {

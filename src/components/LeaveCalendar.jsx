@@ -99,6 +99,8 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
       if (type === "PRIVILAGE_LEAVE" || type === "PAID") return "leave-paid";
       if (type === "UNPAID") return "leave-unpaid";
       if (type === "WFH") return "leave-wfh";
+      if (type === "SICK") return "leave-sick";
+      if (type === "CASUAL") return "leave-casual";
     }
     return "";
   };
@@ -229,6 +231,14 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
         <div className="legend-item">
           <span className="legend-box leave-wfh"></span>
           <span>WFH</span>
+        </div>
+        <div className="legend-item">
+          <span className="legend-box leave-sick"></span>
+          <span>Sick Leave</span>
+        </div>
+        <div className="legend-item">
+          <span className="legend-box leave-casual"></span>
+          <span>Casual Leave</span>
         </div>
         {showAttendance && (
           <>

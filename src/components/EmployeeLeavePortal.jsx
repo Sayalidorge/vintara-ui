@@ -67,6 +67,10 @@ const EmployeeLeavePortal = () => {
     paidLeavesUsed: 0,
     unpaidLeavesUsed: 0,
     wfhDays: 0,
+    accruedCasualLeaves: 0,
+    casualLeavesUsed: 0,
+    accruedSickLeaves: 0,
+    sickLeavesUsed: 0,
     allowedLeaveTypes: []
   });
   const [leaveRequests, setLeaveRequests] = useState([]);
@@ -79,6 +83,8 @@ const EmployeeLeavePortal = () => {
   const [loading, setLoading] = useState(false);
 
   const paidLeavesLeft = balance.accruedPaidLeaves - balance.paidLeavesUsed;
+  const casualLeavesLeft = balance.accruedCasualLeaves - balance.casualLeavesUsed;
+  const sickLeavesLeft = balance.accruedSickLeaves - balance.sickLeavesUsed;
 
   const leaveTypeOptions = balance.allowedLeaveTypes.map(type => {
     const cleanedType = (type || "").trim();
@@ -137,11 +143,17 @@ const EmployeeLeavePortal = () => {
   const handleApply = async () => {
     if (!form.startDate || !form.endDate) return alert("Select start and end dates");
 
-    // 🛡️ Balance Check Validation: Protects against exceeding paid/privilege balance allocations
+    // 🛡️ Balance Check Validation: Protects against exceeding paid/privilege/casual/sick balance allocations
     const currentTypeClean = (form.type || "").trim().toUpperCase();
     const isPaidType = currentTypeClean === "PAID" || currentTypeClean === "PRIVILEGE_LEAVE" || currentTypeClean === "PRIVILAGE_LEAVE";
     if (isPaidType && requestedDays > paidLeavesLeft) {
       return alert(`Cannot submit request! You are trying to apply for ${requestedDays} days, but you only have ${paidLeavesLeft} paid leave day(s) remaining.`);
+    }
+    if (currentTypeClean === "CASUAL" && requestedDays > casualLeavesLeft) {
+      return alert(`Cannot submit request! You are trying to apply for ${requestedDays} days, but you only have ${casualLeavesLeft} casual leave day(s) remaining.`);
+    }
+    if (currentTypeClean === "SICK" && requestedDays > sickLeavesLeft) {
+      return alert(`Cannot submit request! You are trying to apply for ${requestedDays} days, but you only have ${sickLeavesLeft} sick leave day(s) remaining.`);
     }
 
     try {
@@ -185,8 +197,8 @@ const EmployeeLeavePortal = () => {
       <div className="leave-balance-card">
         <h2>Leave Balance</h2>
         <div>Paid Leaves Available: <strong>{paidLeavesLeft}</strong></div>
-        <div>Unpaid Leaves Taken: <strong>{balance.unpaidLeavesUsed}</strong></div>
-        <div>WFH Days Taken: <strong>{balance.wfhDays}</strong></div>
+        <div>Casual Leaves Available: <strong>{casualLeavesLeft}</strong></div>
+        <div>Sick Leaves Available: <strong>{sickLeavesLeft}</strong></div>
         <small>Next month’s leave will be credited on the 1st.</small>
       </div>
 
@@ -237,6 +249,18 @@ const EmployeeLeavePortal = () => {
           {requestedDays > paidLeavesLeft && ((form.type || "").trim().toUpperCase() === "PAID" || (form.type || "").trim().toUpperCase() === "PRIVILEGE_LEAVE" || (form.type || "").trim().toUpperCase() === "PRIVILAGE_LEAVE") && (
             <p className="warning-text" style={{ color: "red", fontWeight: "500" }}>
               ⚠️ Warning: Requested duration exceeds your available paid balance!
+            </p>
+          )}
+
+          {requestedDays > casualLeavesLeft && (form.type || "").trim().toUpperCase() === "CASUAL" && (
+            <p className="warning-text" style={{ color: "red", fontWeight: "500" }}>
+              ⚠️ Warning: Requested duration exceeds your available casual leave balance!
+            </p>
+          )}
+
+          {requestedDays > sickLeavesLeft && (form.type || "").trim().toUpperCase() === "SICK" && (
+            <p className="warning-text" style={{ color: "red", fontWeight: "500" }}>
+              ⚠️ Warning: Requested duration exceeds your available sick leave balance!
             </p>
           )}
 
