@@ -11,25 +11,29 @@
   margin: 0 auto;
 }
 
-/* 1b. Calendar (left) + this month's leaves summary (right), stacking below ~700px */
+/* 1b. Calendar (left) + this month's leaves summary (right), stacking below ~700px.
+   Min-widths are kept low because this component's host section (e.g.
+   .leave-calendar-section in EmployeeLeavePortal.css) often only gives it
+   ~500-600px alongside a sibling form - not the full 760px this container
+   could otherwise use. */
 .calendar-and-summary {
   display: flex;
-  gap: 24px;
+  gap: 16px;
   align-items: flex-start;
   flex-wrap: wrap;
 }
 
 .calendar-main {
-  flex: 1 1 340px;
-  min-width: 300px;
+  flex: 1 1 260px;
+  min-width: 240px;
 }
 
 .month-leaves-panel {
-  flex: 1 1 260px;
-  min-width: 240px;
+  flex: 1 1 180px;
+  min-width: 160px;
   max-height: 380px;
   overflow-y: auto;
-  padding-left: 20px;
+  padding-left: 16px;
   border-left: 1px solid #f0f0f0;
 }
 

@@ -26,6 +26,14 @@ const LEAVE_TYPE_LABEL = {
 // the summary panel matches what's actually colored on the grid.
 const leaveDotClass = (type) => ((type || "").toUpperCase() === "WFH" ? "leave-wfh" : "leave-paid");
 
+// "YYYY-MM-DD" -> "DD/MM/YYYY" for display only - API calls/comparisons
+// elsewhere in this file keep using the raw ISO string.
+const formatDisplayDate = (isoDate) => {
+  if (!isoDate) return "";
+  const [year, month, day] = isoDate.split("-");
+  return `${day}/${month}/${year}`;
+};
+
 // showAttendance is opt-in (default off) so the other existing caller of this
 // component (plain leave-only usage) is unaffected - only MyAttendanceLeave's
 // self-service view turns this on.
@@ -92,9 +100,42 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
   // Approved leaves for whichever month is currently in view, for the
   // summary panel beside the calendar - same source data as the tile
   // coloring below, so the two always stay in sync.
-  const thisMonthLeaves = leaveRequests
-    .filter((l) => l.status === "APPROVED")
-    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+  const approvedLeaves = leaveRequests.filter((l) => l.status === "APPROVED");
+
+  // Days that are purple on the grid via ATTENDANCE (WFH status, or PRESENT
+  // confirmed remote via GPS/IP) rather than a formal leave request - e.g. a
+  // backfilled/corrected WFH day - don't have a LeaveRequest at all, so
+  // they'd silently be missing from the summary otherwise. Skip any date
+  // already covered by a leave request above so a day is never listed twice.
+  const leaveDates = new Set();
+  approvedLeaves.forEach((l) => {
+    let cur = new Date(l.startDate);
+    const end = new Date(l.endDate);
+    while (cur <= end) {
+      leaveDates.add(toLocalDateStr(cur));
+      cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 1);
+    }
+  });
+
+  const attendanceWfhDays = showAttendance
+    ? attendanceRecords
+        .filter((r) => {
+          if (leaveDates.has(r.date)) return false;
+          if (r.status === "WFH") return true;
+          return r.status === "PRESENT" && r.checkInLocationType === "REMOTE";
+        })
+        .map((r) => ({
+          id: `attendance-${r.date}`,
+          type: "WFH",
+          startDate: r.date,
+          endDate: r.date,
+          leaveDays: 1,
+        }))
+    : [];
+
+  const thisMonthLeaves = [...approvedLeaves, ...attendanceWfhDays].sort(
+    (a, b) => new Date(a.startDate) - new Date(b.startDate)
+  );
 
   // Helper: returns CSS class based on APPROVED leave type
   const getTileClassName = (tileDate) => {
@@ -148,7 +189,11 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
     if (record && record.status) {
       switch (record.status) {
         case "PRESENT":
-          return record.checkInLocationType === "OFFICE" ? "attendance-office" : "attendance-remote";
+          // checkInLocationType is null for backfilled/corrected days (no GPS/IP
+          // evidence exists for a past date) and UNKNOWN when a live check-in had
+          // no signal - neither means the person worked remotely, so only an
+          // explicit REMOTE classification gets the WFH color.
+          return record.checkInLocationType === "REMOTE" ? "attendance-remote" : "attendance-office";
         case "WFH":
           return "attendance-remote";
         case "ON_LEAVE":
@@ -294,7 +339,9 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
                     {LEAVE_TYPE_LABEL[(l.type || "").toUpperCase()] || l.type}
                   </span>
                   <span className="leave-row-dates">
-                    {l.startDate === l.endDate ? l.startDate : `${l.startDate} – ${l.endDate}`}
+                    {l.startDate === l.endDate
+                      ? formatDisplayDate(l.startDate)
+                      : `${formatDisplayDate(l.startDate)} – ${formatDisplayDate(l.endDate)}`}
                   </span>
                   <span className="leave-row-days">
                     {l.leaveDays} day{l.leaveDays === 1 ? "" : "s"}
