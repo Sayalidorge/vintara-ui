@@ -8,25 +8,24 @@ import "react-datepicker/dist/react-datepicker.css";
 import config from "../config";
 import "./DailyEntryDashboard.css";
 import { toLocalDateStr } from "../utils/date";
+import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
 
 // Set via the `styles` prop (real inline styles) instead of CSS classes:
 // the .react-select__* class names are already fought over by five other
 // stylesheets in this app at the same specificity, so plain CSS overrides
 // here would keep losing an unpredictable cascade battle against
-// react-select's own runtime-injected styles.
-const statusSelectStyles = {
-  control: (base, state) => ({
+// react-select's own runtime-injected styles. Also needs menuPortalTarget
+// (below, on the <Select>) - this sits in a filter row that stacks into a
+// column on mobile, the same layout that let a sibling filter paint over an
+// unportaled resort dropdown on the Inventory page.
+const statusSelectStyles = themedSelectStyles({
+  control: (base) => ({
     ...base,
     minHeight: 40,
     height: 40,
     borderRadius: 6,
-    borderColor: state.isFocused ? "var(--primary-purple)" : "#ccc",
-    boxShadow: "none",
     fontWeight: 600,
     cursor: "pointer",
-    ":hover": {
-      borderColor: "var(--primary-purple)",
-    },
   }),
   valueContainer: (base) => ({
     ...base,
@@ -38,17 +37,7 @@ const statusSelectStyles = {
     height: 40,
   }),
   indicatorSeparator: () => ({ display: "none" }),
-  option: (base, state) => ({
-    ...base,
-    backgroundColor: state.isSelected
-      ? "var(--primary-purple)"
-      : state.isFocused
-      ? "#f3e6f5"
-      : "#fff",
-    color: state.isSelected ? "#fff" : "#333",
-    cursor: "pointer",
-  }),
-};
+});
 
 const DailyEntryDashboard = () => {
   const navigate = useNavigate();
@@ -68,10 +57,13 @@ const DailyEntryDashboard = () => {
     ([a], [b]) => (a === "OPEN" ? -1 : b === "OPEN" ? 1 : 0)
   );
 
-  const statusSelectOptions = sortedStatusEntries.map(([key, label]) => ({
-    value: key,
-    label,
-  }));
+  const statusSelectOptions = [
+    { value: "ALL", label: "All Statuses" },
+    ...sortedStatusEntries.map(([key, label]) => ({
+      value: key,
+      label,
+    })),
+  ];
   const selectedStatusOption =
     statusSelectOptions.find((opt) => opt.value === status) || null;
 
@@ -90,8 +82,10 @@ const DailyEntryDashboard = () => {
     // Base URL with user
     let url = `${config.BASE_URL}/api/booking-enquiry/filtered?createdBy=${user.userId}`;
 
-    // Status filter: default OPEN, override if dropdown changed
-    if (status) {
+    // Status filter: default OPEN, "ALL" clears the filter server-side
+    if (status === "ALL") {
+      url += `&status=`;
+    } else if (status) {
       url += `&status=${status}`;
     } else {
       url += `&status=OPEN`;
@@ -193,6 +187,7 @@ const handleStatusChange = async (id, newStatus) => {
         <Select
           className="status-filter-select"
           styles={statusSelectStyles}
+          menuPortalTarget={menuPortalTarget}
           options={statusSelectOptions}
           value={selectedStatusOption}
           onChange={(opt) => setStatus(opt.value)}

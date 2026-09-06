@@ -69,7 +69,9 @@ const ViewBookingEnquiry = () => {
   useEffect(() => {
     const fetchEntries = async () => {
       try {
-        let url = `${config.BASE_URL}/api/booking-enquiry/admin/filtered?status=${statusFilter}`;
+        // "ALL" clears the status filter server-side (empty status = no filter)
+        const statusParam = statusFilter === "ALL" ? "" : statusFilter;
+        let url = `${config.BASE_URL}/api/booking-enquiry/admin/filtered?status=${statusParam}`;
         if (fromDate) url += `&fromDate=${toLocalDateStr(fromDate)}`;
         if (toDate) url += `&toDate=${toLocalDateStr(toDate)}`;
         if (userFilter) url += `&userId=${userFilter}`;
@@ -135,8 +137,7 @@ const ViewBookingEnquiry = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            {/* Ensure Open always exists */}
-            <option value="OPEN">Open</option>
+            <option value="ALL">All Statuses</option>
             {Object.entries(bookingStatuses).map(([key, value]) => (
               <option key={key} value={key}>{value}</option>
             ))}
