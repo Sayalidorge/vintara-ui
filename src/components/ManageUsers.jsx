@@ -5,6 +5,7 @@ import "./ManageUsers.css";
 import { useNavigate } from "react-router-dom";
 import Select from "react-select";
 import config from "../config";
+import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
 
 // Roles a SUPER_USER isn't allowed to assign or edit (mirrors the backend
 // guard in UserService.assertCanAssignRole) - kept in sync manually since
@@ -193,6 +194,26 @@ const ManageUsers = () => {
     nameInputRef.current?.focus();
   };
 
+  const handleResetPassword = async (user) => {
+    if (isSuperUser && PROTECTED_ROLES.includes(user.role)) return;
+    if (!window.confirm(`Reset ${user.name}'s password to the default ("welcome")?`)) return;
+
+    try {
+      const res = await fetch(`${config.BASE_URL}/users/${user.id}/reset-password`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
+        throw new Error(errBody?.error || errBody?.message || "Failed to reset password");
+      }
+      alert(`Password for ${user.name} has been reset to "welcome".`);
+    } catch (err) {
+      console.error("Error resetting password:", err);
+      alert(err.message);
+    }
+  };
+
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
       try {
@@ -304,10 +325,8 @@ const ManageUsers = () => {
                 placeholder="Select Resort Profiles..."
                 className="basic-multi-select"
                 classNamePrefix="select"
-                menuPortalTarget={document.body}
-                styles={{
-                  menuPortal: (base) => ({ ...base, zIndex: 9999 })
-                }}
+                menuPortalTarget={menuPortalTarget}
+                styles={themedSelectStyles()}
               />
             </div>
           </div>
@@ -411,6 +430,14 @@ const ManageUsers = () => {
                             style={{ marginRight: "8px", padding: "6px 14px", cursor: restricted ? "not-allowed" : "pointer", backgroundColor: restricted ? "#ccc" : "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}
                           >
                             Edit
+                          </button>
+                          <button
+                            onClick={() => handleResetPassword(user)}
+                            disabled={restricted}
+                            title={restricted ? "You do not have permission to reset this account's password" : undefined}
+                            style={{ marginRight: "8px", padding: "6px 14px", cursor: restricted ? "not-allowed" : "pointer", backgroundColor: restricted ? "#ccc" : "var(--primary-teal)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}
+                          >
+                            Reset Password
                           </button>
                           <button
                             onClick={() => handleDelete(user.id)}
