@@ -8,6 +8,7 @@ import "react-phone-input-2/lib/style.css";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "./CreateBookingForm.css";
+import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
 
 // Formats a Date as "yyyy-MM-dd" using local Y/M/D (not toISOString, which
 // converts to UTC and can shift the date across a day boundary depending on
@@ -110,8 +111,6 @@ const CreateBookingForm = () => {
 
   const [walkinGstApplied, setWalkinGstApplied] = useState(false);
 
-  const [showFinalAmount, setShowFinalAmount] = useState(false);
-  const [finalAmount, setFinalAmount] = useState(0);
   const [otaCommission, setOtaCommission] = useState("");
   // -----------------------------
   // Booking Item Methods
@@ -206,7 +205,6 @@ const CreateBookingForm = () => {
         setShowGstPercent(true);
         setShowAdvance(true);
         setShowBalanceAmount(true);
-        setShowFinalAmount(false);
         break;
 
       case "BOOKING_COM":
@@ -214,13 +212,11 @@ const CreateBookingForm = () => {
         setShowGstPercent(false);
         setShowAdvance(true);
         setShowBalanceAmount(true);
-        setShowFinalAmount(false);
         break;
 
       case "WALKIN":
         setShowAdvance(false);
         setShowBalanceAmount(false);
-        setShowFinalAmount(true);
         setShowGstFields(walkinGstApplied);
         setShowGstPercent(true);
 
@@ -231,7 +227,6 @@ const CreateBookingForm = () => {
       default:
         setShowAdvance(false);
         setShowBalanceAmount(false);
-        setShowFinalAmount(false);
 
         setShowGstFields(true);
         setShowGstPercent(false);
@@ -255,18 +250,21 @@ const CreateBookingForm = () => {
         break;
 
       case "CALLS_GST":
-        setGstAmount(((total * percent) / 100).toFixed(2));
+        // Inclusive of total (same convention as CALL, just based on total
+        // instead of advance) - extracted from the entered amount rather
+        // than added on top, so the total itself doesn't change.
+        setGstAmount(((total * percent) / (100 + percent)).toFixed(2));
         break;
 
       case "WALKIN":
+        // Inclusive of total (same convention as CALL/CALLS_GST) - the
+        // entered amount already covers GST rather than having it added
+        // on top, so the total itself doesn't change.
         if (walkinGstApplied) {
-          const gst = (total * percent) / 100;
-
+          const gst = (total * percent) / (100 + percent);
           setGstAmount(gst.toFixed(2));
-          setFinalAmount((total + gst).toFixed(2));
         } else {
           setGstAmount(0);
-          setFinalAmount(total.toFixed(2));
         }
         break;
 
@@ -378,6 +376,14 @@ const CreateBookingForm = () => {
         setTransactionId(data.transactionId || "");
 
         setBookingSource(data.source || "");
+        // walkinGstApplied isn't a persisted booking field (it's only a
+        // transient flag the backend uses to pick a GST formula) - infer it
+        // from whether this walk-in already has GST recorded, so reopening
+        // a GST-applied booking for edit doesn't default back to "No" and
+        // silently wipe the GST out on the next save.
+        setWalkinGstApplied(
+          data.source === "WALKIN" && parseFloat(data.gstAmount) > 0
+        );
 
         setOtaCommission(data.otaCommission || "");
 
@@ -624,6 +630,8 @@ console.log(JSON.stringify(bookingDataToSend, null, 2));
               value={resort}
               onChange={setResort}
               placeholder="Select Resort"
+              menuPortalTarget={menuPortalTarget}
+              styles={themedSelectStyles()}
             />
           </div>
 
@@ -754,6 +762,8 @@ const roomOptions = Array.from(roomOptionsMap.values());
                     }
                     placeholder="Select Category"
                     isDisabled={!resort || !checkInDate || !checkOutDate}
+                    menuPortalTarget={menuPortalTarget}
+                    styles={themedSelectStyles()}
                   />
                 </div>
 
@@ -767,6 +777,8 @@ const roomOptions = Array.from(roomOptionsMap.values());
   placeholder="Select Rooms"
   isDisabled={!item.category}
   getOptionValue={(option) => option.value}
+  menuPortalTarget={menuPortalTarget}
+  styles={themedSelectStyles()}
 />
                 </div>
 
@@ -896,6 +908,8 @@ const roomOptions = Array.from(roomOptionsMap.values());
                 }}
                 formatCreateLabel={(inputValue) => `Use ${inputValue} adults`}
                 placeholder="Select or type"
+                menuPortalTarget={menuPortalTarget}
+                styles={themedSelectStyles()}
               />
             </div>
 
@@ -907,6 +921,8 @@ const roomOptions = Array.from(roomOptionsMap.values());
                 value={kids}
                 onChange={setKids}
                 placeholder="Select Kids"
+                menuPortalTarget={menuPortalTarget}
+                styles={themedSelectStyles()}
               />
             </div>
 
@@ -931,6 +947,8 @@ const roomOptions = Array.from(roomOptionsMap.values());
                 setBookingSource(selected?.value)
               }
               placeholder="Select Booking Source"
+              menuPortalTarget={menuPortalTarget}
+              styles={themedSelectStyles()}
             />
 
           </div>
@@ -947,19 +965,33 @@ const roomOptions = Array.from(roomOptionsMap.values());
             </div>
           )}
           {bookingSource === "WALKIN" && (
-            <div className="form-group">
+            <div className="form-row">
 
-              <label>Apply GST?</label>
+              <div className="form-group">
+                <label>Apply GST?</label>
 
-              <select
-                value={walkinGstApplied}
-                onChange={(e) =>
-                  setWalkinGstApplied(e.target.value === "true")
-                }
-              >
-                <option value="false">No</option>
-                <option value="true">Yes</option>
-              </select>
+                <select
+                  value={walkinGstApplied}
+                  onChange={(e) =>
+                    setWalkinGstApplied(e.target.value === "true")
+                  }
+                >
+                  <option value="false">No</option>
+                  <option value="true">Yes</option>
+                </select>
+              </div>
+
+              {showGstFields && showGstPercent && (
+                <div className="form-group">
+                  <label>GST %</label>
+
+                  <input
+                    type="number"
+                    value={gstPercent}
+                    onChange={(e) => setGstPercent(e.target.value)}
+                  />
+                </div>
+              )}
 
             </div>
           )}
@@ -975,6 +1007,14 @@ const roomOptions = Array.from(roomOptionsMap.values());
                 onChange={(e) => setTotalAmount(e.target.value)}
               />
             </div>
+
+            {bookingSource === "WALKIN" && showGstFields && (
+              <div className="form-group">
+                <label>GST Amount</label>
+
+                <input type="text" value={gstAmount} readOnly />
+              </div>
+            )}
 
             {showAdvance && (
               <div className="form-group">
@@ -996,17 +1036,9 @@ const roomOptions = Array.from(roomOptionsMap.values());
               </div>
             )}
 
-            {showFinalAmount && (
-              <div className="form-group">
-                <label>Final Amount</label>
-
-                <input type="text" value={finalAmount} readOnly />
-              </div>
-            )}
-
           </div>
 
-          {showGstFields && (
+          {bookingSource !== "WALKIN" && showGstFields && (
             <div className="form-row">
 
               {showGstPercent && (

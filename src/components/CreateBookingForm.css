@@ -122,7 +122,7 @@
 .booking-form input[type="number"],
 .booking-form input[type="date"],
 .booking-form textarea,
-.booking-form select,
+.booking-form .form-group select,
 .booking-form .date-picker-input,
 .booking-form .react-select__control {
   padding: 10px 12px;
@@ -137,11 +137,17 @@
 
 /* Fixed-height fields (everything except textarea, which needs to grow)
    share one height so a row mixing plain inputs with react-select controls
-   lines up instead of the shorter react-select control looking "higher". */
+   lines up instead of the shorter react-select control looking "higher".
+   Selects use the more specific ".booking-form .form-group select" (rather
+   than ".booking-form select") because RecordDailyEntryForm.css declares an
+   unscoped ".form-group select { height: 36px; ... }" of otherwise-equal
+   specificity - CRA bundles all component CSS globally, so whichever file's
+   rule happens to load later in the build would silently win the tie and
+   shrink "Apply GST?" below the "GST %" input next to it. */
 .booking-form input[type="text"],
 .booking-form input[type="number"],
 .booking-form input[type="date"],
-.booking-form select,
+.booking-form .form-group select,
 .booking-form .date-picker-input {
   height: 40px;
 }
@@ -188,7 +194,7 @@
 
 .booking-form input:focus,
 .booking-form textarea:focus,
-.booking-form select:focus,
+.booking-form .form-group select:focus,
 .booking-form .react-select__control--is-focused {
   border-color: #008080;
   outline: none;
