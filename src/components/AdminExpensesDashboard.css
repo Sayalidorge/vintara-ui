@@ -292,8 +292,13 @@
   margin-bottom: 20px;
 }
 
-input,
-select {
+/* Scoped to this page's own form - a bare "input, select" here leaked into
+   every <input>/<select> in the app (CRA bundles all component CSS
+   globally), most visibly as an unwanted 6px top margin misaligning plain
+   inputs next to same-row react-select controls elsewhere (e.g. the split
+   payment rows in UserInventory's check-in modal). */
+.expense-form input,
+.expense-form select {
   padding: 10px 12px;
   margin-top: 6px;
 }

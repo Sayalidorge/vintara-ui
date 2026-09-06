@@ -1,8 +1,9 @@
 // src/components/ManageResorts.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import Select from "react-select"; 
+import Select from "react-select";
 import config from "../config";
+import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
 import "../css/theme.css";
 import "./ManageResorts.css";
 
@@ -320,16 +321,20 @@ const getCommissionModelLabel = (value) =>
     }
   };
 
-  const customSelectStyles = {
-    control: (base) => ({
+  // customSelectStyles previously had no `option` styling at all, so it fell
+  // back to react-select's default blue hover/selected colors - themedSelectStyles
+  // (see src/utils/reactSelectTheme.js) supplies the app's purple theme for
+  // that plus a themed, focus-aware control border in place of the old
+  // static "&:hover" gray.
+  const customSelectStyles = themedSelectStyles({
+    control: (base, state) => ({
       ...base,
       height: "38px",
       minHeight: "38px",
       borderRadius: "4px",
-      border: "1px solid #ccc",
-      boxShadow: "none",
+      border: state.isFocused ? "1px solid var(--primary-purple)" : "1px solid #ccc",
       boxSizing: "border-box",
-      "&:hover": { border: "1px solid #999" }
+      "&:hover": { border: "1px solid var(--primary-purple)" },
     }),
     valueContainer: (base) => ({
       ...base,
@@ -350,14 +355,13 @@ const getCommissionModelLabel = (value) =>
       boxSizing: "border-box",
       margin: 0
     }),
-    menuPortal: (base) => ({ ...base, zIndex: 9999 })
-  };
+  });
 
   // Multi-select variant: lets the control grow to fit multiple chips instead of clipping at 38px
   const multiSelectStyles = {
     ...customSelectStyles,
-    control: (base) => ({
-      ...customSelectStyles.control(base),
+    control: (base, state) => ({
+      ...customSelectStyles.control(base, state),
       height: "auto",
       minHeight: "38px",
     }),
@@ -452,7 +456,7 @@ const getCommissionModelLabel = (value) =>
                 value={locationOptions.find(o => o.value === location) || null}
                 onChange={(selected) => setLocation(selected ? selected.value : "")}
                 placeholder="Select Existing Location..."
-                menuPortalTarget={document.body}
+                menuPortalTarget={menuPortalTarget}
                 styles={customSelectStyles}
               />
             </div>
@@ -530,7 +534,7 @@ const getCommissionModelLabel = (value) =>
                   value={paymentAccountOptions.filter((opt) => selectedAccountIds.includes(opt.value))}
                   onChange={(selected) => setSelectedAccountIds((selected || []).map((opt) => opt.value))}
                   placeholder="Select payment accounts..."
-                  menuPortalTarget={document.body}
+                  menuPortalTarget={menuPortalTarget}
                   styles={multiSelectStyles}
                 />
               )}
@@ -575,7 +579,7 @@ const getCommissionModelLabel = (value) =>
       }
       placeholder="Select Commission Model"
       styles={customSelectStyles}
-      menuPortalTarget={document.body}
+      menuPortalTarget={menuPortalTarget}
     />
   </div>
 
@@ -609,7 +613,7 @@ const getCommissionModelLabel = (value) =>
       }
       placeholder="Select Percentage"
       styles={customSelectStyles}
-      menuPortalTarget={document.body}
+      menuPortalTarget={menuPortalTarget}
     />
   </div>
 </div>

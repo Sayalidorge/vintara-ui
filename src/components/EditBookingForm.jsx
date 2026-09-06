@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Select from "react-select";
 import config from "../config";
+import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
 import "./CreateBookingForm.css";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
@@ -248,6 +249,8 @@ const EditBookingForm = () => {
             value={resort}
             onChange={setResort}
             placeholder="Select Resort"
+            menuPortalTarget={menuPortalTarget}
+            styles={themedSelectStyles()}
           />
         </div>
 
@@ -260,6 +263,8 @@ const EditBookingForm = () => {
               value={selectedCategory}
               onChange={setSelectedCategory}
               placeholder="Select Room Category"
+              menuPortalTarget={menuPortalTarget}
+              styles={themedSelectStyles()}
             />
           </div>
         )}
@@ -273,6 +278,8 @@ const EditBookingForm = () => {
               value={selectedRoom}
               onChange={setSelectedRoom}
               placeholder="Select Room"
+              menuPortalTarget={menuPortalTarget}
+              styles={themedSelectStyles()}
             />
           </div>
         )}
@@ -387,6 +394,8 @@ const EditBookingForm = () => {
             onChange={(g) => setGstPercent(g.value)}
             placeholder="Select GST %"
             isClearable
+            menuPortalTarget={menuPortalTarget}
+            styles={themedSelectStyles()}
           />
         </div>
 
@@ -406,6 +415,8 @@ const EditBookingForm = () => {
             onChange={(bs) => setBookingSource(bs.value)}
             placeholder="Select booking source"
             isClearable
+            menuPortalTarget={menuPortalTarget}
+            styles={themedSelectStyles()}
           />
         </div>
 

@@ -4,6 +4,7 @@ import config from "../config";
 import "./MonthlySettlement.css";
 import { downloadCsv } from "../utils/csv";
 import { isSuperAdmin } from "../utils/auth";
+import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
 
 const MonthlySettlement = () => {
 
@@ -185,6 +186,8 @@ const MonthlySettlement = () => {
     options={resorts}
     value={selectedResort}
     onChange={setSelectedResort}
+    menuPortalTarget={menuPortalTarget}
+    styles={themedSelectStyles()}
 />
                         </div>
 
@@ -201,6 +204,8 @@ const MonthlySettlement = () => {
                                 onChange={(obj) =>
                                     setSelectedMonth(obj.value)
                                 }
+                                menuPortalTarget={menuPortalTarget}
+                                styles={themedSelectStyles()}
                             />
                         </div>
 

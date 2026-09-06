@@ -5,6 +5,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import "./RecordDailyEntryForm.css";
 import config from "../config";
 import Select from "react-select";
+import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
 
 // Formats a Date as "yyyy-MM-dd" using local Y/M/D (not toISOString, which
 // converts to UTC and can shift the date across a day boundary depending on
@@ -256,8 +257,8 @@ const RecordDailyEntryForm = () => {
                         classNamePrefix="react-select"
                         placeholder="Location"
                         options={locationOptions}
-                        menuPortalTarget={document.body}
-                        styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+                        menuPortalTarget={menuPortalTarget}
+                        styles={themedSelectStyles()}
                         value={
                           locationOptions.find(
                             (option) => option.value === enquiry.preferredLocation
@@ -281,8 +282,8 @@ const RecordDailyEntryForm = () => {
                         classNamePrefix="react-select"
                         placeholder="Property"
                         options={propertyOptions}
-                        menuPortalTarget={document.body}
-                        styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+                        menuPortalTarget={menuPortalTarget}
+                        styles={themedSelectStyles()}
                         value={
                           propertyOptions.find(
                             (option) => option.value === enquiry.propertyName
@@ -306,8 +307,8 @@ const RecordDailyEntryForm = () => {
                         classNamePrefix="react-select"
                         placeholder="Source"
                         options={sourceOptions}
-                        menuPortalTarget={document.body}
-                        styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+                        menuPortalTarget={menuPortalTarget}
+                        styles={themedSelectStyles()}
                         value={
                           sourceOptions.find(
                             (option) => option.value === enquiry.source

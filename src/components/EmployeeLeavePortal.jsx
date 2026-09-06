@@ -5,13 +5,14 @@ import LeaveCalendar from "./LeaveCalendar";
 import { getLeaveBalance, getLeaveRequests, applyLeaveRequest } from "../services/LeaveService";
 import "./EmployeeLeavePortal.css";
 import { toLocalDateStr } from "../utils/date";
+import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
 
 // Native <select> option-list hover/highlight colors are drawn by the OS and
 // can't be styled with CSS (same limitation as the daily-entries Status
 // filter), so this uses react-select + the `styles` prop (real inline
 // styles) instead, themed to match this page's purple/teal accents.
-const leaveTypeSelectStyles = {
-  control: (base, state) => ({
+const leaveTypeSelectStyles = themedSelectStyles({
+  control: (base) => ({
     ...base,
     minHeight: 38,
     height: 38,
@@ -22,12 +23,7 @@ const leaveTypeSelectStyles = {
     // the 38px above instead of being part of it, rendering ~2-3px taller.
     boxSizing: "border-box",
     borderRadius: 4,
-    borderColor: state.isFocused ? "var(--primary-purple)" : "#ccc",
-    boxShadow: "none",
     cursor: "pointer",
-    ":hover": {
-      borderColor: "var(--primary-purple)",
-    },
   }),
   // Only trim the padding here - don't touch height/display. react-select
   // overlays the placeholder/selected text and its hidden input in the same
@@ -46,17 +42,7 @@ const leaveTypeSelectStyles = {
   indicatorsContainer: (base) => ({ ...base, height: 36 }),
   dropdownIndicator: (base) => ({ ...base, padding: "0 8px" }),
   indicatorSeparator: (base) => ({ ...base, marginTop: 8, marginBottom: 8 }),
-  option: (base, state) => ({
-    ...base,
-    backgroundColor: state.isSelected
-      ? "var(--primary-purple)"
-      : state.isFocused
-      ? "#f3e6f5"
-      : "#fff",
-    color: state.isSelected ? "#fff" : "#333",
-    cursor: "pointer",
-  }),
-};
+});
 
 const EmployeeLeavePortal = () => {
   const currentUser = JSON.parse(localStorage.getItem("user"));
@@ -211,6 +197,7 @@ const EmployeeLeavePortal = () => {
           <Select
             className="leave-type-select"
             styles={leaveTypeSelectStyles}
+            menuPortalTarget={menuPortalTarget}
             options={leaveTypeOptions}
             value={selectedLeaveTypeOption}
             onChange={(opt) => setForm({ ...form, type: opt.value })}

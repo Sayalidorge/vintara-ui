@@ -8,6 +8,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { downloadCsv } from "../utils/csv";
 import { toLocalDateStr } from "../utils/date";
 import { isSuperAdmin } from "../utils/auth";
+import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
 
 // Mirrors SettlementService.EXPENSE_EDIT_WINDOW_DAYS on the backend - kept in
 // sync manually since there's no shared source of truth between the two apps.
@@ -290,8 +291,8 @@ const AdminExpensesDashboard = () => {
                 value={selectedResort}
                 onChange={setSelectedResort}
                 isClearable
-                menuPortalTarget={document.body}
-                styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+                menuPortalTarget={menuPortalTarget}
+                styles={themedSelectStyles()}
               />
             </div>
           </div>
@@ -329,8 +330,8 @@ const AdminExpensesDashboard = () => {
           onChange={setSelectedResort}
           placeholder="All Resorts"
           isClearable
-          menuPortalTarget={document.body}
-          styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+          menuPortalTarget={menuPortalTarget}
+          styles={themedSelectStyles()}
         />
 
         {isSuperAdmin() && (
