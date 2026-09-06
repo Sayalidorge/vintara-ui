@@ -220,6 +220,8 @@
 }
 
 .room-card {
+  /* Teal covers both "available" and "booked" (not yet checked in) - only
+     an actual checked-in guest gets the distinct purple below. */
   background-color: var(--primary-teal);
   color: white;
   border-radius: 6px;
@@ -232,7 +234,7 @@
   justify-content: center;
 }
 
-.room-card.booked {
+.room-card.checked-in {
   background-color: var(--primary-purple);
   color: white;
   border-color: var(--primary-purple);
@@ -240,12 +242,15 @@
 
 .room-card h4 {
   margin: 0 0 5px 0;
-  font-size: 16px;
+  font-size: 14px;
+  font-family: inherit;
 }
 
+.room-card p,
 .booking-info p {
   margin: 2px 0;
-  font-size: 14px;
+  font-size: 13px;
+  font-family: inherit;
 }
 
 .checkin-btn,
@@ -268,6 +273,17 @@
   background-color: var(--button-hover);
 }
 
+/* On a teal (booked, not yet checked in) room card, "View Linked Booking"
+   is always purple - previewing the checked-in color that room will get
+   once check-in happens. */
+.room-card.booked .checkin-btn {
+  background-color: var(--primary-purple);
+}
+
+.room-card.booked .checkin-btn:hover {
+  background-color: var(--button-purple-hover);
+}
+
 .modal button {
   background-color: var(--primary-purple);
   color: white;
@@ -276,6 +292,30 @@
 
 .modal button:hover {
   background-color: var(--button-purple-hover);
+}
+
+/* .modal button's higher specificity (class+element) would otherwise win
+   over the plain .checkin-btn/.cancel-btn class rules below and force every
+   modal button purple - these re-assert the intended colors within .modal. */
+.modal .checkin-btn {
+  background-color: var(--primary-teal);
+  color: white;
+  margin-right: 0;
+}
+
+.modal .checkin-btn:hover:not(:disabled) {
+  background-color: var(--button-hover);
+}
+
+.modal .cancel-btn {
+  background-color: #fff;
+  color: #555;
+  margin-right: 0;
+  border: 1px solid #ccc;
+}
+
+.modal .cancel-btn:hover {
+  background-color: #f5f5f5;
 }
 
 .checked-in-label {
@@ -323,6 +363,177 @@
   padding: 6px 8px;
   border-radius: 6px;
   border: 1px solid #ccc;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* Check-In modal: discount, split-payment accounts, allocation status */
+.checkin-modal {
+  max-width: 480px;
+  width: 100%;
+}
+
+.checkin-modal__summary p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.checkin-modal__balance {
+  color: var(--primary-red, #c0392b);
+  font-weight: bold;
+}
+
+.checkin-modal__section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #eee;
+}
+
+.checkin-modal .field-label {
+  display: block;
+  margin: 0 0 6px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+}
+
+.checkin-modal__input {
+  width: 100%;
+  height: 38px;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+.checkin-modal__input:focus {
+  outline: none;
+  border-color: var(--primary-teal);
+}
+
+.checkin-modal__hint {
+  margin: 8px 0 0 0;
+  font-size: 13px;
+  color: #555;
+}
+
+.split-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.split-row__account {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Match the plain amount <input>'s fixed height, and keep the placeholder/
+   selected label on one line instead of wrapping and growing the box taller
+   than the amount field next to it. */
+.split-row__account .react-select__control {
+  min-height: 38px !important;
+  height: 38px !important;
+}
+
+.split-row__account .react-select__value-container {
+  flex-wrap: nowrap;
+  height: 36px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.split-row__account .react-select__indicators {
+  height: 36px;
+}
+
+.split-row__account .react-select__placeholder,
+.split-row__account .react-select__single-value {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.split-row__amount {
+  flex: 1;
+  min-width: 0;
+}
+
+.split-row__remove {
+  background: none;
+  border: none;
+  color: var(--primary-red, #c0392b);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.split-row__remove:hover:not(:disabled) {
+  background: #fdecea;
+}
+
+.split-row__remove:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.add-split-btn {
+  background: none;
+  border: 1px dashed #999;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #555;
+  margin-top: 2px;
+}
+
+.add-split-btn:hover {
+  border-color: var(--primary-teal);
+  color: var(--primary-teal);
+}
+
+.allocation-status {
+  margin: 10px 0 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.allocation-status.is-balanced {
+  color: #1e7e34;
+}
+
+.allocation-status.is-mismatched {
+  color: var(--primary-red, #c0392b);
+}
+
+.checkin-modal__actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.checkin-modal .checkin-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 @media screen and (max-width: 768px) {
