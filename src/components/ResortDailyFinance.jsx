@@ -6,6 +6,7 @@ import "./ResortDailyFinance.css";
 import config from "../config";
 import { toLocalDateStr } from "../utils/date";
 import { downloadCsv } from "../utils/csv";
+import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
 
 const ResortDailyFinance = () => {
 
@@ -30,6 +31,12 @@ const ResortDailyFinance = () => {
   const [foodBillCollection, setfoodBillCollection] = useState("");
 
   const [expenseAmount, setExpenseAmount] = useState("");
+
+  // Which account the expense was paid out of - fetched per selected resort,
+  // same source used for check-in balance collection (payment-account
+  // assignments per resort).
+  const [paymentAccounts, setPaymentAccounts] = useState([]);
+  const [selectedPaymentAccount, setSelectedPaymentAccount] = useState(null);
 
   const [financeEntries, setFinanceEntries] = useState([]);
 
@@ -86,6 +93,36 @@ const ResortDailyFinance = () => {
   // filters to the caller's assigned resorts for every non-SUPER_ADMIN role),
   // so no client-side filtering is needed here.
   const resorts = allResorts;
+
+  //---------------------------------------------------------
+  // Load payment accounts assigned to the selected resort
+  //---------------------------------------------------------
+
+  useEffect(() => {
+
+    if (!selectedResort) {
+      setPaymentAccounts([]);
+      return;
+    }
+
+    const loadPaymentAccounts = async () => {
+      try {
+        const res = await fetch(
+          `${config.BASE_URL}/api/resorts/${selectedResort.value}/payment-accounts`,
+          { headers: config.getHeaders() }
+        );
+        if (!res.ok) throw new Error("Unable to load payment accounts");
+        const data = await res.json();
+        setPaymentAccounts(data.map((a) => ({ value: a.id, label: a.name })));
+      } catch (e) {
+        console.error(e);
+        setPaymentAccounts([]);
+      }
+    };
+
+    loadPaymentAccounts();
+
+  }, [selectedResort]);
 
   //---------------------------------------------------------
   // Auto select first resort
@@ -160,6 +197,8 @@ const ResortDailyFinance = () => {
     setfoodBillCollection("");
 
     setExpenseAmount("");
+
+    setSelectedPaymentAccount(null);
   };
 
   //---------------------------------------------------------
@@ -194,6 +233,7 @@ const handleSave = async () => {
     financeDate: toLocalDateStr(selectedDate),
     foodBillCollection: Number(foodBillCollection),
     expenseAmount: Number(expenseAmount),
+    paymentAccountId: selectedPaymentAccount ? selectedPaymentAccount.value : null,
   };
 console.log(payload);
   try {
@@ -251,6 +291,7 @@ const exportFinanceEntries = () => {
     foodBillCollection: entry.foodBillCollection,
     expenseAmount: entry.expenseAmount,
     profit: Number(entry.foodBillCollection) - Number(entry.expenseAmount),
+    paymentAccountName: entry.paymentAccountName || "-",
   }));
   downloadCsv(
     `property-collection_${selectedResort?.label || "resort"}_${toLocalDateStr(fromDate)}_to_${toLocalDateStr(toDate)}.csv`,
@@ -261,6 +302,7 @@ const exportFinanceEntries = () => {
       { key: "foodBillCollection", header: "Food Collection" },
       { key: "expenseAmount", header: "Expense" },
       { key: "profit", header: "Profit" },
+      { key: "paymentAccountName", header: "Paid From" },
     ]
   );
 };
@@ -290,6 +332,8 @@ const totalProfit = totalFoodCollection - totalExpense;
               isSingleResortRole &&
               resorts.length === 1
             }
+            menuPortalTarget={menuPortalTarget}
+            styles={themedSelectStyles()}
           />
         </div>
 
@@ -341,6 +385,23 @@ const totalProfit = totalFoodCollection - totalExpense;
         value={expenseAmount}
         onChange={(e) => setExpenseAmount(e.target.value)}
         placeholder="0"
+      />
+
+    </div>
+
+    <div className="finance-input">
+
+      <label>Paid From</label>
+
+      <Select
+        classNamePrefix="react-select"
+        options={paymentAccounts}
+        value={selectedPaymentAccount}
+        onChange={setSelectedPaymentAccount}
+        placeholder="Select account..."
+        isClearable
+        menuPortalTarget={menuPortalTarget}
+        styles={themedSelectStyles()}
       />
 
     </div>
@@ -407,6 +468,8 @@ const totalProfit = totalFoodCollection - totalExpense;
               isSingleResortRole &&
               resorts.length === 1
             }
+            menuPortalTarget={menuPortalTarget}
+            styles={themedSelectStyles()}
           />
         </div>
         {user?.role === "SUPER_ADMIN" && (
@@ -438,6 +501,7 @@ const totalProfit = totalFoodCollection - totalExpense;
 {isAdminView && (
         <th>Profit</th>
     )}
+              <th>Paid From</th>
             </tr>
 
           </thead>
@@ -449,7 +513,7 @@ const totalProfit = totalFoodCollection - totalExpense;
               <tr>
 
                 <td
-                  colSpan="4"
+                  colSpan={isAdminView ? 6 : 5}
                   style={{textAlign:"center"}}
                 >
                   Loading...
@@ -462,7 +526,7 @@ const totalProfit = totalFoodCollection - totalExpense;
               <tr>
 
                 <td
-                  colSpan="4"
+                  colSpan={isAdminView ? 6 : 5}
                   style={{textAlign:"center"}}
                 >
                   No records found.
@@ -505,6 +569,7 @@ const totalProfit = totalFoodCollection - totalExpense;
         ).toLocaleString()}
     </td>
 )}
+                  <td>{entry.paymentAccountName || "-"}</td>
                 </tr>
 
               ))
@@ -525,6 +590,7 @@ const totalProfit = totalFoodCollection - totalExpense;
 {isAdminView && (
     <td><strong>₹{totalProfit.toLocaleString()}</strong></td>
 )}
+<td></td>
 </tr>
 
 </tfoot>
