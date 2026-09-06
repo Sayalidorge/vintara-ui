@@ -2,11 +2,12 @@ import { useState, useEffect, Fragment } from "react";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams, Link } from "react-router-dom";
 import "../css/theme.css";
 import "./UserDashboard.css";
 import config from "../config";
 import { toLocalDateStr } from "../utils/date";
+import { menuPortalTarget } from "../utils/reactSelectTheme";
 
 // Collapses check-in/check-out into one compact range, e.g. "08-09 Aug 2026"
 // when they fall in the same month/year, expanding only as far as needed
@@ -35,10 +36,22 @@ const formatStayDuration = (checkInStr, checkOutStr) => {
 const UserDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
   const [resorts, setResorts] = useState([]);
-  const [selectedResort, setSelectedResort] = useState(null);
+  const [selectedResort, setSelectedResortState] = useState(null);
+  // Kept in the URL (?resortId=) so a refresh reopens the same resort
+  // instead of falling back to the first one - same pattern as UserInventory.
+  const setSelectedResort = (resort) => {
+    setSelectedResortState(resort);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (resort?.value != null) next.set("resortId", String(resort.value));
+      else next.delete("resortId");
+      return next;
+    }, { replace: true });
+  };
   const [bookings, setBookings] = useState([]);
   const [fromDate, setFromDate] = useState(new Date());
   const [toDate, setToDate] = useState(null);
@@ -248,7 +261,13 @@ const UserDashboard = () => {
             return;
           }
         }
-        if (options.length > 0 && !selectedResort) setSelectedResort(options[0]);
+        if (options.length > 0 && !selectedResort) {
+          const savedResortId = searchParams.get("resortId");
+          const savedResort = savedResortId != null
+            ? options.find((r) => String(r.value) === savedResortId)
+            : null;
+          setSelectedResort(savedResort || options[0]);
+        }
       } catch (err) {
         console.error(err);
         setResorts([]);
@@ -319,8 +338,16 @@ const UserDashboard = () => {
   placeholder="Select resort..."
   isDisabled={resorts.length === 0}
   classNamePrefix="react-select"
-  // remove menuPortalTarget to keep inside form
+  // Same filter-row-collapses-to-column-on-mobile layout as UserInventory's
+  // Resort filter (see src/utils/reactSelectTheme.js) - without a portal, the
+  // From Date field stacked right below on mobile paints over any option
+  // past the first, exactly like that bug. The sibling DatePickers already
+  // portal via portalId="datepicker-portal" without issue, so doing the same
+  // here is safe; colors below are already purple/inline so portaling them
+  // doesn't lose any theming the way a CSS-class-based approach would.
+  menuPortalTarget={menuPortalTarget}
   styles={{
+    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
     control: (base, state) => ({
       ...base,
       minHeight: 40,       // match DatePicker / Reset button
