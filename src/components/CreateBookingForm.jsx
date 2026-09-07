@@ -8,7 +8,7 @@ import "react-phone-input-2/lib/style.css";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "./CreateBookingForm.css";
-import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 
 // Formats a Date as "yyyy-MM-dd" using local Y/M/D (not toISOString, which
 // converts to UTC and can shift the date across a day boundary depending on
@@ -108,8 +108,6 @@ const CreateBookingForm = () => {
   const [showGstPercent, setShowGstPercent] = useState(true);
   const [showAdvance, setShowAdvance] = useState(true);
   const [showBalanceAmount, setShowBalanceAmount] = useState(false);
-
-  const [walkinGstApplied, setWalkinGstApplied] = useState(false);
 
   const [otaCommission, setOtaCommission] = useState("");
   // -----------------------------
@@ -215,10 +213,12 @@ const CreateBookingForm = () => {
         break;
 
       case "WALKIN":
+        // No GST fields at all here - GST is entirely account-driven,
+        // decided later by which payment account collects the (one-shot)
+        // balance at check-in, not by anything entered at booking time.
         setShowAdvance(false);
         setShowBalanceAmount(false);
-        setShowGstFields(walkinGstApplied);
-        setShowGstPercent(true);
+        setShowGstFields(false);
 
         setAdvanceAmount("0");
         setBalanceAmount(0);
@@ -234,7 +234,7 @@ const CreateBookingForm = () => {
         setAdvanceAmount(totalAmount);
         break;
     }
-  }, [bookingSource, walkinGstApplied, totalAmount]);
+  }, [bookingSource, totalAmount]);
 
   // -----------------------------
   // GST Calculation
@@ -256,18 +256,6 @@ const CreateBookingForm = () => {
         setGstAmount(((total * percent) / (100 + percent)).toFixed(2));
         break;
 
-      case "WALKIN":
-        // Inclusive of total (same convention as CALL/CALLS_GST) - the
-        // entered amount already covers GST rather than having it added
-        // on top, so the total itself doesn't change.
-        if (walkinGstApplied) {
-          const gst = (total * percent) / (100 + percent);
-          setGstAmount(gst.toFixed(2));
-        } else {
-          setGstAmount(0);
-        }
-        break;
-
       default:
         // All OTA sources (Booking.com, MMT, Agoda, Airbnb, EaseMyTrip):
         // fixed 5% inclusive default - editable below, since the entered
@@ -284,7 +272,6 @@ const CreateBookingForm = () => {
     totalAmount,
     advanceAmount,
     gstPercent,
-    walkinGstApplied,
     isOTA,
   ]);
 
@@ -376,14 +363,6 @@ const CreateBookingForm = () => {
         setTransactionId(data.transactionId || "");
 
         setBookingSource(data.source || "");
-        // walkinGstApplied isn't a persisted booking field (it's only a
-        // transient flag the backend uses to pick a GST formula) - infer it
-        // from whether this walk-in already has GST recorded, so reopening
-        // a GST-applied booking for edit doesn't default back to "No" and
-        // silently wipe the GST out on the next save.
-        setWalkinGstApplied(
-          data.source === "WALKIN" && parseFloat(data.gstAmount) > 0
-        );
 
         setOtaCommission(data.otaCommission || "");
 
@@ -558,8 +537,6 @@ if (data.bookingItems?.length > 0) {
       createdByUserId: currentUser?.id,
       editedByUserId: currentUser?.id,
 
-      walkinGstApplied,
-
       foodPreorder,
       totalFoodAmount: foodPreorder ? (parseFloat(totalFoodAmount) || 0) : 0,
       advanceFoodAmount: foodPreorder ? (parseFloat(advanceFoodAmount) || 0) : 0,
@@ -631,6 +608,7 @@ console.log(JSON.stringify(bookingDataToSend, null, 2));
               onChange={setResort}
               placeholder="Select Resort"
               menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
               styles={themedSelectStyles()}
             />
           </div>
@@ -640,7 +618,7 @@ console.log(JSON.stringify(bookingDataToSend, null, 2));
 
             <DatePicker
               className="date-picker-input"
-              dateFormat="yyyy-MM-dd"
+              dateFormat="dd/MM/yyyy"
               placeholderText="Select check-in date"
               portalId="booking-datepicker-portal"
               selected={checkInDate ? new Date(checkInDate) : null}
@@ -671,7 +649,7 @@ console.log(JSON.stringify(bookingDataToSend, null, 2));
 
             <DatePicker
               className="date-picker-input"
-              dateFormat="yyyy-MM-dd"
+              dateFormat="dd/MM/yyyy"
               placeholderText="Select check-out date"
               portalId="booking-datepicker-portal"
               selected={checkOutDate ? new Date(checkOutDate) : null}
@@ -763,6 +741,7 @@ const roomOptions = Array.from(roomOptionsMap.values());
                     placeholder="Select Category"
                     isDisabled={!resort || !checkInDate || !checkOutDate}
                     menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
                     styles={themedSelectStyles()}
                   />
                 </div>
@@ -778,6 +757,7 @@ const roomOptions = Array.from(roomOptionsMap.values());
   isDisabled={!item.category}
   getOptionValue={(option) => option.value}
   menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
   styles={themedSelectStyles()}
 />
                 </div>
@@ -909,7 +889,26 @@ const roomOptions = Array.from(roomOptionsMap.values());
                 formatCreateLabel={(inputValue) => `Use ${inputValue} adults`}
                 placeholder="Select or type"
                 menuPortalTarget={menuPortalTarget}
-                styles={themedSelectStyles()}
+                menuPosition={menuPosition}
+                // "Select or type" wraps onto two lines in this narrow half-width
+                // column, and the control's min-height (CreateBookingForm.css)
+                // grows to fit that, making the box visibly taller than "Kids"
+                // right next to it. react-select's valueContainer defaults to
+                // flex-wrap:wrap (needed for multi-select chips to wrap), which
+                // drops the whole placeholder onto its own second line before the
+                // placeholder's own white-space even comes into play - nowrap on
+                // the container itself is what actually keeps it to one line;
+                // the placeholder override is a truncating (ellipsis) backstop.
+                styles={themedSelectStyles({
+                  valueContainer: (base) => ({ ...base, flexWrap: "nowrap" }),
+                  placeholder: (base) => ({
+                    ...base,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    minWidth: 0,
+                  }),
+                })}
               />
             </div>
 
@@ -922,6 +921,7 @@ const roomOptions = Array.from(roomOptionsMap.values());
                 onChange={setKids}
                 placeholder="Select Kids"
                 menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
                 styles={themedSelectStyles()}
               />
             </div>
@@ -948,6 +948,7 @@ const roomOptions = Array.from(roomOptionsMap.values());
               }
               placeholder="Select Booking Source"
               menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
               styles={themedSelectStyles()}
             />
 
@@ -964,38 +965,6 @@ const roomOptions = Array.from(roomOptionsMap.values());
               />
             </div>
           )}
-          {bookingSource === "WALKIN" && (
-            <div className="form-row">
-
-              <div className="form-group">
-                <label>Apply GST?</label>
-
-                <select
-                  value={walkinGstApplied}
-                  onChange={(e) =>
-                    setWalkinGstApplied(e.target.value === "true")
-                  }
-                >
-                  <option value="false">No</option>
-                  <option value="true">Yes</option>
-                </select>
-              </div>
-
-              {showGstFields && showGstPercent && (
-                <div className="form-group">
-                  <label>GST %</label>
-
-                  <input
-                    type="number"
-                    value={gstPercent}
-                    onChange={(e) => setGstPercent(e.target.value)}
-                  />
-                </div>
-              )}
-
-            </div>
-          )}
-
           <div className="form-row">
 
             <div className="form-group">
@@ -1007,14 +976,6 @@ const roomOptions = Array.from(roomOptionsMap.values());
                 onChange={(e) => setTotalAmount(e.target.value)}
               />
             </div>
-
-            {bookingSource === "WALKIN" && showGstFields && (
-              <div className="form-group">
-                <label>GST Amount</label>
-
-                <input type="text" value={gstAmount} readOnly />
-              </div>
-            )}
 
             {showAdvance && (
               <div className="form-group">
