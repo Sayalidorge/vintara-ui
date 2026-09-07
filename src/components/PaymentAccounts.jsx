@@ -7,6 +7,7 @@ const PaymentAccounts = () => {
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
   const [editId, setEditId] = useState(null);
+  const [companyAccount, setCompanyAccount] = useState(false);
 
   const fetchAccounts = async () => {
     try {
@@ -33,7 +34,7 @@ const PaymentAccounts = () => {
     e.preventDefault();
     if (!name.trim()) return alert("Please enter an account name");
 
-    const payload = { name: name.trim(), active: true };
+    const payload = { name: name.trim(), active: true, companyAccount };
 
     try {
       const url = editId
@@ -52,6 +53,7 @@ const PaymentAccounts = () => {
 
       setName("");
       setEditId(null);
+      setCompanyAccount(false);
       fetchAccounts();
     } catch (err) {
       console.error(err);
@@ -62,6 +64,7 @@ const PaymentAccounts = () => {
   const handleEdit = (account) => {
     setEditId(account.id);
     setName(account.name);
+    setCompanyAccount(!!account.companyAccount);
   };
 
   const handleToggleActive = async (account) => {
@@ -72,7 +75,7 @@ const PaymentAccounts = () => {
           ...config.getHeaders(),
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name: account.name, active: !account.active }),
+        body: JSON.stringify({ name: account.name, active: !account.active, companyAccount: account.companyAccount }),
       });
       if (!res.ok) throw new Error("Failed to update payment account");
       fetchAccounts();
@@ -107,6 +110,18 @@ const PaymentAccounts = () => {
               />
             </div>
 
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Company Account?</label>
+              <label style={{ display: "flex", alignItems: "center", gap: "6px", height: "38px", fontSize: "14px", color: "#333" }}>
+                <input
+                  type="checkbox"
+                  checked={companyAccount}
+                  onChange={(e) => setCompanyAccount(e.target.checked)}
+                />
+                Yes, GST applies to money collected here
+              </label>
+            </div>
+
             <div className="button-group" style={{ display: "flex", gap: "12px" }}>
               <button
                 type="submit"
@@ -117,7 +132,7 @@ const PaymentAccounts = () => {
               {editId && (
                 <button
                   type="button"
-                  onClick={() => { setEditId(null); setName(""); }}
+                  onClick={() => { setEditId(null); setName(""); setCompanyAccount(false); }}
                   style={{ padding: "0 24px", height: "40px", cursor: "pointer", backgroundColor: "var(--primary-teal)", border: "1px solid #ccc", borderRadius: "4px", color: "#ffffff", fontSize: "14px" }}
                 >
                   Cancel
@@ -136,12 +151,13 @@ const PaymentAccounts = () => {
               <tr style={{ background: "#f2f2f2", textAlign: "left" }}>
                 <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Name</th>
                 <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Status</th>
+                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Company Account</th>
                 <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {accounts.length === 0 ? (
-                <tr><td colSpan="3" style={{ textAlign: "center", padding: "20px" }}>No payment accounts configured</td></tr>
+                <tr><td colSpan="4" style={{ textAlign: "center", padding: "20px" }}>No payment accounts configured</td></tr>
               ) : (
                 accounts.map((account) => (
                   <tr key={account.id} style={{ borderBottom: "1px solid #eee" }}>
@@ -157,6 +173,7 @@ const PaymentAccounts = () => {
                         <option value="INACTIVE">Inactive</option>
                       </select>
                     </td>
+                    <td style={{ padding: "10px" }}>{account.companyAccount ? "Yes" : "No"}</td>
                     <td className="actions" style={{ padding: "10px", whiteSpace: "nowrap" }}>
                       <button
                         className="edit-btn"
