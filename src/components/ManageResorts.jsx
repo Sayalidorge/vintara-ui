@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Select from "react-select";
 import config from "../config";
-import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 import "../css/theme.css";
 import "./ManageResorts.css";
 
@@ -457,6 +457,7 @@ const getCommissionModelLabel = (value) =>
                 onChange={(selected) => setLocation(selected ? selected.value : "")}
                 placeholder="Select Existing Location..."
                 menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
                 styles={customSelectStyles}
               />
             </div>
@@ -535,6 +536,7 @@ const getCommissionModelLabel = (value) =>
                   onChange={(selected) => setSelectedAccountIds((selected || []).map((opt) => opt.value))}
                   placeholder="Select payment accounts..."
                   menuPortalTarget={menuPortalTarget}
+                  menuPosition={menuPosition}
                   styles={multiSelectStyles}
                 />
               )}
@@ -580,6 +582,7 @@ const getCommissionModelLabel = (value) =>
       placeholder="Select Commission Model"
       styles={customSelectStyles}
       menuPortalTarget={menuPortalTarget}
+      menuPosition={menuPosition}
     />
   </div>
 
@@ -614,6 +617,7 @@ const getCommissionModelLabel = (value) =>
       placeholder="Select Percentage"
       styles={customSelectStyles}
       menuPortalTarget={menuPortalTarget}
+      menuPosition={menuPosition}
     />
   </div>
 </div>

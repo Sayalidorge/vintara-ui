@@ -5,7 +5,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import "./RecordDailyEntryForm.css";
 import config from "../config";
 import Select from "react-select";
-import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 
 // Formats a Date as "yyyy-MM-dd" using local Y/M/D (not toISOString, which
 // converts to UTC and can shift the date across a day boundary depending on
@@ -258,6 +258,7 @@ const RecordDailyEntryForm = () => {
                         placeholder="Location"
                         options={locationOptions}
                         menuPortalTarget={menuPortalTarget}
+                        menuPosition={menuPosition}
                         styles={themedSelectStyles()}
                         value={
                           locationOptions.find(
@@ -283,6 +284,7 @@ const RecordDailyEntryForm = () => {
                         placeholder="Property"
                         options={propertyOptions}
                         menuPortalTarget={menuPortalTarget}
+                        menuPosition={menuPosition}
                         styles={themedSelectStyles()}
                         value={
                           propertyOptions.find(
@@ -308,6 +310,7 @@ const RecordDailyEntryForm = () => {
                         placeholder="Source"
                         options={sourceOptions}
                         menuPortalTarget={menuPortalTarget}
+                        menuPosition={menuPosition}
                         styles={themedSelectStyles()}
                         value={
                           sourceOptions.find(

@@ -8,7 +8,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import config from "../config";
 import "./DailyEntryDashboard.css";
 import { toLocalDateStr } from "../utils/date";
-import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 
 // Set via the `styles` prop (real inline styles) instead of CSS classes:
 // the .react-select__* class names are already fought over by five other
@@ -188,6 +188,7 @@ const handleStatusChange = async (id, newStatus) => {
           className="status-filter-select"
           styles={statusSelectStyles}
           menuPortalTarget={menuPortalTarget}
+          menuPosition={menuPosition}
           options={statusSelectOptions}
           value={selectedStatusOption}
           onChange={(opt) => setStatus(opt.value)}

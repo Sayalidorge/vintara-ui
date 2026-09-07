@@ -6,7 +6,7 @@ import "./ResortDailyFinance.css";
 import config from "../config";
 import { toLocalDateStr } from "../utils/date";
 import { downloadCsv } from "../utils/csv";
-import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 
 const ResortDailyFinance = () => {
 
@@ -333,6 +333,7 @@ const totalProfit = totalFoodCollection - totalExpense;
               resorts.length === 1
             }
             menuPortalTarget={menuPortalTarget}
+            menuPosition={menuPosition}
             styles={themedSelectStyles()}
           />
         </div>
@@ -401,6 +402,7 @@ const totalProfit = totalFoodCollection - totalExpense;
         placeholder="Select account..."
         isClearable
         menuPortalTarget={menuPortalTarget}
+        menuPosition={menuPosition}
         styles={themedSelectStyles()}
       />
 
@@ -469,6 +471,7 @@ const totalProfit = totalFoodCollection - totalExpense;
               resorts.length === 1
             }
             menuPortalTarget={menuPortalTarget}
+            menuPosition={menuPosition}
             styles={themedSelectStyles()}
           />
         </div>

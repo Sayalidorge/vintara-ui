@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Select from "react-select";
 import config from "../config";
-import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 import "./CreateBookingForm.css";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
@@ -250,6 +250,7 @@ const EditBookingForm = () => {
             onChange={setResort}
             placeholder="Select Resort"
             menuPortalTarget={menuPortalTarget}
+            menuPosition={menuPosition}
             styles={themedSelectStyles()}
           />
         </div>
@@ -264,6 +265,7 @@ const EditBookingForm = () => {
               onChange={setSelectedCategory}
               placeholder="Select Room Category"
               menuPortalTarget={menuPortalTarget}
+              menuPosition={menuPosition}
               styles={themedSelectStyles()}
             />
           </div>
@@ -279,6 +281,7 @@ const EditBookingForm = () => {
               onChange={setSelectedRoom}
               placeholder="Select Room"
               menuPortalTarget={menuPortalTarget}
+              menuPosition={menuPosition}
               styles={themedSelectStyles()}
             />
           </div>
@@ -395,6 +398,7 @@ const EditBookingForm = () => {
             placeholder="Select GST %"
             isClearable
             menuPortalTarget={menuPortalTarget}
+            menuPosition={menuPosition}
             styles={themedSelectStyles()}
           />
         </div>
@@ -416,6 +420,7 @@ const EditBookingForm = () => {
             placeholder="Select booking source"
             isClearable
             menuPortalTarget={menuPortalTarget}
+            menuPosition={menuPosition}
             styles={themedSelectStyles()}
           />
         </div>

@@ -5,7 +5,7 @@ import LeaveCalendar from "./LeaveCalendar";
 import { getLeaveBalance, getLeaveRequests, applyLeaveRequest } from "../services/LeaveService";
 import "./EmployeeLeavePortal.css";
 import { toLocalDateStr } from "../utils/date";
-import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 
 // Native <select> option-list hover/highlight colors are drawn by the OS and
 // can't be styled with CSS (same limitation as the daily-entries Status
@@ -198,6 +198,7 @@ const EmployeeLeavePortal = () => {
             className="leave-type-select"
             styles={leaveTypeSelectStyles}
             menuPortalTarget={menuPortalTarget}
+            menuPosition={menuPosition}
             options={leaveTypeOptions}
             value={selectedLeaveTypeOption}
             onChange={(opt) => setForm({ ...form, type: opt.value })}

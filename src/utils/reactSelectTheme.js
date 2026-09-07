@@ -12,10 +12,21 @@
 // of whatever page wrapper had scoped CSS (e.g.
 // ".user-inventory-wrapper .filter-item .react-select__option--is-focused")
 // theming it purple, so it silently falls back to react-select's default
-// blue. These two exports fix both issues together for every Select in the
-// app: pass `menuPortalTarget` and spread `themedSelectStyles(...)` into
-// `styles`.
+// blue. These exports fix both issues together for every Select in the app:
+// pass `menuPortalTarget`, `menuPosition`, and spread `themedSelectStyles(...)`
+// into `styles`.
 export const menuPortalTarget = typeof document !== "undefined" ? document.body : null;
+
+// react-select defaults to `menuPosition="absolute"` even when portaled,
+// which computes the menu's position once at open time and inserts it into
+// the document at that offset - so the browser's own "scroll the focused
+// control into view" behavior (and react-select's menuShouldScrollIntoView)
+// can shift the whole page up when the menu opens, and leave dead white
+// space below where the document briefly grew to fit it. "fixed" positions
+// the menu relative to the viewport instead, recalculated on scroll, so
+// opening it never changes the document's scrollable height or triggers a
+// scroll-into-view jump. Always pair this with menuPortalTarget above.
+export const menuPosition = "fixed";
 
 // Returns a react-select `styles` object using the app's only two theme
 // colors (var(--primary-purple), var(--primary-teal)) - never the library's

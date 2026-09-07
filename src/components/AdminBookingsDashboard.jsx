@@ -8,7 +8,7 @@ import config from "../config";
 import { toLocalDateStr } from "../utils/date";
 import { downloadCsv } from "../utils/csv";
 import { isSuperAdmin } from "../utils/auth";
-import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "-";
@@ -161,6 +161,7 @@ const AdminBookingsDashboard = () => {
             classNamePrefix="react-select"
             className="react-select-container"
             menuPortalTarget={menuPortalTarget}
+            menuPosition={menuPosition}
             styles={themedSelectStyles()}
           />
         </div>
