@@ -17,7 +17,11 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    /* This container itself never scrolls - .guest-list below is the one
+       scroll region, so .drawer-header/.drawer-footer (both position:sticky)
+       stay pinned around it instead of the whole drawer (header, booking
+       summary, and guest content together) scrolling as one long block. */
+    overflow: hidden;
     box-shadow: -4px 0 15px rgba(0,0,0,.2);
 }
 
@@ -87,6 +91,11 @@
 
 .guest-list {
     flex: 1;
+    /* Flex items default to min-height:auto, which lets them grow to fit
+       their full content (guest cards + 220px-tall document images) instead
+       of being capped at their flex-allocated share of the column - without
+       this, overflow-y:auto below never actually gets a chance to activate. */
+    min-height: 0;
     overflow-y: auto;
     padding: 20px;
 }
