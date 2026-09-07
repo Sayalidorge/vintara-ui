@@ -116,6 +116,16 @@
   background: var(--primary-teal);
 }
 
+/* Lets the table scroll horizontally on its own instead of overflowing the
+   page when the Actions column (Edit/Reset Password/Delete) needs more
+   room than a narrow viewport has. Scoped to .admin-manage-container (this
+   page's own wrapper) since plain .table-wrapper is reused, unscoped, by
+   many other pages' CSS - a bare rule here would leak into all of them
+   since CRA bundles all component CSS globally. */
+.admin-manage-container .table-wrapper {
+  overflow-x: auto;
+}
+
 /* Users table */
 .users-table {
   width: 100%;

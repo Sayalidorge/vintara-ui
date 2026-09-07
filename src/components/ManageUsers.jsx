@@ -5,7 +5,7 @@ import "./ManageUsers.css";
 import { useNavigate } from "react-router-dom";
 import Select from "react-select";
 import config from "../config";
-import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 
 // Roles a SUPER_USER isn't allowed to assign or edit (mirrors the backend
 // guard in UserService.assertCanAssignRole) - kept in sync manually since
@@ -190,9 +190,19 @@ const ManageUsers = () => {
     }
 
     setShowForm(true);
+  };
+
+  // Scroll/focus the form once it's actually mounted, rather than right
+  // after setShowForm(true) - that used to run before React had rendered
+  // the (previously hidden) form section, so formSectionRef/nameInputRef
+  // were both still null and the scroll/focus silently did nothing. Also
+  // re-fires on editId changing so clicking Edit on a different user while
+  // the form is already open still re-focuses it.
+  useEffect(() => {
+    if (!showForm) return;
     formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     nameInputRef.current?.focus();
-  };
+  }, [showForm, editId]);
 
   const handleResetPassword = async (user) => {
     if (isSuperUser && PROTECTED_ROLES.includes(user.role)) return;
@@ -326,6 +336,7 @@ const ManageUsers = () => {
                 className="basic-multi-select"
                 classNamePrefix="select"
                 menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
                 styles={themedSelectStyles()}
               />
             </div>
@@ -422,12 +433,12 @@ const ManageUsers = () => {
                     {(() => {
                       const restricted = isSuperUser && PROTECTED_ROLES.includes(user.role);
                       return (
-                        <>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                           <button
                             onClick={() => handleEdit(user)}
                             disabled={restricted}
                             title={restricted ? "You do not have permission to edit this account" : undefined}
-                            style={{ marginRight: "8px", padding: "6px 14px", cursor: restricted ? "not-allowed" : "pointer", backgroundColor: restricted ? "#ccc" : "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}
+                            style={{ padding: "6px 14px", cursor: restricted ? "not-allowed" : "pointer", backgroundColor: restricted ? "#ccc" : "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", whiteSpace: "nowrap" }}
                           >
                             Edit
                           </button>
@@ -435,7 +446,7 @@ const ManageUsers = () => {
                             onClick={() => handleResetPassword(user)}
                             disabled={restricted}
                             title={restricted ? "You do not have permission to reset this account's password" : undefined}
-                            style={{ marginRight: "8px", padding: "6px 14px", cursor: restricted ? "not-allowed" : "pointer", backgroundColor: restricted ? "#ccc" : "var(--primary-teal)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}
+                            style={{ padding: "6px 14px", cursor: restricted ? "not-allowed" : "pointer", backgroundColor: restricted ? "#ccc" : "var(--primary-teal)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", whiteSpace: "nowrap" }}
                           >
                             Reset Password
                           </button>
@@ -443,11 +454,11 @@ const ManageUsers = () => {
                             onClick={() => handleDelete(user.id)}
                             disabled={restricted}
                             title={restricted ? "You do not have permission to delete this account" : undefined}
-                            style={{ padding: "6px 14px", cursor: restricted ? "not-allowed" : "pointer", backgroundColor: restricted ? "#ccc" : "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}
+                            style={{ padding: "6px 14px", cursor: restricted ? "not-allowed" : "pointer", backgroundColor: restricted ? "#ccc" : "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", whiteSpace: "nowrap" }}
                           >
                             Delete
                           </button>
-                        </>
+                        </div>
                       );
                     })()}
                   </td>
