@@ -10,7 +10,7 @@ import config from "../config";
 import ManageCheckInDrawer from "./checkin/ManageCheckInDrawer";
 import { toLocalDateStr, formatDateDMY } from "../utils/date";
 import { QRCodeSVG } from "qrcode.react";
-import { menuPortalTarget, themedSelectStyles } from "../utils/reactSelectTheme";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 
 // The guest self check-in page a booking's link/QR points to (see
 // GuestCheckInPage.jsx, route /checkin/:token).
@@ -38,6 +38,10 @@ const UserInventory = () => {
   const [allResorts, setAllResorts] = useState([]);
   const [selectedResort, setSelectedResortState] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  // Arrivals/departures/Grid matching are all relative to whichever date is
+  // currently selected, not hardcoded to "today" - cheap to recompute, no
+  // need for useMemo.
+  const selectedDateStr = toLocalDateStr(selectedDate);
   const [bookings, setBookings] = useState([]);
   const [collapsedCategories, setCollapsedCategories] = useState({});
   const [loadingResorts, setLoadingResorts] = useState(true);
@@ -56,6 +60,12 @@ const UserInventory = () => {
     const raw = searchParams.get("bookingFilterId");
     return raw ? Number(raw) : null;
   });
+
+  // Active Bookings list can be narrowed to just today's (or whatever date
+  // is selected) arrivals or departures - the by-date fetch now returns
+  // both, so this is how staff tell them apart / find a departing guest
+  // without needing to flip the date picker back a day.
+  const [arrivalDepartureFilter, setArrivalDepartureFilter] = useState("ALL");
 
   // Single source of truth for updating ?tab=/?bookingFilterId=/?resortId= —
   // takes whichever changed so a click that sets several at once does it in
@@ -126,6 +136,15 @@ const UserInventory = () => {
   const [extendTotalAmount, setExtendTotalAmount] = useState("");
   const [extendCategoryOptions, setExtendCategoryOptions] = useState([]);
   const [showCollectBalanceModal, setShowCollectBalanceModal] = useState(false);
+
+  // Late Checkout Charge: a standalone same-day fee for leaving later than
+  // the standard checkout time - deliberately NOT part of the room
+  // balance/total (see BookingPayment.lateCheckoutCharge on the backend).
+  // Single account, not the multi-row split-payment UI used for the balance.
+  const [showLateCheckoutModal, setShowLateCheckoutModal] = useState(false);
+  const [lateCheckoutAmount, setLateCheckoutAmount] = useState("");
+  const [lateCheckoutReason, setLateCheckoutReason] = useState("");
+  const [lateCheckoutAccount, setLateCheckoutAccount] = useState(null);
 
   // Fetch payment accounts assigned to the currently selected resort
   useEffect(() => {
@@ -245,7 +264,11 @@ const UserInventory = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedResort, selectedDate]);
 
-  // Map categories to current active room matches
+  // Map categories to current active room matches. The by-date fetch now
+  // includes today's departures too (so Active Bookings can show/act on
+  // them), but the Grid tile for a room should only ever reflect who's
+  // arriving/staying there - not a guest who's just leaving that room today
+  // - otherwise a same-day turnover room would ambiguously match both.
   const categories = useMemo(() => {
     if (!selectedResort?.categories?.length) return [];
 
@@ -256,12 +279,13 @@ const UserInventory = () => {
         rooms: cat.rooms.map((room) => {
           const matchingBooking = bookings.find((booking) =>
             !["EARLY_CHECK_OUT", "CANCELLED"].includes(booking.status) &&
+            booking.checkOutDate !== selectedDateStr &&
             booking.bookingItems?.some((item) => item.roomIds?.includes(room.id))
           );
           return { ...room, booking: matchingBooking };
         }),
       }));
-  }, [selectedResort, bookings]);
+  }, [selectedResort, bookings, selectedDateStr]);
 
   // Filter out any booking profiles that have already departed or been
   // cancelled, and list not-yet-arrived BOOKED guests before CHECKED_IN ones
@@ -285,12 +309,30 @@ const UserInventory = () => {
     [activeBookingsList]
   );
 
+  const arrivalsCount = useMemo(
+    () => activeBookingsList.filter((b) => b.checkInDate === selectedDateStr).length,
+    [activeBookingsList, selectedDateStr]
+  );
+  const departuresCount = useMemo(
+    () => activeBookingsList.filter((b) => b.checkOutDate === selectedDateStr).length,
+    [activeBookingsList, selectedDateStr]
+  );
+  const arrivalFilteredList = useMemo(() => {
+    if (arrivalDepartureFilter === "ARRIVALS") {
+      return activeBookingsList.filter((b) => b.checkInDate === selectedDateStr);
+    }
+    if (arrivalDepartureFilter === "DEPARTURES") {
+      return activeBookingsList.filter((b) => b.checkOutDate === selectedDateStr);
+    }
+    return activeBookingsList;
+  }, [activeBookingsList, arrivalDepartureFilter, selectedDateStr]);
+
   // Narrowed to a single booking when arriving via "View Linked Booking" from
-  // Grid View; otherwise the full active list, same as before.
+  // Grid View; otherwise the arrival/departure-filtered list above.
   const displayedBookingsList = useMemo(() => {
-    if (bookingFilterId == null) return activeBookingsList;
-    return activeBookingsList.filter((b) => b.id === bookingFilterId);
-  }, [activeBookingsList, bookingFilterId]);
+    if (bookingFilterId == null) return arrivalFilteredList;
+    return arrivalFilteredList.filter((b) => b.id === bookingFilterId);
+  }, [arrivalFilteredList, bookingFilterId]);
 
   // Check-in is allowed any day from the booking's arrival date (checkInDate)
   // through its departure date (checkOutDate) — covers late/delayed arrivals
@@ -298,6 +340,16 @@ const UserInventory = () => {
   const todayStr = useMemo(() => toLocalDateStr(new Date()), []);
   const canCheckInToday = (booking) =>
     todayStr >= booking.checkInDate && todayStr <= booking.checkOutDate;
+
+  // Early Checkout only means anything strictly before the scheduled
+  // checkout date - on the scheduled date itself, leaving isn't "early"
+  // (a 1-night stay can only be left early on its check-in day; a 2-night
+  // stay can be left early on either of its first two days, but not on the
+  // actual checkout day). Backend enforces the same window in
+  // BookingService.processBookingExit.
+  const canEarlyCheckoutToday = (booking) =>
+    todayStr >= booking.checkInDate && todayStr < booking.checkOutDate;
+
 
   // Plain USER can only cancel/checkout bookings they personally created;
   // every other role (supervisory or front-desk) can act on any booking —
@@ -383,7 +435,21 @@ const UserInventory = () => {
     setExtendTotalAmount("");
     setExtendCategoryOptions([]);
     setExtendOptionsLoaded(false);
+    // Payment is collected in this same modal now (not a separate Check-In
+    // step afterward) - reuses the same split-row state/UI as Check-In and
+    // Collect Balance.
+    setSplitRows([{ key: 0, paymentAccount: null, amount: "" }]);
     setShowExtendStayModal(true);
+  };
+
+  const handleExtendTotalAmountChange = (value) => {
+    setExtendTotalAmount(value);
+    // Convenience: with a single split row, keep it in sync with the total
+    // automatically - matches the same pattern used at check-in.
+    if (splitRows.length === 1) {
+      const amt = parseFloat(value) || 0;
+      setSplitRows([{ ...splitRows[0], amount: amt > 0 ? String(amt) : "" }]);
+    }
   };
 
   // Available categories/rooms for the extension period - no ignoreBookingId
@@ -428,6 +494,61 @@ const UserInventory = () => {
     setShowCollectBalanceModal(true);
   };
 
+  const openLateCheckoutModal = (booking) => {
+    setSelectedBooking(booking);
+    setLateCheckoutAmount("");
+    setLateCheckoutReason("");
+    setLateCheckoutAccount(null);
+    setShowLateCheckoutModal(true);
+  };
+
+  const handleLateCheckoutChargeSubmit = async () => {
+    if (!selectedBooking) return;
+    const amount = parseFloat(lateCheckoutAmount) || 0;
+    if (amount <= 0) {
+      alert("Enter the late checkout charge amount.");
+      return;
+    }
+    if (!lateCheckoutAccount) {
+      alert("Select which account collected the late checkout charge.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${config.BASE_URL}/api/bookings/${selectedBooking.id}/late-checkout-charge`, {
+        method: "PUT",
+        headers: config.getHeaders(),
+        body: JSON.stringify({
+          amount,
+          reason: lateCheckoutReason.trim() || null,
+          paymentAccountId: lateCheckoutAccount.value,
+        }),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
+        throw new Error(errBody?.error || "Failed to add late checkout charge");
+      }
+
+      setBookings((prev) =>
+        prev.map((bk) =>
+          bk.id === selectedBooking.id
+            ? {
+                ...bk,
+                lateCheckoutCharge: (bk.lateCheckoutCharge || 0) + amount,
+                lateCheckoutReason: lateCheckoutReason.trim() || null,
+                lateCheckoutCreditedToAccountName: lateCheckoutAccount.label,
+              }
+            : bk
+        )
+      );
+      setShowLateCheckoutModal(false);
+      setSelectedBooking(null);
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Failed to add late checkout charge. Please try again.");
+    }
+  };
+
   const handleExtendStaySubmit = async () => {
     if (!selectedBooking) return;
     if (!extendNewCheckOutDate || extendNewCheckOutDate <= selectedBooking.checkOutDate) {
@@ -441,6 +562,16 @@ const UserInventory = () => {
     const totalAmount = parseFloat(extendTotalAmount) || 0;
     if (totalAmount <= 0) {
       alert("Enter the total amount for the extension.");
+      return;
+    }
+    // Payment is collected right here, in the same modal, instead of a
+    // separate Check-In step afterward.
+    if (splitRows.some((r) => !r.paymentAccount || !r.amount || parseFloat(r.amount) <= 0)) {
+      alert("Please select an account and enter an amount for every split row.");
+      return;
+    }
+    if (Math.round(splitTotal * 100) !== Math.round(totalAmount * 100)) {
+      alert(`Split amounts (₹${splitTotal}) must add up to the total amount (₹${totalAmount}).`);
       return;
     }
 
@@ -459,12 +590,27 @@ const UserInventory = () => {
         const errBody = await res.json().catch(() => null);
         throw new Error(errBody?.error || "Failed to create extension booking");
       }
+      const newBooking = await res.json();
+
+      const splitsPayload = splitRows.map((r) => ({ paymentAccountId: r.paymentAccount.value, amount: parseFloat(r.amount) }));
+      const checkInRes = await fetch(`${config.BASE_URL}/api/bookings/${newBooking.id}/check-in`, {
+        method: "PUT",
+        headers: config.getHeaders(),
+        body: JSON.stringify(splitsPayload),
+      });
+      if (!checkInRes.ok) {
+        const errBody = await checkInRes.json().catch(() => null);
+        throw new Error(
+          errBody?.error ||
+            "Extension booking was created, but collecting payment failed - check it in manually from the list."
+        );
+      }
 
       setShowExtendStayModal(false);
       setSelectedBooking(null);
-      // The new booking is a separate record (own check-in date, status
-      // BOOKED) - refresh the list so it shows up if it belongs on the
-      // currently-viewed date, same as any other newly created booking.
+      // The new (now checked-in) booking is a separate record - refresh the
+      // list so it shows up if it belongs on the currently-viewed date,
+      // same as any other newly created booking.
       fetchBookings();
     } catch (err) {
       console.error(err);
@@ -680,6 +826,7 @@ const UserInventory = () => {
               // .content-viewport's overflow-y:auto, which was clipping/truncating
               // the option list to a single row instead of just letting it scroll.
               menuPortalTarget={menuPortalTarget}
+              menuPosition={menuPosition}
               styles={resortSelectStyles}
             />
           </div>
@@ -737,8 +884,7 @@ const UserInventory = () => {
                           <h4>Room {room.roomNumber}</h4>
                           {booking ? (
                             <div className="booking-info">
-                              <p><strong>Guest:</strong> {booking.customerName}</p>
-                              <p><strong>No of people:</strong> {booking.adults ?? 0} Adults, {booking.kids ?? 0} Kids</p>
+                              <p><strong>Guest:</strong> <strong>{booking.customerName}</strong></p>
                               <p><strong>Status:</strong> {booking.status}</p>
                               <button
                                 className="checkin-btn"
@@ -768,6 +914,27 @@ const UserInventory = () => {
       {/* PERSPECTIVE TWO: COMPREHENSIVE ACTIVE BOOKINGS LIST VIEW */}
       {activeTab === "BOOKINGS" && (
         <div className="bookings-list-view" style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+          <div className="view-switcher-tabs" style={{ alignSelf: "flex-start" }}>
+            <button
+              className={`view-tab-btn ${arrivalDepartureFilter === "ALL" ? "active" : ""}`}
+              onClick={() => setArrivalDepartureFilter("ALL")}
+            >
+              All ({activeBookingsList.length})
+            </button>
+            <button
+              className={`view-tab-btn ${arrivalDepartureFilter === "ARRIVALS" ? "active" : ""}`}
+              onClick={() => setArrivalDepartureFilter("ARRIVALS")}
+            >
+              Check-ins ({arrivalsCount})
+            </button>
+            <button
+              className={`view-tab-btn ${arrivalDepartureFilter === "DEPARTURES" ? "active" : ""}`}
+              onClick={() => setArrivalDepartureFilter("DEPARTURES")}
+            >
+              Check-outs ({departuresCount})
+            </button>
+          </div>
+
           {(pendingCheckInCount > 0 || pendingDocVerificationCount > 0) && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
               {pendingCheckInCount > 0 && (
@@ -804,11 +971,8 @@ const UserInventory = () => {
               <div key={b.id} style={{ border: "1px solid #ddd", borderRadius: "8px", padding: "20px", background: "#ffffff", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", borderBottom: "1px solid #eee", paddingBottom: "10px", marginBottom: "15px" }}>
                   <div>
-                    <h3 style={{ margin: 0, color: "#333" }}>{b.customerName} <span style={{ fontSize: "13px", fontWeight: "normal", color: "#777" }}>(ID: #{b.id})</span></h3>
+                    <h3 style={{ margin: 0, color: "#333", fontSize: "22px", fontWeight: "bold" }}>{b.customerName} <span style={{ fontSize: "13px", fontWeight: "normal", color: "#777" }}>(ID: #{b.id})</span></h3>
                     <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#555" }}>Contact: {b.customerContactNumber} | Source: <strong>{b.source}</strong></p>
-                    {b.createdByUser && (
-                      <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#555" }}>Created By: <strong>{b.createdByUser}</strong></p>
-                    )}
                     {b.extendedFromBookingId && (
                       <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#555" }}>
                         Extended from Booking <strong>#{b.extendedFromBookingId}</strong> ({b.extendedFromCustomerName})
@@ -830,7 +994,10 @@ const UserInventory = () => {
                     <span style={{ padding: "4px 10px", borderRadius: "20px", fontSize: "12px", fontWeight: "bold", background: b.status === "CHECKED_IN" ? "#d4edda" : "#fff3cd", color: b.status === "CHECKED_IN" ? "#155724" : "#856404" }}>
                       {b.status}
                     </span>
-                    <p style={{ margin: "6px 0 0 0", fontSize: "12px", color: "#888" }}>Stay: {formatDateDMY(b.checkInDate)} to {formatDateDMY(b.checkOutDate)} ({b.numberOfNights} Night)</p>
+                    <p style={{ margin: "6px 0 0 0", fontSize: "14px", fontWeight: "bold", color: "#333" }}>Stay: {formatDateDMY(b.checkInDate)} to {formatDateDMY(b.checkOutDate)} ({b.numberOfNights} Night)</p>
+                    {b.createdByUser && (
+                      <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#555" }}>Created By: <strong>{b.createdByUser}</strong></p>
+                    )}
                   </div>
                 </div>
 
@@ -898,6 +1065,13 @@ const UserInventory = () => {
                       {b.status === "CHECKED_IN" && !(b.balanceSplits?.length > 0) && b.balanceCreditedToAccountName && (
                         <p style={{ margin: 0 }}>
                           <strong>Balance Collected In:</strong> {b.balanceCreditedToAccountName}
+                        </p>
+                      )}
+                      {b.lateCheckoutCharge > 0 && (
+                        <p style={{ margin: 0 }}>
+                          <strong>Late Checkout:</strong> ₹{b.lateCheckoutCharge}
+                          {b.lateCheckoutCreditedToAccountName ? ` (${b.lateCheckoutCreditedToAccountName})` : ""}
+                          {b.lateCheckoutReason ? ` - ${b.lateCheckoutReason}` : ""}
                         </p>
                       )}
                     </div>
@@ -975,9 +1149,15 @@ const UserInventory = () => {
                       <button
                         className="checkin-btn"
                         onClick={() => openEarlyCheckoutModal(b)}
-                        disabled={!canModifyBooking(b)}
-                        title={canModifyBooking(b) ? undefined : "Only the creator or an admin can check out this booking"}
-                        style={!canModifyBooking(b) ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
+                        disabled={!canModifyBooking(b) || !canEarlyCheckoutToday(b)}
+                        title={
+                          !canModifyBooking(b)
+                            ? "Only the creator or an admin can check out this booking"
+                            : !canEarlyCheckoutToday(b)
+                            ? `Early checkout is only available before the scheduled checkout date (${formatDateDMY(b.checkOutDate)})`
+                            : undefined
+                        }
+                        style={!canModifyBooking(b) || !canEarlyCheckoutToday(b) ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
                       >
                         Process Early Checkout
                       </button>
@@ -992,6 +1172,15 @@ const UserInventory = () => {
                     {b.status === "CHECKED_IN" && (b.pendingBalanceAmount ?? b.balanceAmount) > 0 && (
                       <button className="checkin-btn" onClick={() => openCollectBalanceModal(b)}>
                         Collect Balance
+                      </button>
+                    )}
+
+                    {b.status === "CHECKED_IN" && (
+                      <button
+                        className="checkin-btn"
+                        onClick={() => openLateCheckoutModal(b)}
+                      >
+                        Late Checkout
                       </button>
                     )}
                   </div>
@@ -1081,6 +1270,7 @@ const UserInventory = () => {
                         placeholder="Select account..."
                         classNamePrefix="react-select"
                         menuPortalTarget={menuPortalTarget}
+                        menuPosition={menuPosition}
                         styles={themedSelectStyles()}
                       />
                     </div>
@@ -1174,6 +1364,7 @@ const UserInventory = () => {
                     onChange={(cat) => { setExtendCategory(cat); setExtendRoom(null); }}
                     placeholder="Category"
                     menuPortalTarget={menuPortalTarget}
+                    menuPosition={menuPosition}
                     styles={themedSelectStyles()}
                   />
                 </div>
@@ -1186,6 +1377,7 @@ const UserInventory = () => {
                     placeholder="Room"
                     isDisabled={!extendCategory}
                     menuPortalTarget={menuPortalTarget}
+                    menuPosition={menuPosition}
                     styles={themedSelectStyles()}
                   />
                 </div>
@@ -1210,19 +1402,70 @@ const UserInventory = () => {
                 type="number"
                 min="0"
                 value={extendTotalAmount}
-                onChange={(e) => setExtendTotalAmount(e.target.value)}
+                onChange={(e) => handleExtendTotalAmountChange(e.target.value)}
                 placeholder="0"
                 className="checkin-modal__input"
               />
+            </div>
+
+            <div className="checkin-modal__section">
+              <label className="field-label">
+                Credit Account Destination{splitRows.length > 1 ? "s (split payment)" : ""}
+              </label>
+              {splitRows.map((row) => (
+                <div key={row.key} className="split-row">
+                  <div className="split-row__account">
+                    <Select
+                      options={creditDestinations}
+                      value={row.paymentAccount}
+                      onChange={(opt) => updateSplitRow(row.key, { paymentAccount: opt })}
+                      placeholder="Select account..."
+                      classNamePrefix="react-select"
+                      menuPortalTarget={menuPortalTarget}
+                      menuPosition={menuPosition}
+                      styles={themedSelectStyles()}
+                    />
+                  </div>
+                  <input
+                    type="number"
+                    value={row.amount}
+                    onChange={(e) => updateSplitRow(row.key, { amount: e.target.value })}
+                    placeholder="Amount"
+                    className="checkin-modal__input split-row__amount"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeSplitRow(row.key)}
+                    title="Remove this split"
+                    className="split-row__remove"
+                    disabled={splitRows.length === 1}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+
+              <button type="button" onClick={addSplitRow} className="add-split-btn">
+                + Add Split
+              </button>
+
+              <p className={`allocation-status ${splitTotal === (parseFloat(extendTotalAmount) || 0) ? "is-balanced" : "is-mismatched"}`}>
+                Allocated: ₹{splitTotal} / ₹{parseFloat(extendTotalAmount) || 0}
+              </p>
             </div>
 
             <div className="checkin-modal__actions">
               <button
                 className="checkin-btn"
                 onClick={handleExtendStaySubmit}
-                disabled={!extendOptionsLoaded || extendRoomUnavailable}
+                disabled={
+                  !extendOptionsLoaded ||
+                  extendRoomUnavailable ||
+                  splitTotal !== (parseFloat(extendTotalAmount) || 0) ||
+                  !(parseFloat(extendTotalAmount) > 0)
+                }
               >
-                Create Extension Booking
+                Create Extension Booking &amp; Collect Payment
               </button>
               <button className="cancel-btn" onClick={() => setShowExtendStayModal(false)}>
                 Cancel
@@ -1259,6 +1502,7 @@ const UserInventory = () => {
                       placeholder="Select account..."
                       classNamePrefix="react-select"
                       menuPortalTarget={menuPortalTarget}
+                      menuPosition={menuPosition}
                       styles={themedSelectStyles()}
                     />
                   </div>
@@ -1306,6 +1550,64 @@ const UserInventory = () => {
         </div>
       )}
 
+      {/* Late Checkout Charge Modal - a standalone same-day fee, kept
+          separate from the room balance/total (see BookingPayment.
+          lateCheckoutCharge on the backend for why). Single account, not
+          the multi-row split-payment UI used for the room balance. */}
+      {showLateCheckoutModal && selectedBooking && (
+        <div className="modal-overlay">
+          <div className="modal checkin-modal">
+            <h3>Late Checkout</h3>
+
+            <div className="checkin-modal__summary">
+              <p><strong>Guest:</strong> {selectedBooking.customerName}</p>
+            </div>
+
+            <div className="checkin-modal__section">
+              <label className="field-label">Amount</label>
+              <input
+                type="number"
+                min="0"
+                value={lateCheckoutAmount}
+                onChange={(e) => setLateCheckoutAmount(e.target.value)}
+                placeholder="0"
+                className="checkin-modal__input"
+              />
+
+              <label className="field-label" style={{ marginTop: "10px" }}>Credit Account Destination</label>
+              <Select
+                options={creditDestinations}
+                value={lateCheckoutAccount}
+                onChange={setLateCheckoutAccount}
+                placeholder="Select account..."
+                classNamePrefix="react-select"
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+                styles={themedSelectStyles()}
+              />
+
+              <label className="field-label" style={{ marginTop: "10px" }}>Reason (optional)</label>
+              <input
+                type="text"
+                value={lateCheckoutReason}
+                onChange={(e) => setLateCheckoutReason(e.target.value)}
+                placeholder="e.g. Late checkout till 3 PM"
+                className="checkin-modal__input"
+              />
+            </div>
+
+            <div className="checkin-modal__actions">
+              <button className="checkin-btn" onClick={handleLateCheckoutChargeSubmit}>
+                Add Charge
+              </button>
+              <button className="cancel-btn" onClick={() => setShowLateCheckoutModal(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Global Early Checkout / Cancellation Modal Overlay Container */}
       {showEarlyCheckoutModal && selectedBooking && (
         <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
@@ -1346,6 +1648,7 @@ const UserInventory = () => {
                 onChange={setRefundAccount}
                 placeholder="Select payment account refund came from..."
                 menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
                 styles={themedSelectStyles()}
               />
             </div>
