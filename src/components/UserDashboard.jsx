@@ -7,7 +7,7 @@ import "../css/theme.css";
 import "./UserDashboard.css";
 import config from "../config";
 import { toLocalDateStr } from "../utils/date";
-import { menuPortalTarget } from "../utils/reactSelectTheme";
+import { menuPortalTarget, menuPosition } from "../utils/reactSelectTheme";
 
 // Collapses check-in/check-out into one compact range, e.g. "08-09 Aug 2026"
 // when they fall in the same month/year, expanding only as far as needed
@@ -317,7 +317,9 @@ const UserDashboard = () => {
   };
 
   const handleCreateBooking = () =>
-    navigate("/user/create-booking", { state: { resortOptions: resorts } });
+    navigate("/user/create-booking", {
+      state: { resortOptions: resorts, selectedResortId: selectedResort?.value },
+    });
 
   return (
     <div className="user-dashboard">
@@ -346,6 +348,7 @@ const UserDashboard = () => {
   // here is safe; colors below are already purple/inline so portaling them
   // doesn't lose any theming the way a CSS-class-based approach would.
   menuPortalTarget={menuPortalTarget}
+  menuPosition={menuPosition}
   styles={{
     menuPortal: (base) => ({ ...base, zIndex: 9999 }),
     control: (base, state) => ({
