@@ -430,7 +430,22 @@
     color:#fff;
 }
 
-.primary-btn:hover:not(:disabled){
+/* (hover: hover) only matches devices with a real pointer (mouse/trackpad) -
+   without this guard, touch browsers apply :hover after a tap and then get
+   "stuck" showing it, since there's no mouse to leave and clear it (looks
+   like the button turns purple and stays that way). :active covers the
+   equivalent tap-feedback on touch devices instead. */
+@media (hover: hover) {
+    .primary-btn:hover:not(:disabled){
+        background:var(--primary-purple);
+    }
+
+    .secondary-btn:hover{
+        background:#dfe2e5;
+    }
+}
+
+.primary-btn:active:not(:disabled){
     background:var(--primary-purple);
 }
 
@@ -444,7 +459,7 @@
     color:var(--text-dark);
 }
 
-.secondary-btn:hover{
+.secondary-btn:active{
     background:#dfe2e5;
 }
 

@@ -28,6 +28,11 @@ const GuestCheckInPage = () => {
     const [booking, setBooking] = useState(null);
     const [guests, setGuests] = useState([]);
     const [savingIndex, setSavingIndex] = useState(null);
+    // Which guest/document field is currently being resized in the browser
+    // before upload - { index, docType } or null. Kept separate from
+    // savingIndex since compression happens right after picking the file,
+    // before the guest even taps Save.
+    const [compressingField, setCompressingField] = useState(null);
 
     // State to handle the image preview modal
     const [previewUrl, setPreviewUrl] = useState(null);
@@ -137,13 +142,95 @@ const GuestCheckInPage = () => {
     // message instead of a failed upload after the guest has already waited.
     const MAX_DOCUMENT_SIZE_BYTES = 20 * 1024 * 1024;
 
-    const handleFileChange = (index, docType, file) => {
-        if (file && file.size > MAX_DOCUMENT_SIZE_BYTES) {
+    // A full-resolution phone camera photo (often several MB) can trip a
+    // request-size limit sitting in front of the backend in production
+    // (confirmed: a KB-sized file uploads fine, a ~10MB one gets its
+    // connection reset outright - the browser then only reports a generic
+    // "Load failed", since a proxy killing the connection before any HTTP
+    // response exists is indistinguishable from any other network failure
+    // to JS). Rather than guess the exact limit, shrink every photo down to
+    // a size that comfortably clears any such limit, before it's ever sent.
+    const MAX_DOCUMENT_DIMENSION_PX = 1920;
+    const DOCUMENT_JPEG_QUALITY = 0.8;
+    // Backstop for the rare case compression doesn't get far enough (e.g. an
+    // already-dense image) - a clear, specific message beats a silent
+    // "Load failed" after the guest has waited for the upload to fail.
+    const SAFE_UPLOAD_SIZE_BYTES = 4 * 1024 * 1024;
+
+    // Resizes/re-encodes an image file via canvas so it uploads reliably
+    // regardless of the phone camera's original resolution. Non-image files
+    // (e.g. a PDF document) can't be processed this way and are returned
+    // unchanged - same for any image that fails to process, so a guest is
+    // never blocked by this step, only helped by it when it works.
+    const compressImageFile = (file) => new Promise((resolve) => {
+        if (!file || !file.type || !file.type.startsWith("image/")) {
+            resolve(file);
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        const img = new Image();
+
+        img.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+
+            const scale = Math.min(1, MAX_DOCUMENT_DIMENSION_PX / Math.max(img.width, img.height));
+            const targetWidth = Math.round(img.width * scale);
+            const targetHeight = Math.round(img.height * scale);
+
+            const canvas = document.createElement("canvas");
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+                resolve(file);
+                return;
+            }
+            ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    resolve(file);
+                    return;
+                }
+                // Only worth it if it actually shrank the file - a small
+                // source image re-encoded at a fixed quality can end up
+                // larger than the original.
+                if (blob.size >= file.size) {
+                    resolve(file);
+                    return;
+                }
+                const compressedName = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+                resolve(new File([blob], compressedName, { type: "image/jpeg" }));
+            }, "image/jpeg", DOCUMENT_JPEG_QUALITY);
+        };
+
+        img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(file);
+        };
+
+        img.src = objectUrl;
+    });
+
+    const handleFileChange = async (index, docType, file) => {
+        if (!file) return;
+
+        if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
             alert("That file is too large (max 20MB). Please choose a smaller photo, or reduce the camera's photo quality/resolution.");
             return;
         }
+
+        setCompressingField({ index, docType });
+        const processedFile = await compressImageFile(file);
+        setCompressingField(null);
+
+        if (processedFile.size > SAFE_UPLOAD_SIZE_BYTES) {
+            alert("This photo is still quite large and may fail to upload. Please choose a smaller photo, or reduce the camera's photo quality/resolution.");
+        }
+
         const updated = [...guestForms];
-        updated[index][docType] = file;
+        updated[index][docType] = processedFile;
         setGuestForms(updated);
     };
 
@@ -206,10 +293,31 @@ const GuestCheckInPage = () => {
                 ? `${config.BASE_URL}/api/checkin/${token}/guest-with-docs/${form.guestId}`
                 : `${config.BASE_URL}/api/checkin/${token}/guest-with-docs`;
 
-            const response = await fetch(url, {
-                method: "POST",
-                body: formData
-            });
+            // fetch() has no built-in timeout - on a weak/flaky mobile
+            // connection a stalled upload just hangs forever, leaving the
+            // button stuck on "Saving..." with no error ever surfacing
+            // (neither the try nor the catch ever settles). Aborting after a
+            // generous window turns that silent hang into a clear, retryable
+            // error instead.
+            const UPLOAD_TIMEOUT_MS = 45000;
+            const abortController = new AbortController();
+            const timeoutId = setTimeout(() => abortController.abort(), UPLOAD_TIMEOUT_MS);
+
+            let response;
+            try {
+                response = await fetch(url, {
+                    method: "POST",
+                    body: formData,
+                    signal: abortController.signal
+                });
+            } catch (fetchError) {
+                if (fetchError.name === "AbortError") {
+                    throw new Error("Upload timed out - please check your connection and try again.");
+                }
+                throw fetchError;
+            } finally {
+                clearTimeout(timeoutId);
+            }
 
             if (!response.ok) {
                 const errText = await response.text();
@@ -495,8 +603,12 @@ const GuestCheckInPage = () => {
                             <input
                                 type="file"
                                 accept="image/*,.pdf,.png,.jpg,.jpeg"
+                                disabled={compressingField?.index === index && compressingField?.docType === "primaryDocument"}
                                 onChange={(e) => handleFileChange(index, "primaryDocument", e.target.files[0])}
                             />
+                            {compressingField?.index === index && compressingField?.docType === "primaryDocument" && (
+                                <div className="doc-preview-hint">Compressing photo…</div>
+                            )}
 
                             <label style={{ marginTop: "10px" }}>Secondary Document (Optional)</label>
                             {secondaryPreviewSrc ? (
@@ -528,15 +640,23 @@ const GuestCheckInPage = () => {
                             <input
                                 type="file"
                                 accept="image/*,.pdf,.png,.jpg,.jpeg"
+                                disabled={compressingField?.index === index && compressingField?.docType === "secondaryDocument"}
                                 onChange={(e) => handleFileChange(index, "secondaryDocument", e.target.files[0])}
                             />
+                            {compressingField?.index === index && compressingField?.docType === "secondaryDocument" && (
+                                <div className="doc-preview-hint">Compressing photo…</div>
+                            )}
 
                             <button
                                 className="primary-btn"
                                 onClick={() => saveSpecificGuest(index)}
-                                disabled={savingIndex === index}
+                                disabled={savingIndex === index || compressingField?.index === index}
                             >
-                                {savingIndex === index ? "Saving..." : `Save Guest ${index + 1}`}
+                                {savingIndex === index
+                                    ? "Saving..."
+                                    : compressingField?.index === index
+                                        ? "Compressing…"
+                                        : `Save Guest ${index + 1}`}
                             </button>
                         </>
                     )}
