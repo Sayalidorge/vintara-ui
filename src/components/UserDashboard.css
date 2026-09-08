@@ -260,8 +260,8 @@
    "Resend Confirmation" is much longer than "Edit"/"Cancel", it was usually
    the one to wrap first, leaving rows misaligned relative to each other.
    Split into two explicit groups (stacked as rows) instead of relying on
-   flex-wrap to decide where the break falls: Edit/Send Confirmation always
-   on the first line, Cancel/GST Invoice always together on the second. */
+   flex-wrap to decide where the break falls: Send Confirmation always alone
+   on the first line, Edit/Cancel always together on the second. */
 .user-dashboard .bookings-table .row-actions {
   display: flex;
   flex-direction: column;

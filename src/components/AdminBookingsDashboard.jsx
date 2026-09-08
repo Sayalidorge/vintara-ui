@@ -164,9 +164,12 @@ const AdminBookingsDashboard = () => {
     { key: "lateCheckoutCharge", label: "Late Checkout Charge", group: "payment", summable: true, render: (b) => b.lateCheckoutCharge ?? "-" },
     { key: "lateCheckoutReason", label: "Late Checkout Reason", group: "payment", render: (b) => b.lateCheckoutReason || "-" },
     { key: "lateCheckoutCreditedToAccountName", label: "Late Checkout Account", group: "payment", render: (b) => b.lateCheckoutCreditedToAccountName || "-" },
+    { key: "extraCharge", label: "Extra Charge", group: "payment", summable: true, render: (b) => b.extraCharge ?? "-" },
+    { key: "extraChargeReason", label: "Extra Charge Reason", group: "payment", render: (b) => b.extraChargeReason || "-" },
+    { key: "extraChargeCreditedToAccountName", label: "Extra Charge Account", group: "payment", render: (b) => b.extraChargeCreditedToAccountName || "-" },
     { key: "refundAmount", label: "Refund Amount", group: "payment", summable: true, render: (b) => b.refundAmount ?? "-" },
     { key: "refundReason", label: "Refund Reason", group: "payment", render: (b) => b.refundReason || "-" },
-    { key: "refundSplits", label: "Refund Split", group: "payment", render: (b) => formatSplits(b.refundSplits) },
+    { key: "refundCreditedToAccountName", label: "Refund Account", group: "payment", render: (b) => b.refundCreditedToAccountName || "-" },
   ];
 
   const visibleColumns = columns.filter((c) => !c.contactOnly || contactVisible);
@@ -182,7 +185,6 @@ const AdminBookingsDashboard = () => {
       advanceReceivedAtText: formatDateTime(b.advanceReceivedAt),
       balanceReceivedAtText: formatDateTime(b.balanceReceivedAt),
       balanceSplitsText: formatSplits(b.balanceSplits),
-      refundSplitsText: formatSplits(b.refundSplits),
     }));
     downloadCsv(
       `bookings_${resortLabel}_${toLocalDateStr(fromDate)}.csv`,
@@ -225,9 +227,12 @@ const AdminBookingsDashboard = () => {
         { key: "lateCheckoutCharge", header: "Late Checkout Charge" },
         { key: "lateCheckoutReason", header: "Late Checkout Reason" },
         { key: "lateCheckoutCreditedToAccountName", header: "Late Checkout Account" },
+        { key: "extraCharge", header: "Extra Charge" },
+        { key: "extraChargeReason", header: "Extra Charge Reason" },
+        { key: "extraChargeCreditedToAccountName", header: "Extra Charge Account" },
         { key: "refundAmount", header: "Refund Amount" },
         { key: "refundReason", header: "Refund Reason" },
-        { key: "refundSplitsText", header: "Refund Split" },
+        { key: "refundCreditedToAccountName", header: "Refund Account" },
         { key: "resortName", header: "Resort" },
       ]
     );

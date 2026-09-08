@@ -146,6 +146,14 @@ const UserInventory = () => {
   const [lateCheckoutReason, setLateCheckoutReason] = useState("");
   const [lateCheckoutAccount, setLateCheckoutAccount] = useState(null);
 
+  // Extra Charge: a standalone charge for extra guests, an extra mattress,
+  // etc. - same pattern as Late Checkout Charge above (see
+  // BookingPayment.extraCharge on the backend).
+  const [showExtraChargeModal, setShowExtraChargeModal] = useState(false);
+  const [extraChargeAmount, setExtraChargeAmount] = useState("");
+  const [extraChargeReason, setExtraChargeReason] = useState("");
+  const [extraChargeAccount, setExtraChargeAccount] = useState(null);
+
   // Fetch payment accounts assigned to the currently selected resort
   useEffect(() => {
     if (!selectedResort) {
@@ -435,21 +443,7 @@ const UserInventory = () => {
     setExtendTotalAmount("");
     setExtendCategoryOptions([]);
     setExtendOptionsLoaded(false);
-    // Payment is collected in this same modal now (not a separate Check-In
-    // step afterward) - reuses the same split-row state/UI as Check-In and
-    // Collect Balance.
-    setSplitRows([{ key: 0, paymentAccount: null, amount: "" }]);
     setShowExtendStayModal(true);
-  };
-
-  const handleExtendTotalAmountChange = (value) => {
-    setExtendTotalAmount(value);
-    // Convenience: with a single split row, keep it in sync with the total
-    // automatically - matches the same pattern used at check-in.
-    if (splitRows.length === 1) {
-      const amt = parseFloat(value) || 0;
-      setSplitRows([{ ...splitRows[0], amount: amt > 0 ? String(amt) : "" }]);
-    }
   };
 
   // Available categories/rooms for the extension period - no ignoreBookingId
@@ -549,6 +543,61 @@ const UserInventory = () => {
     }
   };
 
+  const openExtraChargeModal = (booking) => {
+    setSelectedBooking(booking);
+    setExtraChargeAmount("");
+    setExtraChargeReason("");
+    setExtraChargeAccount(null);
+    setShowExtraChargeModal(true);
+  };
+
+  const handleExtraChargeSubmit = async () => {
+    if (!selectedBooking) return;
+    const amount = parseFloat(extraChargeAmount) || 0;
+    if (amount <= 0) {
+      alert("Enter the extra charge amount.");
+      return;
+    }
+    if (!extraChargeAccount) {
+      alert("Select which account collected the extra charge.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${config.BASE_URL}/api/bookings/${selectedBooking.id}/extra-charge`, {
+        method: "PUT",
+        headers: config.getHeaders(),
+        body: JSON.stringify({
+          amount,
+          reason: extraChargeReason.trim() || null,
+          paymentAccountId: extraChargeAccount.value,
+        }),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
+        throw new Error(errBody?.error || "Failed to add extra charge");
+      }
+
+      setBookings((prev) =>
+        prev.map((bk) =>
+          bk.id === selectedBooking.id
+            ? {
+                ...bk,
+                extraCharge: (bk.extraCharge || 0) + amount,
+                extraChargeReason: extraChargeReason.trim() || null,
+                extraChargeCreditedToAccountName: extraChargeAccount.label,
+              }
+            : bk
+        )
+      );
+      setShowExtraChargeModal(false);
+      setSelectedBooking(null);
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Failed to add extra charge. Please try again.");
+    }
+  };
+
   const handleExtendStaySubmit = async () => {
     if (!selectedBooking) return;
     if (!extendNewCheckOutDate || extendNewCheckOutDate <= selectedBooking.checkOutDate) {
@@ -562,16 +611,6 @@ const UserInventory = () => {
     const totalAmount = parseFloat(extendTotalAmount) || 0;
     if (totalAmount <= 0) {
       alert("Enter the total amount for the extension.");
-      return;
-    }
-    // Payment is collected right here, in the same modal, instead of a
-    // separate Check-In step afterward.
-    if (splitRows.some((r) => !r.paymentAccount || !r.amount || parseFloat(r.amount) <= 0)) {
-      alert("Please select an account and enter an amount for every split row.");
-      return;
-    }
-    if (Math.round(splitTotal * 100) !== Math.round(totalAmount * 100)) {
-      alert(`Split amounts (₹${splitTotal}) must add up to the total amount (₹${totalAmount}).`);
       return;
     }
 
@@ -590,27 +629,14 @@ const UserInventory = () => {
         const errBody = await res.json().catch(() => null);
         throw new Error(errBody?.error || "Failed to create extension booking");
       }
-      const newBooking = await res.json();
-
-      const splitsPayload = splitRows.map((r) => ({ paymentAccountId: r.paymentAccount.value, amount: parseFloat(r.amount) }));
-      const checkInRes = await fetch(`${config.BASE_URL}/api/bookings/${newBooking.id}/check-in`, {
-        method: "PUT",
-        headers: config.getHeaders(),
-        body: JSON.stringify(splitsPayload),
-      });
-      if (!checkInRes.ok) {
-        const errBody = await checkInRes.json().catch(() => null);
-        throw new Error(
-          errBody?.error ||
-            "Extension booking was created, but collecting payment failed - check it in manually from the list."
-        );
-      }
 
       setShowExtendStayModal(false);
       setSelectedBooking(null);
-      // The new (now checked-in) booking is a separate record - refresh the
-      // list so it shows up if it belongs on the currently-viewed date,
-      // same as any other newly created booking.
+      // The new booking is a separate, normal BOOKED record (own check-in
+      // date) - refresh the list so it shows up if it belongs on the
+      // currently-viewed date, same as any other newly created booking.
+      // Staff check it in later through the exact same Check In button/flow
+      // as every other booking - nothing special happens here.
       fetchBookings();
     } catch (err) {
       console.error(err);
@@ -753,13 +779,9 @@ const UserInventory = () => {
     if (refundAmount === "" || isNaN(parseFloat(refundAmount))) return alert("Please enter a valid numeric refund amount");
 
     const refundValue = parseFloat(refundAmount);
-    let refundSplitsPayload = [];
-    if (refundValue > 0) {
-      if (!refundAccount) {
-        alert("Please select which account the refund is being paid out from.");
-        return;
-      }
-      refundSplitsPayload = [{ paymentAccountId: refundAccount.value, amount: refundValue }];
+    if (refundValue > 0 && !refundAccount) {
+      alert("Please select which account the refund is being paid out from.");
+      return;
     }
 
     const calculatedTargetStatus = selectedBooking.status === "CHECKED_IN" ? "EARLY_CHECK_OUT" : "CANCELLED";
@@ -775,7 +797,7 @@ const UserInventory = () => {
           exitStatus: calculatedTargetStatus,
           reason: checkoutReason,
           refundAmount: refundValue,
-          refundSplits: refundSplitsPayload,
+          refundAccountId: refundValue > 0 ? refundAccount.value : null,
         }),
       });
 
@@ -974,13 +996,35 @@ const UserInventory = () => {
                     <h3 style={{ margin: 0, color: "#333", fontSize: "22px", fontWeight: "bold" }}>{b.customerName} <span style={{ fontSize: "13px", fontWeight: "normal", color: "#777" }}>(ID: #{b.id})</span></h3>
                     <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#555" }}>Contact: {b.customerContactNumber} | Source: <strong>{b.source}</strong></p>
                     {b.extendedFromBookingId && (
-                      <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#555" }}>
-                        Extended from Booking <strong>#{b.extendedFromBookingId}</strong> ({b.extendedFromCustomerName})
+                      <p style={{ margin: "6px 0 0 0" }}>
+                        <span
+                          style={{
+                            padding: "3px 10px",
+                            borderRadius: "10px",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                            background: "#e0d6f8",
+                            color: "#5a1a96",
+                          }}
+                        >
+                          Extended from Booking #{b.extendedFromBookingId} ({b.extendedFromCustomerName})
+                        </span>
                       </p>
                     )}
                     {b.extendedIntoBookingId && (
-                      <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#555" }}>
-                        Extended into Booking <strong>#{b.extendedIntoBookingId}</strong>
+                      <p style={{ margin: "6px 0 0 0" }}>
+                        <span
+                          style={{
+                            padding: "3px 10px",
+                            borderRadius: "10px",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                            background: "#d6e9f8",
+                            color: "#1a5a96",
+                          }}
+                        >
+                          → Extended into Booking #{b.extendedIntoBookingId}
+                        </span>
                       </p>
                     )}
                     <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#333" }}><strong>Total Headcount:</strong> {(b.adults ?? 0) + (b.kids ?? 0)} People ({b.adults ?? 0} Adults, {b.kids ?? 0} Kids)</p>
@@ -1072,6 +1116,13 @@ const UserInventory = () => {
                           <strong>Late Checkout:</strong> ₹{b.lateCheckoutCharge}
                           {b.lateCheckoutCreditedToAccountName ? ` (${b.lateCheckoutCreditedToAccountName})` : ""}
                           {b.lateCheckoutReason ? ` - ${b.lateCheckoutReason}` : ""}
+                        </p>
+                      )}
+                      {b.extraCharge > 0 && (
+                        <p style={{ margin: 0 }}>
+                          <strong>Extra Charge:</strong> ₹{b.extraCharge}
+                          {b.extraChargeCreditedToAccountName ? ` (${b.extraChargeCreditedToAccountName})` : ""}
+                          {b.extraChargeReason ? ` - ${b.extraChargeReason}` : ""}
                         </p>
                       )}
                     </div>
@@ -1181,6 +1232,15 @@ const UserInventory = () => {
                         onClick={() => openLateCheckoutModal(b)}
                       >
                         Late Checkout
+                      </button>
+                    )}
+
+                    {b.status === "CHECKED_IN" && (
+                      <button
+                        className="checkin-btn"
+                        onClick={() => openExtraChargeModal(b)}
+                      >
+                        Extra Charge
                       </button>
                     )}
                   </div>
@@ -1402,70 +1462,19 @@ const UserInventory = () => {
                 type="number"
                 min="0"
                 value={extendTotalAmount}
-                onChange={(e) => handleExtendTotalAmountChange(e.target.value)}
+                onChange={(e) => setExtendTotalAmount(e.target.value)}
                 placeholder="0"
                 className="checkin-modal__input"
               />
-            </div>
-
-            <div className="checkin-modal__section">
-              <label className="field-label">
-                Credit Account Destination{splitRows.length > 1 ? "s (split payment)" : ""}
-              </label>
-              {splitRows.map((row) => (
-                <div key={row.key} className="split-row">
-                  <div className="split-row__account">
-                    <Select
-                      options={creditDestinations}
-                      value={row.paymentAccount}
-                      onChange={(opt) => updateSplitRow(row.key, { paymentAccount: opt })}
-                      placeholder="Select account..."
-                      classNamePrefix="react-select"
-                      menuPortalTarget={menuPortalTarget}
-                      menuPosition={menuPosition}
-                      styles={themedSelectStyles()}
-                    />
-                  </div>
-                  <input
-                    type="number"
-                    value={row.amount}
-                    onChange={(e) => updateSplitRow(row.key, { amount: e.target.value })}
-                    placeholder="Amount"
-                    className="checkin-modal__input split-row__amount"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeSplitRow(row.key)}
-                    title="Remove this split"
-                    className="split-row__remove"
-                    disabled={splitRows.length === 1}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-
-              <button type="button" onClick={addSplitRow} className="add-split-btn">
-                + Add Split
-              </button>
-
-              <p className={`allocation-status ${splitTotal === (parseFloat(extendTotalAmount) || 0) ? "is-balanced" : "is-mismatched"}`}>
-                Allocated: ₹{splitTotal} / ₹{parseFloat(extendTotalAmount) || 0}
-              </p>
             </div>
 
             <div className="checkin-modal__actions">
               <button
                 className="checkin-btn"
                 onClick={handleExtendStaySubmit}
-                disabled={
-                  !extendOptionsLoaded ||
-                  extendRoomUnavailable ||
-                  splitTotal !== (parseFloat(extendTotalAmount) || 0) ||
-                  !(parseFloat(extendTotalAmount) > 0)
-                }
+                disabled={!extendOptionsLoaded || extendRoomUnavailable}
               >
-                Create Extension Booking &amp; Collect Payment
+                Create Extension Booking
               </button>
               <button className="cancel-btn" onClick={() => setShowExtendStayModal(false)}>
                 Cancel
@@ -1601,6 +1610,64 @@ const UserInventory = () => {
                 Add Charge
               </button>
               <button className="cancel-btn" onClick={() => setShowLateCheckoutModal(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Extra Charge Modal - a standalone charge for extra guests, an
+          extra mattress, etc. (see BookingPayment.extraCharge on the
+          backend for why). Single account, not the multi-row split-payment
+          UI used for the room balance. */}
+      {showExtraChargeModal && selectedBooking && (
+        <div className="modal-overlay">
+          <div className="modal checkin-modal">
+            <h3>Extra Charge</h3>
+
+            <div className="checkin-modal__summary">
+              <p><strong>Guest:</strong> {selectedBooking.customerName}</p>
+            </div>
+
+            <div className="checkin-modal__section">
+              <label className="field-label">Amount</label>
+              <input
+                type="number"
+                min="0"
+                value={extraChargeAmount}
+                onChange={(e) => setExtraChargeAmount(e.target.value)}
+                placeholder="0"
+                className="checkin-modal__input"
+              />
+
+              <label className="field-label" style={{ marginTop: "10px" }}>Credit Account Destination</label>
+              <Select
+                options={creditDestinations}
+                value={extraChargeAccount}
+                onChange={setExtraChargeAccount}
+                placeholder="Select account..."
+                classNamePrefix="react-select"
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+                styles={themedSelectStyles()}
+              />
+
+              <label className="field-label" style={{ marginTop: "10px" }}>Reason (optional)</label>
+              <input
+                type="text"
+                value={extraChargeReason}
+                onChange={(e) => setExtraChargeReason(e.target.value)}
+                placeholder="e.g. 2 extra guests, extra mattress"
+                className="checkin-modal__input"
+              />
+            </div>
+
+            <div className="checkin-modal__actions">
+              <button className="checkin-btn" onClick={handleExtraChargeSubmit}>
+                Add Charge
+              </button>
+              <button className="cancel-btn" onClick={() => setShowExtraChargeModal(false)}>
                 Cancel
               </button>
             </div>

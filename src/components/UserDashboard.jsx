@@ -2,7 +2,7 @@ import { useState, useEffect, Fragment } from "react";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useNavigate, useLocation, useSearchParams, Link } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import "../css/theme.css";
 import "./UserDashboard.css";
 import config from "../config";
@@ -65,7 +65,7 @@ const UserDashboard = () => {
   const [cancelRefundAmount, setCancelRefundAmount] = useState("");
   const [cancelling, setCancelling] = useState(false);
   // Which account the refund is paid out from - same per-resort dropdown
-  // and refundSplits shape as the Inventory page's cancel/early-checkout flow.
+  // as the Inventory page's cancel/early-checkout flow.
   const [cancelRefundAccount, setCancelRefundAccount] = useState(null);
   const [creditDestinations, setCreditDestinations] = useState([]);
 
@@ -225,12 +225,8 @@ const UserDashboard = () => {
     }
 
     const refundValue = parseFloat(cancelRefundAmount);
-    let refundSplitsPayload = [];
-    if (refundValue > 0) {
-      if (!cancelRefundAccount) {
-        return alert("Please select which account the refund is being paid out from.");
-      }
-      refundSplitsPayload = [{ paymentAccountId: cancelRefundAccount.value, amount: refundValue }];
+    if (refundValue > 0 && !cancelRefundAccount) {
+      return alert("Please select which account the refund is being paid out from.");
     }
 
     setCancelling(true);
@@ -244,7 +240,7 @@ const UserDashboard = () => {
             exitStatus: "CANCELLED",
             reason: cancelReason,
             refundAmount: refundValue,
-            refundSplits: refundSplitsPayload,
+            refundAccountId: refundValue > 0 ? cancelRefundAccount.value : null,
           }),
         }
       );
@@ -564,7 +560,41 @@ const UserDashboard = () => {
                     </button>
                   </td>
                   <td>{b.id}</td>
-                  <td>{b.customerName}</td>
+                  <td>
+                    {b.customerName}
+                    {b.extendedIntoBookingId && (
+                      <span
+                        title={`Extended into Booking #${b.extendedIntoBookingId}`}
+                        style={{
+                          marginLeft: "6px",
+                          padding: "2px 8px",
+                          borderRadius: "10px",
+                          fontSize: "11px",
+                          fontWeight: "bold",
+                          background: "#d6e9f8",
+                          color: "#1a5a96",
+                        }}
+                      >
+                        → Extended
+                      </span>
+                    )}
+                    {b.extendedFromBookingId && (
+                      <span
+                        title={`Extended from Booking #${b.extendedFromBookingId} (${b.extendedFromCustomerName})`}
+                        style={{
+                          marginLeft: "6px",
+                          padding: "2px 8px",
+                          borderRadius: "10px",
+                          fontSize: "11px",
+                          fontWeight: "bold",
+                          background: "#e0d6f8",
+                          color: "#5a1a96",
+                        }}
+                      >
+                        Extension
+                      </span>
+                    )}
+                  </td>
                   <td>{b.customerContactNumber}</td>
                   <td>{formatStayDuration(b.checkInDate, b.checkOutDate)}</td>
                   <td>{b.adults ?? 0}A / {b.kids ?? 0}K</td>
@@ -609,14 +639,6 @@ const UserDashboard = () => {
                     <div className="row-actions">
                       <div className="row-actions__group">
                         <button
-                          onClick={() => handleEditBooking(b)}
-                          className="btn-edit"
-                          disabled={isTerminalStatus(b.status)}
-                          title={isTerminalStatus(b.status) ? "This booking is no longer active" : undefined}
-                        >
-                          Edit
-                        </button>
-                        <button
                           onClick={() => handleSendConfirmation(b)}
                           className="btn-confirm"
                           disabled={
@@ -636,6 +658,14 @@ const UserDashboard = () => {
                         </button>
                       </div>
                       <div className="row-actions__group">
+                        <button
+                          onClick={() => handleEditBooking(b)}
+                          className="btn-edit"
+                          disabled={isTerminalStatus(b.status)}
+                          title={isTerminalStatus(b.status) ? "This booking is no longer active" : undefined}
+                        >
+                          Edit
+                        </button>
                         {b.status === "BOOKED" && (
                           <button
                             onClick={() => openCancelModal(b)}
@@ -645,15 +675,6 @@ const UserDashboard = () => {
                           >
                             Cancel
                           </button>
-                        )}
-                        {user?.permissions?.includes("generate_gst_invoice") && (
-                          <Link
-                            to={`/user/gst-invoice?bookingId=${b.id}`}
-                            className="btn-confirm"
-                            style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
-                          >
-                            GST Invoice
-                          </Link>
                         )}
                       </div>
                     </div>
@@ -671,6 +692,18 @@ const UserDashboard = () => {
                           <span className="row-details-label">Created By</span>
                           <span>{b.createdByUser || "-"}</span>
                         </div>
+                        {b.extendedFromBookingId && (
+                          <div>
+                            <span className="row-details-label">Extended From</span>
+                            <span>Booking #{b.extendedFromBookingId} ({b.extendedFromCustomerName})</span>
+                          </div>
+                        )}
+                        {b.extendedIntoBookingId && (
+                          <div>
+                            <span className="row-details-label">Extended Into</span>
+                            <span>Booking #{b.extendedIntoBookingId}</span>
+                          </div>
+                        )}
                         <div>
                           <span className="row-details-label">GST %</span>
                           <span>{b.gstPercentage}</span>
