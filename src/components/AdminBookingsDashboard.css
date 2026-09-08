@@ -175,9 +175,35 @@
   z-index: 2;
 }
 
+/* Group-header row sits above the column-label row, so it needs its own
+   sticky offset - otherwise both rows would stack on "top: 0" and overlap. */
+.admin-bookings-dashboard .bookings-table thead tr:first-child th {
+  top: 0;
+}
+
+.admin-bookings-dashboard .bookings-table thead tr:last-child th {
+  top: 34px;
+}
+
+/* Payment columns (header, body, footer) get a distinct purple tint running
+   the full height of the table, so the whole payment block reads as one
+   contiguous region next to the booking-detail columns - not just ordering. */
+.admin-bookings-dashboard .bookings-table th.payment-col {
+  background: var(--primary-purple);
+}
+
+.admin-bookings-dashboard .bookings-table td.payment-col {
+  background: rgba(128, 0, 128, 0.06);
+}
+
 .admin-bookings-dashboard .bookings-table tfoot td {
   background: #f4fbfb;
   border-top: 2px solid var(--primary-teal);
+}
+
+.admin-bookings-dashboard .bookings-table tfoot td.payment-col {
+  background: rgba(128, 0, 128, 0.12);
+  border-top: 2px solid var(--primary-purple);
 }
 
 @media (max-width: 900px) {

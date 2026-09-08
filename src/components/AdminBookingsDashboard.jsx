@@ -19,6 +19,21 @@ const formatDate = (dateStr) => {
   });
 };
 
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  return `${d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  })} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+};
+
+const formatSplits = (splits) =>
+  splits && splits.length
+    ? splits.map((s) => `${s.accountName}: ₹${s.amount}`).join(", ")
+    : "-";
+
 const statusBadgeColors = (status) => {
   if (status === "CHECKED_IN") return { background: "#d4edda", color: "#155724" };
   if (status === "CANCELLED" || status === "EARLY_CHECK_OUT") return { background: "#f8d7da", color: "#721c24" };
@@ -88,9 +103,87 @@ const AdminBookingsDashboard = () => {
       ? b.bookingItems.map((item) => item.roomNumbers?.join(", ")).join(" | ")
       : "-";
 
+  // Every column the table renders, in display order. Grouping into
+  // "booking" vs "payment" drives both the two-tier header (so payment
+  // columns render as one visually contiguous, tinted block) and the
+  // footer's sum row - not just cosmetic ordering.
+  const columns = [
+    { key: "id", label: "ID", group: "booking", render: (b) => b.id },
+    { key: "customerName", label: "Customer", group: "booking", render: (b) => b.customerName },
+    { key: "customerContactNumber", label: "Contact", group: "booking", contactOnly: true, render: (b) => b.customerContactNumber },
+    { key: "customerEmail", label: "Email", group: "booking", contactOnly: true, render: (b) => b.customerEmail || "-" },
+    { key: "checkInDate", label: "Check-In", group: "booking", render: (b) => formatDate(b.checkInDate) },
+    { key: "checkOutDate", label: "Check-Out", group: "booking", render: (b) => formatDate(b.checkOutDate) },
+    { key: "numberOfNights", label: "Nights", group: "booking", render: (b) => b.numberOfNights },
+    { key: "adults", label: "Adults", group: "booking", render: (b) => b.adults ?? 0 },
+    { key: "kids", label: "Kids", group: "booking", render: (b) => b.kids ?? 0 },
+    { key: "source", label: "Source", group: "booking", render: (b) => b.source },
+    { key: "rooms", label: "Rooms", group: "booking", render: (b) => roomsFor(b) },
+    {
+      key: "status",
+      label: "Status",
+      group: "booking",
+      render: (b) => (
+        <span
+          style={{
+            padding: "3px 8px",
+            borderRadius: "12px",
+            fontSize: "12px",
+            fontWeight: "bold",
+            ...statusBadgeColors(b.status),
+          }}
+        >
+          {b.status}
+        </span>
+      ),
+    },
+    { key: "createdByUser", label: "Created By", group: "booking", render: (b) => b.createdByUser || "-" },
+    { key: "remarks", label: "Remarks", group: "booking", render: (b) => b.remarks || "-" },
+
+    // --- Payment details (kept contiguous - see thead/tfoot below) ---
+    { key: "totalAmount", label: "Total", group: "payment", summable: true, render: (b) => b.totalAmount },
+    { key: "advanceAmount", label: "Advance", group: "payment", summable: true, render: (b) => b.advanceAmount },
+    { key: "advanceCreditedToAccountName", label: "Advance Account", group: "payment", render: (b) => b.advanceCreditedToAccountName || "-" },
+    { key: "advanceReceivedAt", label: "Advance Received", group: "payment", render: (b) => formatDateTime(b.advanceReceivedAt) },
+    { key: "balanceAmount", label: "Balance", group: "payment", summable: true, render: (b) => b.balanceAmount },
+    { key: "pendingBalanceAmount", label: "Pending Balance", group: "payment", summable: true, render: (b) => b.pendingBalanceAmount },
+    { key: "balanceCreditedToAccountName", label: "Balance Account", group: "payment", render: (b) => b.balanceCreditedToAccountName || "-" },
+    { key: "balanceSplits", label: "Balance Split", group: "payment", render: (b) => formatSplits(b.balanceSplits) },
+    { key: "balanceReceivedAt", label: "Balance Received", group: "payment", render: (b) => formatDateTime(b.balanceReceivedAt) },
+    { key: "discountAmount", label: "Discount", group: "payment", summable: true, render: (b) => b.discountAmount ?? "-" },
+    { key: "discountReason", label: "Discount Reason", group: "payment", render: (b) => b.discountReason || "-" },
+    { key: "gstPercentage", label: "GST %", group: "payment", render: (b) => b.gstPercentage },
+    { key: "gstAmount", label: "GST Amount", group: "payment", summable: true, render: (b) => b.gstAmount },
+    { key: "gstOnAdvance", label: "GST On Advance", group: "payment", summable: true, render: (b) => b.gstOnAdvance ?? "-" },
+    { key: "gstOnBalance", label: "GST On Balance", group: "payment", summable: true, render: (b) => b.gstOnBalance ?? "-" },
+    { key: "otaCommission", label: "OTA Commission", group: "payment", summable: true, render: (b) => b.otaCommission ?? "-" },
+    { key: "totalFoodAmount", label: "Food Total", group: "payment", summable: true, foodOnly: true, render: (b) => (b.foodPreorder ? b.totalFoodAmount ?? "-" : "-") },
+    { key: "advanceFoodAmount", label: "Food Advance", group: "payment", summable: true, foodOnly: true, render: (b) => (b.foodPreorder ? b.advanceFoodAmount ?? "-" : "-") },
+    { key: "foodBalanceAmount", label: "Food Balance", group: "payment", summable: true, foodOnly: true, render: (b) => (b.foodPreorder ? b.foodBalanceAmount ?? "-" : "-") },
+    { key: "transactionId", label: "Transaction ID", group: "payment", render: (b) => b.transactionId || "-" },
+    { key: "lateCheckoutCharge", label: "Late Checkout Charge", group: "payment", summable: true, render: (b) => b.lateCheckoutCharge ?? "-" },
+    { key: "lateCheckoutReason", label: "Late Checkout Reason", group: "payment", render: (b) => b.lateCheckoutReason || "-" },
+    { key: "lateCheckoutCreditedToAccountName", label: "Late Checkout Account", group: "payment", render: (b) => b.lateCheckoutCreditedToAccountName || "-" },
+    { key: "refundAmount", label: "Refund Amount", group: "payment", summable: true, render: (b) => b.refundAmount ?? "-" },
+    { key: "refundReason", label: "Refund Reason", group: "payment", render: (b) => b.refundReason || "-" },
+    { key: "refundSplits", label: "Refund Split", group: "payment", render: (b) => formatSplits(b.refundSplits) },
+  ];
+
+  const visibleColumns = columns.filter((c) => !c.contactOnly || contactVisible);
+  const bookingColumns = visibleColumns.filter((c) => c.group === "booking");
+  const paymentColumns = visibleColumns.filter((c) => c.group === "payment");
+
   const exportBookings = () => {
     const resortLabel = selectedResort ? selectedResort.label : "all-resorts";
-    const rows = bookings.map((b) => ({ ...b, rooms: roomsFor(b), resortName: resortLabel }));
+    const rows = bookings.map((b) => ({
+      ...b,
+      rooms: roomsFor(b),
+      resortName: resortLabel,
+      advanceReceivedAtText: formatDateTime(b.advanceReceivedAt),
+      balanceReceivedAtText: formatDateTime(b.balanceReceivedAt),
+      balanceSplitsText: formatSplits(b.balanceSplits),
+      refundSplitsText: formatSplits(b.refundSplits),
+    }));
     downloadCsv(
       `bookings_${resortLabel}_${toLocalDateStr(fromDate)}.csv`,
       rows,
@@ -104,40 +197,51 @@ const AdminBookingsDashboard = () => {
         { key: "numberOfNights", header: "Nights" },
         { key: "adults", header: "Adults" },
         { key: "kids", header: "Kids" },
-        { key: "totalAmount", header: "Total Amount" },
-        { key: "advanceAmount", header: "Advance" },
-        { key: "balanceAmount", header: "Balance" },
-        { key: "gstPercentage", header: "GST %" },
-        { key: "gstAmount", header: "GST Amount" },
         { key: "source", header: "Source" },
         { key: "rooms", header: "Rooms" },
         { key: "status", header: "Status" },
         { key: "createdByUser", header: "Created By" },
-        { key: "transactionId", header: "Transaction ID" },
+        { key: "remarks", header: "Remarks" },
+        { key: "totalAmount", header: "Total Amount" },
+        { key: "advanceAmount", header: "Advance" },
+        { key: "advanceCreditedToAccountName", header: "Advance Account" },
+        { key: "advanceReceivedAtText", header: "Advance Received" },
+        { key: "balanceAmount", header: "Balance" },
+        { key: "pendingBalanceAmount", header: "Pending Balance" },
+        { key: "balanceCreditedToAccountName", header: "Balance Account" },
+        { key: "balanceSplitsText", header: "Balance Split" },
+        { key: "balanceReceivedAtText", header: "Balance Received" },
+        { key: "discountAmount", header: "Discount" },
+        { key: "discountReason", header: "Discount Reason" },
+        { key: "gstPercentage", header: "GST %" },
+        { key: "gstAmount", header: "GST Amount" },
+        { key: "gstOnAdvance", header: "GST On Advance" },
+        { key: "gstOnBalance", header: "GST On Balance" },
         { key: "otaCommission", header: "OTA Commission" },
         { key: "totalFoodAmount", header: "Food Total" },
         { key: "advanceFoodAmount", header: "Food Advance" },
         { key: "foodBalanceAmount", header: "Food Balance" },
-        { key: "remarks", header: "Remarks" },
+        { key: "transactionId", header: "Transaction ID" },
+        { key: "lateCheckoutCharge", header: "Late Checkout Charge" },
+        { key: "lateCheckoutReason", header: "Late Checkout Reason" },
+        { key: "lateCheckoutCreditedToAccountName", header: "Late Checkout Account" },
+        { key: "refundAmount", header: "Refund Amount" },
+        { key: "refundReason", header: "Refund Reason" },
+        { key: "refundSplitsText", header: "Refund Split" },
         { key: "resortName", header: "Resort" },
       ]
     );
   };
 
-  // Sums for the footer row - only the genuinely additive money columns.
-  // Nights/Adults/GST % etc. aren't included: summing a percentage or a
-  // headcount across bookings with different date ranges isn't meaningful.
-  const sum = (fn) => bookings.reduce((total, b) => total + (fn(b) || 0), 0);
-  const totals = {
-    totalAmount: sum((b) => b.totalAmount),
-    advanceAmount: sum((b) => b.advanceAmount),
-    balanceAmount: sum((b) => b.balanceAmount),
-    gstAmount: sum((b) => b.gstAmount),
-    otaCommission: sum((b) => b.otaCommission),
-    totalFoodAmount: sum((b) => (b.foodPreorder ? b.totalFoodAmount : 0)),
-    advanceFoodAmount: sum((b) => (b.foodPreorder ? b.advanceFoodAmount : 0)),
-    foodBalanceAmount: sum((b) => (b.foodPreorder ? b.foodBalanceAmount : 0)),
-  };
+  // Sums for the footer row - only the genuinely additive money columns
+  // (flagged `summable` above). Percentages, account names, splits, and
+  // headcounts aren't included: summing those across bookings with
+  // different date ranges/accounts isn't meaningful.
+  const sumColumn = (col) =>
+    bookings.reduce((total, b) => {
+      const value = col.foodOnly ? (b.foodPreorder ? b[col.key] : 0) : b[col.key];
+      return total + (value || 0);
+    }, 0);
   const money = (n) => `₹${n.toLocaleString()}`;
 
   return (
@@ -207,95 +311,43 @@ const AdminBookingsDashboard = () => {
         <table className="bookings-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Customer</th>
-              {contactVisible && <th>Contact</th>}
-              {contactVisible &&<th>Email</th>}
-              <th>Check-In</th>
-              <th>Check-Out</th>
-              <th>Nights</th>
-              <th>Adults</th>
-              <th>Kids</th>
-              <th>Total</th>
-              <th>Advance</th>
-              <th>Balance</th>
-              <th>GST %</th>
-              <th>GST Amount</th>
-              <th>Source</th>
-              <th>Rooms</th>
-              <th>Status</th>
-              <th>Created By</th>
-              <th>Transaction ID</th>
-              <th>OTA Commission</th>
-              <th>Food Total</th>
-              <th>Food Advance</th>
-              <th>Food Balance</th>
-              <th>Remarks</th>
+              <th colSpan={bookingColumns.length}>Booking Details</th>
+              <th colSpan={paymentColumns.length} className="payment-col">Payment Details</th>
+            </tr>
+            <tr>
+              {visibleColumns.map((c) => (
+                <th key={c.key} className={c.group === "payment" ? "payment-col" : undefined}>
+                  {c.label}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {bookings.length > 0 ? (
               bookings.map((b) => (
                 <tr key={b.id}>
-                  <td>{b.id}</td>
-                  <td>{b.customerName}</td>
-                  {contactVisible && <td>{b.customerContactNumber}</td>}
-                  {contactVisible &&<td>{b.customerEmail || "-"}</td>}
-                  <td>{formatDate(b.checkInDate)}</td>
-                  <td>{formatDate(b.checkOutDate)}</td>
-                  <td>{b.numberOfNights}</td>
-                  <td>{b.adults ?? 0}</td>
-                  <td>{b.kids ?? 0}</td>
-                  <td>{b.totalAmount}</td>
-                  <td>{b.advanceAmount}</td>
-                  <td>{b.balanceAmount}</td>
-                  <td>{b.gstPercentage}</td>
-                  <td>{b.gstAmount}</td>
-                  <td>{b.source}</td>
-                  <td>{roomsFor(b)}</td>
-                  <td>
-                    <span
-                      style={{
-                        padding: "3px 8px",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                        fontWeight: "bold",
-                        ...statusBadgeColors(b.status),
-                      }}
-                    >
-                      {b.status}
-                    </span>
-                  </td>
-                  <td>{b.createdByUser || "-"}</td>
-                  <td>{b.transactionId || "-"}</td>
-                  <td>{b.otaCommission ?? "-"}</td>
-                  <td>{b.foodPreorder ? b.totalFoodAmount ?? "-" : "-"}</td>
-                  <td>{b.foodPreorder ? b.advanceFoodAmount ?? "-" : "-"}</td>
-                  <td>{b.foodPreorder ? b.foodBalanceAmount ?? "-" : "-"}</td>
-                  <td>{b.remarks || "-"}</td>
+                  {visibleColumns.map((c) => (
+                    <td key={c.key} className={c.group === "payment" ? "payment-col" : undefined}>
+                      {c.render(b)}
+                    </td>
+                  ))}
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={contactVisible ? 24 : 23}>No bookings found</td>
+                <td colSpan={visibleColumns.length}>No bookings found</td>
               </tr>
             )}
           </tbody>
           {bookings.length > 0 && (
             <tfoot>
               <tr>
-                <td colSpan={contactVisible ? 9 : 8}><strong>Total</strong></td>
-                <td><strong>{money(totals.totalAmount)}</strong></td>
-                <td><strong>{money(totals.advanceAmount)}</strong></td>
-                <td><strong>{money(totals.balanceAmount)}</strong></td>
-                <td></td>
-                <td><strong>{money(totals.gstAmount)}</strong></td>
-                <td colSpan="5"></td>
-                <td><strong>{money(totals.otaCommission)}</strong></td>
-                <td><strong>{money(totals.totalFoodAmount)}</strong></td>
-                <td><strong>{money(totals.advanceFoodAmount)}</strong></td>
-                <td><strong>{money(totals.foodBalanceAmount)}</strong></td>
-                <td></td>
+                <td colSpan={bookingColumns.length}><strong>Total</strong></td>
+                {paymentColumns.map((c) => (
+                  <td key={c.key} className="payment-col">
+                    {c.summable ? <strong>{money(sumColumn(c))}</strong> : ""}
+                  </td>
+                ))}
               </tr>
             </tfoot>
           )}
