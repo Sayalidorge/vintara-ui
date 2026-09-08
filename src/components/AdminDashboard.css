@@ -52,6 +52,149 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
+/* Booking Trend KPI tiles - lighter-weight than .summary-cards .card (no
+   shadow/top-border) since these sit inside a chart-container that already
+   has its own shadow; four of the heavier card style stacked in here would
+   compete with the page's real summary cards above. */
+.trend-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.trend-kpi {
+  background: #f3f2ef;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trend-kpi-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.trend-kpi-value {
+  font-size: 19px;
+  font-weight: 700;
+  color: #222;
+}
+
+.trend-kpi--accent .trend-kpi-value {
+  color: var(--primary-teal);
+}
+
+@media (max-width: 640px) {
+  .trend-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Occupancy meters - one gauge row per resort, replacing the stacked bar
+   chart. Plain HTML/CSS rather than a recharts type: a meter isn't really a
+   "chart" in the axis-and-marks sense, just a labeled fill track. */
+.occ-meter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.occ-meter-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.occ-meter-name {
+  color: #222;
+  font-weight: 600;
+}
+
+.occ-meter-frac {
+  color: #888;
+  font-size: 12px;
+}
+
+.occ-meter-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.occ-meter-track {
+  flex: 1;
+  height: 10px;
+  background: #eeece7;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.occ-meter-fill {
+  height: 100%;
+  border-radius: 6px;
+  background: var(--primary-purple);
+}
+
+.occ-meter-pct {
+  font-weight: 700;
+  font-size: 13px;
+  color: #222;
+  min-width: 36px;
+  text-align: right;
+}
+
+/* Booking Trend tooltip - replaces recharts' bare default tooltip box */
+.trend-tooltip {
+  background: #fff;
+  border: 1px solid #d3d0c9;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 10px 13px;
+  font-size: 13px;
+  min-width: 140px;
+}
+
+.trend-tooltip-title {
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 6px;
+}
+
+.trend-tooltip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 2px 0;
+}
+
+.trend-tooltip-key {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #555;
+}
+
+.trend-tooltip-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: none;
+  display: inline-block;
+}
+
+.trend-tooltip-val {
+  font-weight: 700;
+  color: #222;
+}
+
 .chart-header {
   display: flex;
   justify-content: space-between;

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
-  LineChart,
+  ComposedChart,
+  Area,
   Line,
   XAxis,
   YAxis,
@@ -26,6 +27,26 @@ import { Link, useNavigate } from "react-router-dom";
 import { toLocalDateStr } from "../utils/date";
 import { downloadCsv } from "../utils/csv";
 import { isSuperAdmin } from "../utils/auth";
+
+// One consistent tooltip card for the Booking Trend chart - color swatch +
+// name + value per series, instead of recharts' bare default box.
+const BookingTrendTooltip = ({ active, payload, label }) => {
+  if (!active || !payload || !payload.length) return null;
+  return (
+    <div className="trend-tooltip">
+      <div className="trend-tooltip-title">{label}</div>
+      {payload.map((entry) => (
+        <div className="trend-tooltip-row" key={entry.dataKey}>
+          <span className="trend-tooltip-key">
+            <span className="trend-tooltip-swatch" style={{ background: entry.color }} />
+            {entry.name}
+          </span>
+          <span className="trend-tooltip-val">{entry.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -290,6 +311,14 @@ useEffect(() => {
     );
   };
 
+  // KPI tiles above the Booking Trend chart - summed across whatever period
+  // (daily/weekly/monthly) is currently selected, so they always match what
+  // the chart below is showing rather than a fixed all-time total.
+  const trendDirectTotal = bookingTrend.reduce((sum, d) => sum + (d.directBookings || 0), 0);
+  const trendOtaTotal = bookingTrend.reduce((sum, d) => sum + (d.otaBookings || 0), 0);
+  const trendGrandTotal = trendDirectTotal + trendOtaTotal;
+  const trendDirectPct = trendGrandTotal > 0 ? Math.round((trendDirectTotal / trendGrandTotal) * 100) : 0;
+
   // =====================================================
   // UI
   // =====================================================
@@ -347,26 +376,34 @@ useEffect(() => {
     <p>Loading...</p>
   ) : errorDaily ? (
     <p style={{ color: "red" }}>{errorDaily}</p>
+  ) : dailyOccupancy.length === 0 ? (
+    <p>No resorts to show for this date.</p>
   ) : (
-    <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={dailyOccupancy}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="resortName" />
-        <YAxis />
-        <Tooltip />
-        <Legend />
-        <Bar
-          dataKey="bookedRooms"
-          stackId="rooms"
-          fill="var(--primary-purple)"
-        />
-        <Bar
-          dataKey="availableRooms"
-          stackId="rooms"
-          fill="var(--primary-teal)"
-        />
-      </BarChart>
-    </ResponsiveContainer>
+    // Occupancy meters: "which properties are nearly full" is a ratio-against-
+    // a-limit question, not a magnitude comparison, so a scorecard of gauges
+    // reads faster here than bars - and sidesteps the label-overlap/skipping
+    // the stacked bar version hit once there were more than a handful of
+    // resorts, since each one gets its own row instead of fighting for x-axis width.
+    <div className="occ-meter-list">
+      {dailyOccupancy.map((r) => {
+        const total = r.bookedRooms + r.availableRooms;
+        const pct = total > 0 ? Math.round((r.bookedRooms / total) * 100) : 0;
+        return (
+          <div className="occ-meter-row" key={r.resortName}>
+            <div className="occ-meter-top">
+              <span className="occ-meter-name">{r.resortName}</span>
+              <span className="occ-meter-frac">{r.bookedRooms} / {total} rooms</span>
+            </div>
+            <div className="occ-meter-inner">
+              <div className="occ-meter-track">
+                <div className="occ-meter-fill" style={{ width: `${pct}%` }} />
+              </div>
+              <span className="occ-meter-pct">{pct}%</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   )}
 </div>
         {/* BOOKING TREND */}
@@ -395,27 +432,61 @@ useEffect(() => {
           ) : errorTrend ? (
             <p style={{ color: "red" }}>{errorTrend}</p>
           ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={bookingTrend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="label" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="otaBookings"
-                  stroke="var(--primary-purple)"
-                  strokeWidth={3}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="directBookings"
-                  stroke="var(--primary-teal)"
-                  strokeWidth={3}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <>
+              <div className="trend-kpi-row">
+                <div className="trend-kpi">
+                  <span className="trend-kpi-label">Total Bookings</span>
+                  <span className="trend-kpi-value">{trendGrandTotal}</span>
+                </div>
+                <div className="trend-kpi">
+                  <span className="trend-kpi-label">Direct</span>
+                  <span className="trend-kpi-value">{trendDirectTotal}</span>
+                </div>
+                <div className="trend-kpi">
+                  <span className="trend-kpi-label">OTA</span>
+                  <span className="trend-kpi-value">{trendOtaTotal}</span>
+                </div>
+                <div className="trend-kpi trend-kpi--accent">
+                  <span className="trend-kpi-label">Direct Share</span>
+                  <span className="trend-kpi-value">{trendDirectPct}%</span>
+                </div>
+              </div>
+
+              <ResponsiveContainer width="100%" height={300}>
+                <ComposedChart data={bookingTrend}>
+                  <defs>
+                    <linearGradient id="directBookingsFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--primary-teal)" stopOpacity={0.28} />
+                      <stop offset="100%" stopColor="var(--primary-teal)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="none" vertical={false} stroke="#e4e2dd" />
+                  <XAxis dataKey="label" tick={{ fill: "#8b938e", fontSize: 12 }} axisLine={{ stroke: "#d3d0c9" }} tickLine={false} />
+                  <YAxis tick={{ fill: "#8b938e", fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<BookingTrendTooltip />} />
+                  <Legend />
+                  <Area
+                    type="monotone"
+                    dataKey="directBookings"
+                    name="Direct"
+                    stroke="var(--primary-teal)"
+                    strokeWidth={2.5}
+                    fill="url(#directBookingsFill)"
+                    dot={false}
+                    activeDot={{ r: 4 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="otaBookings"
+                    name="OTA"
+                    stroke="var(--primary-purple)"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4 }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </>
           )}
         </div>
 
