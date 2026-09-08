@@ -7,7 +7,7 @@ import "../css/theme.css";
 import "./UserDashboard.css";
 import config from "../config";
 import { toLocalDateStr } from "../utils/date";
-import { menuPortalTarget, menuPosition } from "../utils/reactSelectTheme";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 
 // Collapses check-in/check-out into one compact range, e.g. "08-09 Aug 2026"
 // when they fall in the same month/year, expanding only as far as needed
@@ -64,6 +64,31 @@ const UserDashboard = () => {
   const [cancelReason, setCancelReason] = useState("");
   const [cancelRefundAmount, setCancelRefundAmount] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  // Which account the refund is paid out from - same per-resort dropdown
+  // and refundSplits shape as the Inventory page's cancel/early-checkout flow.
+  const [cancelRefundAccount, setCancelRefundAccount] = useState(null);
+  const [creditDestinations, setCreditDestinations] = useState([]);
+
+  useEffect(() => {
+    if (!selectedResort) {
+      setCreditDestinations([]);
+      return;
+    }
+    const fetchPaymentAccounts = async () => {
+      try {
+        const res = await fetch(`${config.BASE_URL}/api/resorts/${selectedResort.value}/payment-accounts`, {
+          headers: config.getHeaders(),
+        });
+        if (!res.ok) throw new Error("Failed to fetch payment accounts");
+        const data = await res.json();
+        setCreditDestinations(data.map((a) => ({ value: a.id, label: a.name })));
+      } catch (err) {
+        console.error(err);
+        setCreditDestinations([]);
+      }
+    };
+    fetchPaymentAccounts();
+  }, [selectedResort]);
 
   // Cross-property booking search — lets staff find a booking by guest
   // name/phone without knowing which resort it's on. A single match jumps
@@ -190,12 +215,22 @@ const UserDashboard = () => {
     setCancelModalBooking(booking);
     setCancelReason("");
     setCancelRefundAmount("");
+    setCancelRefundAccount(null);
   };
 
   const handleCancelSubmit = async () => {
     if (!cancelReason.trim()) return alert("Please enter a reason for cancellation");
     if (cancelRefundAmount === "" || isNaN(parseFloat(cancelRefundAmount))) {
       return alert("Please enter a valid numeric refund amount");
+    }
+
+    const refundValue = parseFloat(cancelRefundAmount);
+    let refundSplitsPayload = [];
+    if (refundValue > 0) {
+      if (!cancelRefundAccount) {
+        return alert("Please select which account the refund is being paid out from.");
+      }
+      refundSplitsPayload = [{ paymentAccountId: cancelRefundAccount.value, amount: refundValue }];
     }
 
     setCancelling(true);
@@ -208,7 +243,8 @@ const UserDashboard = () => {
           body: JSON.stringify({
             exitStatus: "CANCELLED",
             reason: cancelReason,
-            refundAmount: parseFloat(cancelRefundAmount),
+            refundAmount: refundValue,
+            refundSplits: refundSplitsPayload,
           }),
         }
       );
@@ -743,8 +779,25 @@ const UserDashboard = () => {
                 />
               </div>
 
+              <div style={{ marginTop: "12px" }}>
+                <label style={{ display: "block", marginBottom: "4px" }}>Refunded From Account:</label>
+                <Select
+                  options={creditDestinations}
+                  value={cancelRefundAccount}
+                  onChange={setCancelRefundAccount}
+                  placeholder="Select payment account refund came from..."
+                  menuPortalTarget={menuPortalTarget}
+                  menuPosition={menuPosition}
+                  styles={themedSelectStyles()}
+                />
+              </div>
+
               <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-                <button className="btn-cancel" onClick={handleCancelSubmit} disabled={cancelling}>
+                <button
+                  className="btn-cancel"
+                  onClick={handleCancelSubmit}
+                  disabled={cancelling || (parseFloat(cancelRefundAmount) > 0 && !cancelRefundAccount)}
+                >
                   {cancelling ? "Cancelling…" : "Confirm Cancellation"}
                 </button>
                 <button className="btn-edit" onClick={() => setCancelModalBooking(null)} disabled={cancelling}>
