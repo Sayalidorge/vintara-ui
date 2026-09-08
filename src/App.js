@@ -9,7 +9,6 @@ import AdminDashboard from "./components/AdminDashboard";
 import AdminBookingsDashboard from "./components/AdminBookingsDashboard";
 import ManageResorts from "./components/ManageResorts";
 import ManageUsers from "./components/ManageUsers";
-import PaymentAccounts from "./components/PaymentAccounts";
 import AdminExpensesDashboard from "./components/AdminExpensesDashboard";
 import RecordExpenseForm from "./components/RecordExpenseForm";
 import ViewBookingEnquiry from "./components/ViewBookingEnquiry";
@@ -68,7 +67,6 @@ function App() {
     <Route path="bookings" element={<ProtectedRoute requiredPermission="view_admin_bookings"><AdminBookingsDashboard /></ProtectedRoute>} />
     <Route path="resorts" element={<ProtectedRoute requiredPermission="manage_resorts"><ManageResorts /></ProtectedRoute>} />
     <Route path="users" element={<ProtectedRoute requiredPermission="manage_users"><ManageUsers /></ProtectedRoute>} />
-    <Route path="payment-accounts" element={<ProtectedRoute requiredPermission="manage_payment_accounts"><PaymentAccounts /></ProtectedRoute>} />
     <Route path="expenses" element={<ProtectedRoute requiredPermission="view_expenses"><AdminExpensesDashboard /></ProtectedRoute>} />
     <Route path="record-expense" element={<ProtectedRoute requiredPermission="view_expenses"><RecordExpenseForm /></ProtectedRoute>} />
     <Route path="enquiries" element={<ProtectedRoute requiredPermission="view_enquiries"><ViewBookingEnquiry /></ProtectedRoute>} />

@@ -4,10 +4,14 @@ import { useNavigate } from "react-router-dom";
 import Select from "react-select";
 import config from "../config";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+import PaymentAccounts from "./PaymentAccounts";
 import "../css/theme.css";
 import "./ManageResorts.css";
 
 const ManageResorts = () => {
+  // "RESORTS" (the existing page content) or "PAYMENT_ACCOUNTS" (folded in
+  // here instead of its own sidebar item/route - see App.js/menuConfig.js).
+  const [activeTab, setActiveTab] = useState("RESORTS");
   const [resorts, setResorts] = useState([]);
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
@@ -390,6 +394,27 @@ const getCommissionModelLabel = (value) =>
         <h2 style={{ fontSize: "26px", fontWeight: 700, color: "var(--text-dark)", textAlign: "left", marginTop: "6px", marginBottom: "20px", paddingBottom: "8px", borderBottom: "3px solid var(--primary-teal)" }}>Manage Resorts</h2>
       </div>
 
+      <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+        <button
+          type="button"
+          onClick={() => setActiveTab("RESORTS")}
+          style={{ padding: "8px 20px", cursor: "pointer", border: "none", borderRadius: "4px", fontWeight: "bold", fontSize: "14px", backgroundColor: activeTab === "RESORTS" ? "var(--primary-purple)" : "#e0e0e0", color: activeTab === "RESORTS" ? "white" : "#333" }}
+        >
+          Resorts
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("PAYMENT_ACCOUNTS")}
+          style={{ padding: "8px 20px", cursor: "pointer", border: "none", borderRadius: "4px", fontWeight: "bold", fontSize: "14px", backgroundColor: activeTab === "PAYMENT_ACCOUNTS" ? "var(--primary-purple)" : "#e0e0e0", color: activeTab === "PAYMENT_ACCOUNTS" ? "white" : "#333" }}
+        >
+          Payment Accounts
+        </button>
+      </div>
+
+      {activeTab === "PAYMENT_ACCOUNTS" && <PaymentAccounts viewOnly={!isSuperAdmin} />}
+
+      {activeTab === "RESORTS" && (
+      <>
       {!showForm && (
         <div style={{ marginBottom: "20px" }}>
           <button
@@ -879,6 +904,8 @@ const getCommissionModelLabel = (value) =>
             </tbody>
           </table>
         </div>
+      )}
+      </>
       )}
     </div>
   );
