@@ -19,7 +19,7 @@ import {
     FaPlus,
 } from "react-icons/fa";
 import config from "../../config";
-import logo from "../../assets/logo.jpg";
+import logo from "../../assets/logo-icon.png";
 import "../../css/theme.css";
 import "./GuestCheckInPage.css";
 
@@ -118,11 +118,10 @@ const GuestCheckInPage = () => {
 
     // Shown on every state of this page (loading/error/form) - a guest
     // reaches this via a bare link (WhatsApp/SMS/email), with nothing else
-    // on the page identifying who it's from.
+    // on the page identifying who it's from. Logo only, no text label.
     const brandHeader = (
         <div className="guest-brand-header">
             <img src={logo} alt="Vintara Stays" className="guest-brand-logo" />
-            <span className="guest-brand-name">Vintara Stays</span>
         </div>
     );
 
@@ -387,8 +386,10 @@ const GuestCheckInPage = () => {
     return (
         <div className="guest-page">
             <div className="booking-card">
-                {brandHeader}
-                <h2 className="booking-card__title">Online Check-In</h2>
+                <div className="booking-card__title-row">
+                    <img src={logo} alt="Vintara Stays" className="guest-brand-logo" />
+                    <h2 className="booking-card__title">Online Check-In</h2>
+                </div>
                 <p className="booking-card__welcome">
                     Welcome to Vintara Stays, {booking.customerName}!
                 </p>

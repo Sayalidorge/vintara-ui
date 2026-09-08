@@ -23,13 +23,6 @@
     object-fit:cover;
 }
 
-.guest-brand-name{
-    font-size:18px;
-    font-weight:700;
-    color:var(--primary-purple);
-    letter-spacing:.3px;
-}
-
 /* ==============================
    Loading / not-found states
    ============================== */
@@ -75,14 +68,20 @@
     margin-bottom:25px;
 }
 
+.booking-card__title-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:6px;
+}
+
 .booking-card__title{
     font-size:26px;
     font-weight:700;
     color:var(--primary-purple);
-    text-align:center;
     letter-spacing:.5px;
-    margin-top:10px;
-    margin-bottom:6px;
+    margin:0;
 }
 
 .booking-card__welcome{
