@@ -386,11 +386,11 @@ const GuestCheckInPage = () => {
 
     return (
         <div className="guest-page">
-            {brandHeader}
             <div className="booking-card">
+                {brandHeader}
                 <h2 className="booking-card__title">Online Check-In</h2>
                 <p className="booking-card__welcome">
-                    Welcome to {booking.resortName}, {booking.customerName}!
+                    Welcome to Vintara Stays, {booking.customerName}!
                 </p>
 
                 <div className="booking-info-grid">
