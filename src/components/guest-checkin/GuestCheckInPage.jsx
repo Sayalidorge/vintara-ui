@@ -19,6 +19,7 @@ import {
     FaPlus,
 } from "react-icons/fa";
 import config from "../../config";
+import logo from "../../assets/logo.jpg";
 import "../../css/theme.css";
 import "./GuestCheckInPage.css";
 
@@ -39,6 +40,12 @@ const GuestCheckInPage = () => {
 
     // Maintain an array of form objects for all guests (expected + any extra added)
     const [guestForms, setGuestForms] = useState([]);
+
+    // Per-guest, per-field validation errors - { [index]: { name: true, primaryDocument: true } }.
+    // Shown inline next to the field itself rather than a one-off alert(),
+    // which is easy to miss on mobile and doesn't point at which of
+    // possibly several guests/fields the problem is in.
+    const [formErrors, setFormErrors] = useState({});
 
     // Helper to safely format file URLs to use the backend file controller.
     // The backend sometimes returns the raw local upload path (or that path
@@ -109,9 +116,20 @@ const GuestCheckInPage = () => {
         }
     };
 
+    // Shown on every state of this page (loading/error/form) - a guest
+    // reaches this via a bare link (WhatsApp/SMS/email), with nothing else
+    // on the page identifying who it's from.
+    const brandHeader = (
+        <div className="guest-brand-header">
+            <img src={logo} alt="Vintara Stays" className="guest-brand-logo" />
+            <span className="guest-brand-name">Vintara Stays</span>
+        </div>
+    );
+
     if (loading) {
         return (
             <div className="guest-page">
+                {brandHeader}
                 <div className="state-card">
                     <span className="spinner" />
                     <p>Loading your check-in details…</p>
@@ -123,6 +141,7 @@ const GuestCheckInPage = () => {
     if (!booking) {
         return (
             <div className="guest-page">
+                {brandHeader}
                 <div className="state-card">
                     <FaExclamationTriangle className="state-icon" />
                     <p>Booking not found or link expired.</p>
@@ -131,10 +150,19 @@ const GuestCheckInPage = () => {
         );
     }
 
+    const clearFieldError = (index, field) => {
+        setFormErrors((prev) => {
+            if (!prev[index]?.[field]) return prev;
+            const updatedGuestErrors = { ...prev[index], [field]: false };
+            return { ...prev, [index]: updatedGuestErrors };
+        });
+    };
+
     const handleFormChange = (index, field, value) => {
         const updated = [...guestForms];
         updated[index][field] = value;
         setGuestForms(updated);
+        clearFieldError(index, field);
     };
 
     // Matches spring.servlet.multipart.max-file-size on the backend - catching
@@ -232,6 +260,7 @@ const GuestCheckInPage = () => {
         const updated = [...guestForms];
         updated[index][docType] = processedFile;
         setGuestForms(updated);
+        clearFieldError(index, docType);
     };
 
     // Function to dynamically add a blank extra guest slot
@@ -256,13 +285,14 @@ const GuestCheckInPage = () => {
     const saveSpecificGuest = async (index) => {
         const form = guestForms[index];
 
-        if (!form.name || !form.name.trim()) {
-            alert(`Guest ${index + 1} name is mandatory.`);
-            return;
-        }
+        const nameMissing = !form.name || !form.name.trim();
+        const primaryDocMissing = !form.primaryDocument && !form.primaryDocumentUrl;
 
-        if (!form.primaryDocument && !form.primaryDocumentUrl) {
-            alert(`Primary document is mandatory for Guest ${index + 1}.`);
+        if (nameMissing || primaryDocMissing) {
+            setFormErrors((prev) => ({
+                ...prev,
+                [index]: { ...prev[index], name: nameMissing, primaryDocument: primaryDocMissing },
+            }));
             return;
         }
 
@@ -356,6 +386,7 @@ const GuestCheckInPage = () => {
 
     return (
         <div className="guest-page">
+            {brandHeader}
             <div className="booking-card">
                 <h2 className="booking-card__title">Online Check-In</h2>
                 <p className="booking-card__welcome">
@@ -433,6 +464,7 @@ const GuestCheckInPage = () => {
                     ? URL.createObjectURL(form.secondaryDocument)
                     : getFileViewUrl(form.secondaryDocumentUrl) || null;
                 const isExtraGuest = index >= booking.expectedGuests;
+                const errors = formErrors[index] || {};
 
                 return (
                 <div
@@ -539,7 +571,11 @@ const GuestCheckInPage = () => {
                                 value={form.name}
                                 disabled={form.leadGuest}
                                 onChange={(e) => handleFormChange(index, "name", e.target.value)}
+                                className={errors.name ? "field-error" : undefined}
                             />
+                            {errors.name && (
+                                <div className="field-error-text">Name is mandatory.</div>
+                            )}
 
                             <label>Mobile Number {form.leadGuest && "(Locked for Lead Guest)"}</label>
                             <input
@@ -605,7 +641,11 @@ const GuestCheckInPage = () => {
                                 accept="image/*,.pdf,.png,.jpg,.jpeg"
                                 disabled={compressingField?.index === index && compressingField?.docType === "primaryDocument"}
                                 onChange={(e) => handleFileChange(index, "primaryDocument", e.target.files[0])}
+                                className={errors.primaryDocument ? "field-error" : undefined}
                             />
+                            {errors.primaryDocument && (
+                                <div className="field-error-text">Primary document is mandatory.</div>
+                            )}
                             {compressingField?.index === index && compressingField?.docType === "primaryDocument" && (
                                 <div className="doc-preview-hint">Compressing photo…</div>
                             )}

@@ -5,6 +5,32 @@
 }
 
 /* ==============================
+   Brand header - shown on every state of this page (loading/error/form),
+   since a guest reaches it via a bare link with nothing else identifying it
+   ============================== */
+.guest-brand-header{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:20px;
+}
+
+.guest-brand-logo{
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    object-fit:cover;
+}
+
+.guest-brand-name{
+    font-size:18px;
+    font-weight:700;
+    color:var(--primary-purple);
+    letter-spacing:.3px;
+}
+
+/* ==============================
    Loading / not-found states
    ============================== */
 .state-card{
@@ -388,6 +414,19 @@
     font-size:12px;
     color:#6c757d;
     margin-bottom:5px;
+}
+
+/* Inline mandatory-field validation - shown after a failed save attempt
+   instead of relying on a one-off alert(), which is easy to miss on mobile
+   and doesn't point at which field/guest the problem is in. */
+.field-error{
+    border-color:#dc3545 !important;
+}
+
+.field-error-text{
+    font-size:12px;
+    color:#dc3545;
+    margin:2px 0 8px 0;
 }
 
 /* File input theming */
