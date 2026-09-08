@@ -1,108 +1,385 @@
+/* Scoped to .monthly-settlement-page throughout - same defensive pattern as
+   AdminBookingsDashboard.css: CRA bundles all component CSS globally, so
+   plain class names here would risk colliding with another page's rules. */
+
 .monthly-settlement-page {
-    padding: 25px;
+    padding: 0 20px 30px 20px;
     background: var(--bg-light);
     min-height: 100vh;
+    --teal-tint: rgba(0, 128, 128, 0.06);
+    --purple-tint: rgba(128, 0, 128, 0.06);
+    --purple-tint-strong: rgba(128, 0, 128, 0.12);
+    --border: #e4e2e6;
+    --muted: #767077;
+    --profit: #1f8a4c;
+    --loss: #b3402f;
 }
 
-.filter-card {
-    background: #fff;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.08);
-}
-
-.summary-card {
-    background: #fff;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.08);
-}
-
-.summary-card h5 {
-    color: var(--primary-teal);
-    font-weight: 600;
-    margin-bottom: 15px;
-}
-
-.summary-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid #eee;
-}
-
-.summary-row:last-child {
-    border-bottom: none;
-}
-
-.summary-label {
-    color: #666;
-    font-weight: 500;
-}
-
-.summary-value {
+.monthly-settlement-page .page-title {
+    font-size: 23px;
+    font-weight: 700;
     color: var(--text-dark);
-    font-weight: 600;
+    margin: 20px 0 15px 0;
 }
 
-.profit {
-    color: #28a745;
-    font-weight: bold;
-}
-
-.loss {
-    color: #dc3545;
-    font-weight: bold;
-}
-
-.card,
-.card *,
-.container-fluid,
-.container-fluid * {
-    color: #000 !important;
-}
-
-/* Minimal grid so the .row / .col-md-* markup (no Bootstrap installed)
-   actually lays out as intended, instead of just stacking as plain divs. */
-.row {
+/* ==============================
+   Filters
+   ============================== */
+.monthly-settlement-page .settlement-filters {
     display: flex;
+    gap: 15px;
+    align-items: flex-end;
     flex-wrap: wrap;
+    margin-bottom: 22px;
 }
 
-.col-md-8 {
-    flex: 0 0 66.6667%;
-    max-width: 66.6667%;
+.monthly-settlement-page .filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 190px;
 }
 
-.col-md-4 {
-    flex: 0 0 33.3333%;
-    max-width: 33.3333%;
-}
-
-.text-end {
-    text-align: right;
-}
-
-.settlement-filter-field {
-    flex: 1 1 160px;
-    min-width: 140px;
-}
-
-.settlement-filter-field--narrow {
-    flex: 1 1 100px;
+.monthly-settlement-page .filter-item--narrow {
     min-width: 100px;
 }
 
+.monthly-settlement-page .filter-item label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+}
+
+.monthly-settlement-page .filter-item .react-select__control {
+    height: 40px;
+    min-height: 40px;
+    border-color: var(--primary-teal);
+}
+
+.monthly-settlement-page .year-input {
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.monthly-settlement-page .year-input:focus {
+    border-color: var(--primary-teal);
+    outline: none;
+    box-shadow: 0 0 0 1px var(--primary-teal);
+}
+
+.monthly-settlement-page .btn {
+    height: 40px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.monthly-settlement-page .btn-teal {
+    background: var(--primary-teal);
+    color: #fff;
+}
+
+.monthly-settlement-page .btn-teal:hover:not(:disabled) {
+    background: var(--primary-purple);
+}
+
+.monthly-settlement-page .btn-teal:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.monthly-settlement-page .btn-outline {
+    background: #fff;
+    border: 1.5px solid var(--primary-purple);
+    color: var(--primary-purple);
+}
+
+.monthly-settlement-page .btn-outline:hover {
+    background: var(--purple-tint);
+}
+
+.monthly-settlement-page .loading-banner {
+    background: var(--teal-tint);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    color: var(--text-dark);
+    font-size: 14px;
+}
+
+/* ==============================
+   Result header
+   ============================== */
+.monthly-settlement-page .result-header {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    padding: 18px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.monthly-settlement-page .result-titles h3 {
+    margin: 0 0 4px 0;
+    font-size: 19px;
+    color: var(--text-dark);
+}
+
+.monthly-settlement-page .result-period {
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.monthly-settlement-page .pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.monthly-settlement-page .pill-model {
+    background: var(--primary-purple);
+    color: #fff;
+}
+
+.monthly-settlement-page .pill-draft {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.monthly-settlement-page .pill-finalized {
+    background: #d4edda;
+    color: #155724;
+}
+
+.monthly-settlement-page .result-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* ==============================
+   Sections (Input = teal, Calculated = purple)
+   ============================== */
+.monthly-settlement-page .section {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+.monthly-settlement-page .section-header {
+    padding: 10px 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.monthly-settlement-page .section-header .kind {
+    font-size: 10px;
+    opacity: 0.85;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+.monthly-settlement-page .section-header.input {
+    background: var(--primary-teal);
+}
+
+.monthly-settlement-page .section-header.calc {
+    background: var(--primary-purple);
+}
+
+.monthly-settlement-page .section-body {
+    padding: 18px 20px;
+}
+
+/* Stat tiles for the headline collection figures */
+.monthly-settlement-page .tile-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.monthly-settlement-page .tile {
+    flex: 1 1 160px;
+    background: var(--teal-tint);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+}
+
+.monthly-settlement-page .tile-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    margin-bottom: 4px;
+}
+
+.monthly-settlement-page .tile-value {
+    font-size: 21px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-dark);
+}
+
+.monthly-settlement-page .secondary-chips {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.monthly-settlement-page .chip {
+    background: var(--teal-tint);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--text-dark);
+}
+
+.monthly-settlement-page .chip b {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Line rows for plainer figures */
+.monthly-settlement-page .line-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 9px 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: 14px;
+    color: var(--text-dark);
+}
+
+.monthly-settlement-page .line-row:last-child {
+    border-bottom: none;
+}
+
+.monthly-settlement-page .line-row .value {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.monthly-settlement-page .line-row.subtotal {
+    border-top: 2px solid var(--purple-tint-strong);
+    margin-top: 6px;
+    padding-top: 12px;
+    font-weight: 700;
+}
+
+.monthly-settlement-page .line-row.subtotal .value {
+    color: var(--primary-purple);
+}
+
+.monthly-settlement-page .line-row .formula {
+    display: block;
+    font-size: 11.5px;
+    color: var(--muted);
+    font-weight: 400;
+    margin-top: 2px;
+}
+
+/* ==============================
+   Bottom line
+   ============================== */
+.monthly-settlement-page .bottom-line {
+    background: #fff;
+    border-radius: 10px;
+    border: 2px solid var(--border);
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.monthly-settlement-page .bottom-line .breakdown {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.monthly-settlement-page .bottom-line .breakdown div {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.monthly-settlement-page .bottom-line .breakdown b {
+    display: block;
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+}
+
+.monthly-settlement-page .bottom-line .headline {
+    text-align: right;
+}
+
+.monthly-settlement-page .bottom-line .headline .label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+}
+
+.monthly-settlement-page .bottom-line .headline .amount {
+    font-size: 34px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.monthly-settlement-page .bottom-line.owner-settlement {
+    justify-content: flex-start;
+}
+
 @media screen and (max-width: 768px) {
-    .col-md-8,
-    .col-md-4 {
-        flex: 0 0 100%;
-        max-width: 100%;
+    .monthly-settlement-page .settlement-filters {
+        flex-direction: column;
+        align-items: stretch;
     }
 
-    .col-md-4.text-end {
+    .monthly-settlement-page .result-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .monthly-settlement-page .bottom-line {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .monthly-settlement-page .bottom-line .headline {
         text-align: left;
     }
 }
