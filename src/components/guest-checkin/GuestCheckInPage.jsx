@@ -132,7 +132,16 @@ const GuestCheckInPage = () => {
         setGuestForms(updated);
     };
 
+    // Matches spring.servlet.multipart.max-file-size on the backend - catching
+    // an oversized phone-camera photo here gives an immediate, specific
+    // message instead of a failed upload after the guest has already waited.
+    const MAX_DOCUMENT_SIZE_BYTES = 20 * 1024 * 1024;
+
     const handleFileChange = (index, docType, file) => {
+        if (file && file.size > MAX_DOCUMENT_SIZE_BYTES) {
+            alert("That file is too large (max 20MB). Please choose a smaller photo, or reduce the camera's photo quality/resolution.");
+            return;
+        }
         const updated = [...guestForms];
         updated[index][docType] = file;
         setGuestForms(updated);
@@ -204,7 +213,14 @@ const GuestCheckInPage = () => {
 
             if (!response.ok) {
                 const errText = await response.text();
-                throw new Error(errText || "Unable to save guest details.");
+                let message = errText;
+                try {
+                    const parsed = JSON.parse(errText);
+                    message = parsed.error || parsed.message || errText;
+                } catch {
+                    // Not JSON (e.g. a container error page) - fall back to raw text.
+                }
+                throw new Error(message || "Unable to save guest details.");
             }
 
             alert(`Guest ${index + 1} details saved successfully.`);
