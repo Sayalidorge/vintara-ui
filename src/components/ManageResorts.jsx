@@ -37,6 +37,10 @@ const ManageResorts = () => {
   const [commissionPercentage, setCommissionPercentage] = useState("");
   const [paymentAccounts, setPaymentAccounts] = useState([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState([]);
+  // Which of this resort's assigned accounts its advance defaults to -
+  // null means "use the global VINTARA account" (see
+  // BookingService.resolveAdvanceAccount on the backend).
+  const [defaultAdvanceAccountId, setDefaultAdvanceAccountId] = useState(null);
 const STANDARD_CATEGORIES = [
   { label: "Standard Room", value: "Standard Room", prefix: "S" },
   { label: "Deluxe Room", value: "Deluxe Room", prefix: "D" },
@@ -218,8 +222,10 @@ const getCommissionModelLabel = (value) =>
   propertyContact,
   commissionModel,
   commissionPercentage,
+  defaultAdvanceAccountId,
   // Clean, lean payload mapping to your updated backend structure
   roomCategories: roomCategories.map((cat) => ({
+    id: cat.id || null,
     name: cat.name,
     roomPrefix: cat.roomPrefix,
     totalRooms: cat.totalRooms
@@ -281,6 +287,7 @@ const getCommissionModelLabel = (value) =>
     setCommissionPercentage("");
     setRoomCategories([]);
     setSelectedAccountIds([]);
+    setDefaultAdvanceAccountId(null);
     setEditId(null);
     setShowForm(false);
 
@@ -302,8 +309,10 @@ const getCommissionModelLabel = (value) =>
     setPropertyContact(resort.propertyContact || "");
     setCommissionModel(resort.commissionModel || "");
     setCommissionPercentage(resort.commissionPercentage || "");
+    setDefaultAdvanceAccountId(resort.defaultAdvanceAccountId || null);
     setRoomCategories(
       resort.roomCategories?.map((c) => ({
+        id: c.id || null,
         name: c.name,
         roomPrefix: c.roomPrefix,
         totalRooms: c.totalRooms,
@@ -429,6 +438,7 @@ const getCommissionModelLabel = (value) =>
               setCommissionPercentage("");
               setRoomCategories([]);
               setSelectedAccountIds([]);
+              setDefaultAdvanceAccountId(null);
               setShowForm(true);
             }}
             style={{ padding: "10px 20px", cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", fontSize: "14px" }}
@@ -565,6 +575,25 @@ const getCommissionModelLabel = (value) =>
                   styles={multiSelectStyles}
                 />
               )}
+            </div>
+          </div>
+
+          <div className="form-row" style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Default Advance Collection Account</label>
+              <Select
+                isClearable
+                options={paymentAccountOptions.filter((opt) => selectedAccountIds.includes(opt.value))}
+                value={paymentAccountOptions.find((opt) => opt.value === defaultAdvanceAccountId) || null}
+                onChange={(selected) => setDefaultAdvanceAccountId(selected ? selected.value : null)}
+                placeholder="VINTARA (default)"
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+                styles={customSelectStyles}
+              />
+              <p style={{ fontSize: "12px", color: "#999", margin: 0 }}>
+                Leave blank to keep collecting this resort's advance into the VINTARA account. Only accounts assigned to this resort (above) can be picked.
+              </p>
             </div>
           </div>
 {/* ROW 4 - Commission */}
@@ -748,7 +777,7 @@ const getCommissionModelLabel = (value) =>
             <button
               type="button"
               onClick={() => {
-                setEditId(null); setName(""); setLocation(""); setGoogleMapLink(""); setPropertyContact(""); setCommissionModel("");setCommissionPercentage("");setRoomCategories([]);setSelectedAccountIds([]);
+                setEditId(null); setName(""); setLocation(""); setGoogleMapLink(""); setPropertyContact(""); setCommissionModel("");setCommissionPercentage("");setRoomCategories([]);setSelectedAccountIds([]);setDefaultAdvanceAccountId(null);
                 setShowForm(false);
               }}
               style={{ padding: "0 24px", height: "40px", cursor: "pointer", backgroundColor: "var(--primary-teal)", border: "1px solid #ccc", borderRadius: "4px", color: "#ffffff", fontSize: "14px", display: "inline-block", width: "auto" }}
@@ -838,6 +867,9 @@ const getCommissionModelLabel = (value) =>
                       {resort.commissionModel
                         ? `${getCommissionModelLabel(resort.commissionModel)}${resort.commissionPercentage ? ` (${resort.commissionPercentage}%)` : ""}`
                         : "-"}
+                      <div style={{ fontSize: "11px", color: "#999", marginTop: "4px" }}>
+                        Advance to: {resort.defaultAdvanceAccountName || "VINTARA (default)"}
+                      </div>
                     </td>
                     <td style={{ padding: "10px" }}>
                       <select
