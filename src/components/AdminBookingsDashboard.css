@@ -206,9 +206,111 @@
   border-top: 2px solid var(--primary-purple);
 }
 
+/* ==============================
+   Account-wise collection summary
+   ============================== */
+.admin-bookings-dashboard .account-summary-wrap {
+  margin-bottom: 20px;
+}
+
+.admin-bookings-dashboard .account-summary-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #767077;
+  margin: 0 0 10px 2px;
+}
+
+.admin-bookings-dashboard .account-summary {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-bookings-dashboard .account-card {
+  background: #fbf9fc;
+  border: 1px solid #e2dce6;
+  border-top: 3px solid var(--primary-purple);
+  border-radius: 8px;
+  padding: 14px 18px;
+  min-width: 190px;
+  flex: 1 1 190px;
+}
+
+.admin-bookings-dashboard .account-card.all-accounts {
+  border-top-color: var(--primary-teal);
+  background: #f3fbfb;
+  border-color: #d3ecec;
+}
+
+.admin-bookings-dashboard .account-card .account-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-bookings-dashboard .account-card .rank {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--primary-purple);
+  border-radius: 10px;
+  padding: 1px 7px;
+  letter-spacing: 0.03em;
+}
+
+.admin-bookings-dashboard .account-card.all-accounts .rank {
+  background: var(--primary-teal);
+}
+
+.admin-bookings-dashboard .account-card .collected-label {
+  font-size: 11px;
+  color: #767077;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 2px;
+}
+
+.admin-bookings-dashboard .account-card .collected {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dark);
+  line-height: 1.15;
+}
+
+.admin-bookings-dashboard .account-card .sub-line {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e2dce6;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-bookings-dashboard .account-card .sub-line .refunded {
+  color: #a13d3d;
+}
+
+.admin-bookings-dashboard .account-card .sub-line .net {
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
 @media (max-width: 900px) {
   .admin-bookings-dashboard .dashboard-filters {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .admin-bookings-dashboard .account-summary {
+    flex-direction: column;
   }
 }

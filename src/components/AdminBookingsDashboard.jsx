@@ -249,6 +249,36 @@ const AdminBookingsDashboard = () => {
     }, 0);
   const money = (n) => `₹${n.toLocaleString()}`;
 
+  // Per-account collection summary for the currently filtered bookings -
+  // walks every field money can be credited/debited through (advance,
+  // balance splits, late checkout, extra charge, refund) rather than just
+  // advance/balance, so it matches what the "Payment Details" columns show.
+  // Purely derived from `bookings` (same pattern as sumColumn above) - no
+  // extra state or fetch needed.
+  const computeAccountTotals = () => {
+    const totals = new Map();
+    const addTo = (accountName, field, amount) => {
+      if (!accountName || !amount) return;
+      if (!totals.has(accountName)) totals.set(accountName, { collected: 0, refunded: 0 });
+      totals.get(accountName)[field] += amount;
+    };
+    bookings.forEach((b) => {
+      addTo(b.advanceCreditedToAccountName, "collected", b.advanceAmount);
+      (b.balanceSplits || []).forEach((s) => addTo(s.accountName, "collected", s.amount));
+      addTo(b.lateCheckoutCreditedToAccountName, "collected", b.lateCheckoutCharge);
+      addTo(b.extraChargeCreditedToAccountName, "collected", b.extraCharge);
+      addTo(b.refundCreditedToAccountName, "refunded", b.refundAmount);
+    });
+    return Array.from(totals.entries())
+      .map(([accountName, { collected, refunded }]) => ({ accountName, collected, refunded, net: collected - refunded }))
+      .sort((a, b) => b.collected - a.collected);
+  };
+  const accountTotals = computeAccountTotals();
+  const allAccountsTotal = accountTotals.reduce(
+    (acc, a) => ({ collected: acc.collected + a.collected, refunded: acc.refunded + a.refunded }),
+    { collected: 0, refunded: 0 }
+  );
+
   return (
     <div className="admin-bookings-dashboard">
       <div className="page-header">
@@ -310,6 +340,45 @@ const AdminBookingsDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Account-wise collection summary - derived from the same filtered
+          `bookings` array the table below renders, so it's always in sync
+          with what's visibly listed. */}
+      {bookings.length > 0 && (
+        <div className="account-summary-wrap">
+          <p className="account-summary-label">Collected by account · this filter</p>
+          <div className="account-summary">
+            <div className="account-card all-accounts">
+              <div className="account-name">
+                All Accounts <span className="rank">TOTAL</span>
+              </div>
+              <div className="collected-label">Collected</div>
+              <div className="collected">{money(allAccountsTotal.collected)}</div>
+              {allAccountsTotal.refunded > 0 && (
+                <div className="sub-line">
+                  <span className="refunded">Refunded {money(allAccountsTotal.refunded)}</span>
+                  <span className="net">Net {money(allAccountsTotal.collected - allAccountsTotal.refunded)}</span>
+                </div>
+              )}
+            </div>
+            {accountTotals.map((a, i) => (
+              <div className="account-card" key={a.accountName}>
+                <div className="account-name">
+                  {a.accountName} <span className="rank">#{i + 1}</span>
+                </div>
+                <div className="collected-label">Collected</div>
+                <div className="collected">{money(a.collected)}</div>
+                {a.refunded > 0 && (
+                  <div className="sub-line">
+                    <span className="refunded">Refunded {money(a.refunded)}</span>
+                    <span className="net">Net {money(a.net)}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Table */}
       <div className="table-wrapper">
