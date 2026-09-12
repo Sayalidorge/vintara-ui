@@ -92,6 +92,41 @@
     margin-bottom:20px;
 }
 
+.booking-card__toggle{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    width:100%;
+    background:#fafafa;
+    border:1px solid #ececec;
+    border-radius:8px;
+    padding:10px 14px;
+    margin-bottom:12px;
+    cursor:pointer;
+    font:inherit;
+    text-align:left;
+}
+
+.booking-card__toggle-summary{
+    font-size:13px;
+    font-weight:600;
+    color:var(--text-dark);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.booking-card__toggle-icon{
+    color:var(--primary-teal);
+    flex-shrink:0;
+    transition:transform .2s ease;
+}
+
+.booking-card__toggle-icon--open{
+    transform:rotate(180deg);
+}
+
 .booking-info-grid{
     display:grid;
     grid-template-columns:repeat(2,1fr);

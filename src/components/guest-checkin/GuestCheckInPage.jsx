@@ -17,6 +17,7 @@ import {
     FaCar,
     FaTimes,
     FaPlus,
+    FaChevronDown,
 } from "react-icons/fa";
 import config from "../../config";
 import logo from "../../assets/logo-icon.png";
@@ -37,6 +38,12 @@ const GuestCheckInPage = () => {
 
     // State to handle the image preview modal
     const [previewUrl, setPreviewUrl] = useState(null);
+
+    // The booking-info card never shrank the way each guest card does once
+    // filled in (see guest-form-card--submitted below) - on mobile it ate
+    // most of the screen, pushing the actual guest forms down to a sliver.
+    // Collapsed by default; a tap expands it back to the full grid.
+    const [showBookingDetails, setShowBookingDetails] = useState(false);
 
     // Maintain an array of form objects for all guests (expected + any extra added)
     const [guestForms, setGuestForms] = useState([]);
@@ -394,50 +401,68 @@ const GuestCheckInPage = () => {
                     Welcome to Vintara Stays, {booking.customerName}!
                 </p>
 
-                <div className="booking-info-grid">
-                    <div className="booking-info-item">
-                        <FaHashtag className="booking-info-icon" />
-                        <div>
-                            <span className="booking-info-label">Booking ID</span>
-                            <span className="booking-info-value">{booking.bookingId}</span>
+                <button
+                    type="button"
+                    className="booking-card__toggle"
+                    onClick={() => setShowBookingDetails((prev) => !prev)}
+                    aria-expanded={showBookingDetails}
+                >
+                    <span className="booking-card__toggle-summary">
+                        #{booking.bookingId} · {booking.resortName} · {booking.checkInDate} to {booking.checkOutDate}
+                    </span>
+                    <FaChevronDown
+                        className={classnames("booking-card__toggle-icon", {
+                            "booking-card__toggle-icon--open": showBookingDetails,
+                        })}
+                    />
+                </button>
+
+                {showBookingDetails && (
+                    <div className="booking-info-grid">
+                        <div className="booking-info-item">
+                            <FaHashtag className="booking-info-icon" />
+                            <div>
+                                <span className="booking-info-label">Booking ID</span>
+                                <span className="booking-info-value">{booking.bookingId}</span>
+                            </div>
+                        </div>
+                        <div className="booking-info-item">
+                            <FaUser className="booking-info-icon" />
+                            <div>
+                                <span className="booking-info-label">Lead Guest</span>
+                                <span className="booking-info-value">{booking.customerName}</span>
+                            </div>
+                        </div>
+                        <div className="booking-info-item">
+                            <FaHotel className="booking-info-icon" />
+                            <div>
+                                <span className="booking-info-label">Resort</span>
+                                <span className="booking-info-value">{booking.resortName}</span>
+                            </div>
+                        </div>
+                        <div className="booking-info-item">
+                            <FaUsers className="booking-info-icon" />
+                            <div>
+                                <span className="booking-info-label">Expected Guests</span>
+                                <span className="booking-info-value">{booking.expectedGuests}</span>
+                            </div>
+                        </div>
+                        <div className="booking-info-item">
+                            <FaCalendarAlt className="booking-info-icon" />
+                            <div>
+                                <span className="booking-info-label">Check In</span>
+                                <span className="booking-info-value">{booking.checkInDate}</span>
+                            </div>
+                        </div>
+                        <div className="booking-info-item">
+                            <FaCalendarCheck className="booking-info-icon" />
+                            <div>
+                                <span className="booking-info-label">Check Out</span>
+                                <span className="booking-info-value">{booking.checkOutDate}</span>
+                            </div>
                         </div>
                     </div>
-                    <div className="booking-info-item">
-                        <FaUser className="booking-info-icon" />
-                        <div>
-                            <span className="booking-info-label">Lead Guest</span>
-                            <span className="booking-info-value">{booking.customerName}</span>
-                        </div>
-                    </div>
-                    <div className="booking-info-item">
-                        <FaHotel className="booking-info-icon" />
-                        <div>
-                            <span className="booking-info-label">Resort</span>
-                            <span className="booking-info-value">{booking.resortName}</span>
-                        </div>
-                    </div>
-                    <div className="booking-info-item">
-                        <FaUsers className="booking-info-icon" />
-                        <div>
-                            <span className="booking-info-label">Expected Guests</span>
-                            <span className="booking-info-value">{booking.expectedGuests}</span>
-                        </div>
-                    </div>
-                    <div className="booking-info-item">
-                        <FaCalendarAlt className="booking-info-icon" />
-                        <div>
-                            <span className="booking-info-label">Check In</span>
-                            <span className="booking-info-value">{booking.checkInDate}</span>
-                        </div>
-                    </div>
-                    <div className="booking-info-item">
-                        <FaCalendarCheck className="booking-info-icon" />
-                        <div>
-                            <span className="booking-info-label">Check Out</span>
-                            <span className="booking-info-value">{booking.checkOutDate}</span>
-                        </div>
-                    </div>
-                </div>
+                )}
 
                 <div className="checkin-progress">
                     <div className="checkin-progress__label">
