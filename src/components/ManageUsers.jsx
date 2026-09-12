@@ -33,6 +33,7 @@ const ManageUsers = () => {
   const [assignedResorts, setAssignedResorts] = useState([]);
   const [contactNo, setContactNo] = useState("");
   const [contactAlert, setContactAlert] = useState("");
+  const [loginId, setLoginId] = useState("");
 
   // Table search/filter state
   const [searchTerm, setSearchTerm] = useState("");
@@ -126,7 +127,22 @@ const ManageUsers = () => {
     setRole("");
     setAssignedResorts([]);
     setContactAlert("");
+    setLoginId("");
     setShowForm(false);
+  };
+
+  // Extracts a readable message from a failed response - backend errors are
+  // JSON ({"message": "..."}, since spring.web.error.include-message=always
+  // is set) but fall back to raw text for any non-JSON error body.
+  const extractErrorMessage = async (res, fallback) => {
+    const text = await res.text().catch(() => null);
+    if (!text) return fallback;
+    try {
+      const parsed = JSON.parse(text);
+      return parsed.message || parsed.error || text;
+    } catch {
+      return text;
+    }
   };
 
   // Handle add or edit user
@@ -142,34 +158,41 @@ const ManageUsers = () => {
           contactNumber: contactNo,
           role,
           resortIds: assignedResorts.map((r) => r.value),
+          userId: loginId,
         };
-        await fetch(`${config.BASE_URL}/users/${editId}/update`, {
+        const res = await fetch(`${config.BASE_URL}/users/${editId}/update`, {
           method: "PUT",
           headers: getAuthHeaders(),
           body: JSON.stringify(body),
         });
+        if (!res.ok) {
+          throw new Error(await extractErrorMessage(res, "Failed to update user."));
+        }
       } else {
         const resortIds = assignedResorts.map((r) => r.value);
         const body = {
           name,
           email,
-          contactNumber: contactNo,    
-          userId: email.split("@")[0], 
+          contactNumber: contactNo,
+          userId: email.split("@")[0],
           password: "welcome",
           role,
           resortIds,
         };
-        await fetch(`${config.BASE_URL}/users/create`, {
+        const res = await fetch(`${config.BASE_URL}/users/create`, {
           method: "POST",
           headers: getAuthHeaders(),
           body: JSON.stringify(body),
         });
+        if (!res.ok) {
+          throw new Error(await extractErrorMessage(res, "Failed to create user."));
+        }
       }
-      await fetchUsers(); 
+      await fetchUsers();
       resetForm();
     } catch (err) {
       console.error("Error submitting form:", err);
-      alert("Something went wrong. Check console.");
+      alert(err.message || "Something went wrong. Check console.");
     } finally {
       setIsSubmitting(false);
     }
@@ -182,8 +205,9 @@ const ManageUsers = () => {
     setName(user.name || "");
     setEmail(user.email || "");
     setRole(user.role || "");
-    setContactNo(user.contactNumber || ""); 
+    setContactNo(user.contactNumber || "");
     setContactAlert("");
+    setLoginId(user.userId || "");
 
     if (user.resortNames) {
       const selected = resortOptions.filter((r) =>
@@ -293,6 +317,20 @@ const ManageUsers = () => {
                 style={{ width: "100%", padding: "6px", boxSizing: "border-box" }}
               />
             </div>
+            {editId && (
+              <div style={{ flex: 1 }}>
+                <label>Login ID</label>
+                <input
+                  type="text"
+                  placeholder="Login ID"
+                  value={loginId}
+                  onChange={(e) => setLoginId(e.target.value)}
+                  required
+                  style={{ width: "100%", padding: "6px", boxSizing: "border-box" }}
+                />
+                <span style={{ fontSize: "11px", color: "#999" }}>Used to log in - must be unique.</span>
+              </div>
+            )}
             <div style={{ flex: 1 }}>
               <label>Contact Number</label>
               <input
