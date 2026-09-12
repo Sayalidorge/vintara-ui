@@ -319,6 +319,22 @@ useEffect(() => {
   const trendGrandTotal = trendDirectTotal + trendOtaTotal;
   const trendDirectPct = trendGrandTotal > 0 ? Math.round((trendDirectTotal / trendGrandTotal) * 100) : 0;
 
+  // KPI tiles above the Resort Occupancy Trend chart. Occupancy is a snapshot
+  // per period, not an additive event like bookings, so these average/peak
+  // across the shown range instead of summing (summing rooms across days
+  // would double-count the same rooms).
+  const occPeriodPcts = occupancyData.map((d) =>
+    d.totalRooms > 0 ? (d.bookedRooms / d.totalRooms) * 100 : 0
+  );
+  const occAvgPct = occPeriodPcts.length > 0
+    ? Math.round(occPeriodPcts.reduce((sum, p) => sum + p, 0) / occPeriodPcts.length)
+    : 0;
+  const occPeakPct = occPeriodPcts.length > 0 ? Math.round(Math.max(...occPeriodPcts)) : 0;
+  const occLatestTotalRooms = occupancyData.length > 0 ? occupancyData[occupancyData.length - 1].totalRooms : 0;
+  const occAvgOccupied = occupancyData.length > 0
+    ? Math.round(occupancyData.reduce((sum, d) => sum + d.bookedRooms, 0) / occupancyData.length)
+    : 0;
+
   // =====================================================
   // UI
   // =====================================================
@@ -533,6 +549,25 @@ useEffect(() => {
 ) : errorOccupancy ? (
   <p style={{ color: "red" }}>{errorOccupancy}</p>
 ) : (
+  <>
+  <div className="trend-kpi-row">
+    <div className="trend-kpi">
+      <span className="trend-kpi-label">Total Rooms</span>
+      <span className="trend-kpi-value">{occLatestTotalRooms}</span>
+    </div>
+    <div className="trend-kpi">
+      <span className="trend-kpi-label">Avg. Occupied</span>
+      <span className="trend-kpi-value">{occAvgOccupied}</span>
+    </div>
+    <div className="trend-kpi">
+      <span className="trend-kpi-label">Peak Occupancy</span>
+      <span className="trend-kpi-value">{occPeakPct}%</span>
+    </div>
+    <div className="trend-kpi trend-kpi--accent">
+      <span className="trend-kpi-label">Avg. Occupancy</span>
+      <span className="trend-kpi-value">{occAvgPct}%</span>
+    </div>
+  </div>
   <ResponsiveContainer width="100%" height={300}>
     <BarChart data={occupancyData}>
       <CartesianGrid strokeDasharray="3 3" />
@@ -591,6 +626,7 @@ useEffect(() => {
       />
     </BarChart>
   </ResponsiveContainer>
+  </>
 )}
       
       </div>
