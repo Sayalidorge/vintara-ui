@@ -12,6 +12,13 @@ import { toLocalDateStr, formatDateDMY } from "../utils/date";
 import { QRCodeSVG } from "qrcode.react";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 
+// Display-only relabeling of BookingSource values - the stored/compared
+// value stays CALL/CALLS_GST everywhere else, only what staff see changes
+// (mirrors BookingSource.java's getDisplayName(), which the dynamic
+// booking-source dropdown already reads - these raw-value renders don't).
+const sourceLabel = (source) =>
+  ({ CALL: "Vintara", CALLS_GST: "Vintara + GST Bill" }[source]) || source;
+
 // The guest self check-in page a booking's link/QR points to (see
 // GuestCheckInPage.jsx, route /checkin/:token).
 const getCheckInUrl = (booking) =>
@@ -145,6 +152,11 @@ const UserInventory = () => {
   const [lateCheckoutAmount, setLateCheckoutAmount] = useState("");
   const [lateCheckoutReason, setLateCheckoutReason] = useState("");
   const [lateCheckoutAccount, setLateCheckoutAccount] = useState(null);
+  // The backend adds each submission on top of the existing charge (by
+  // design - a stay can legitimately get more than one late checkout
+  // charge) - guards against a double-click/slow-network double-submit
+  // silently doubling the amount, which has no server-side protection.
+  const [isSubmittingLateCheckout, setIsSubmittingLateCheckout] = useState(false);
 
   // Extra Charge: a standalone charge for extra guests, an extra mattress,
   // etc. - same pattern as Late Checkout Charge above (see
@@ -153,6 +165,15 @@ const UserInventory = () => {
   const [extraChargeAmount, setExtraChargeAmount] = useState("");
   const [extraChargeReason, setExtraChargeReason] = useState("");
   const [extraChargeAccount, setExtraChargeAccount] = useState(null);
+  const [isSubmittingExtraCharge, setIsSubmittingExtraCharge] = useState(false);
+
+  // Guards against double-click/slow-network double-submits on the other
+  // modals that create/collect a payment or record - each fires a single
+  // fetch with no server-side idempotency protection.
+  const [isSubmittingExtendStay, setIsSubmittingExtendStay] = useState(false);
+  const [isSubmittingCollectBalance, setIsSubmittingCollectBalance] = useState(false);
+  const [isSubmittingCheckIn, setIsSubmittingCheckIn] = useState(false);
+  const [isSubmittingEarlyCheckout, setIsSubmittingEarlyCheckout] = useState(false);
 
   // Fetch payment accounts assigned to the currently selected resort
   useEffect(() => {
@@ -497,7 +518,7 @@ const UserInventory = () => {
   };
 
   const handleLateCheckoutChargeSubmit = async () => {
-    if (!selectedBooking) return;
+    if (!selectedBooking || isSubmittingLateCheckout) return;
     const amount = parseFloat(lateCheckoutAmount) || 0;
     if (amount <= 0) {
       alert("Enter the late checkout charge amount.");
@@ -508,6 +529,7 @@ const UserInventory = () => {
       return;
     }
 
+    setIsSubmittingLateCheckout(true);
     try {
       const res = await fetch(`${config.BASE_URL}/api/bookings/${selectedBooking.id}/late-checkout-charge`, {
         method: "PUT",
@@ -540,6 +562,8 @@ const UserInventory = () => {
     } catch (err) {
       console.error(err);
       alert(err.message || "Failed to add late checkout charge. Please try again.");
+    } finally {
+      setIsSubmittingLateCheckout(false);
     }
   };
 
@@ -552,7 +576,7 @@ const UserInventory = () => {
   };
 
   const handleExtraChargeSubmit = async () => {
-    if (!selectedBooking) return;
+    if (!selectedBooking || isSubmittingExtraCharge) return;
     const amount = parseFloat(extraChargeAmount) || 0;
     if (amount <= 0) {
       alert("Enter the extra charge amount.");
@@ -563,6 +587,7 @@ const UserInventory = () => {
       return;
     }
 
+    setIsSubmittingExtraCharge(true);
     try {
       const res = await fetch(`${config.BASE_URL}/api/bookings/${selectedBooking.id}/extra-charge`, {
         method: "PUT",
@@ -595,11 +620,13 @@ const UserInventory = () => {
     } catch (err) {
       console.error(err);
       alert(err.message || "Failed to add extra charge. Please try again.");
+    } finally {
+      setIsSubmittingExtraCharge(false);
     }
   };
 
   const handleExtendStaySubmit = async () => {
-    if (!selectedBooking) return;
+    if (!selectedBooking || isSubmittingExtendStay) return;
     if (!extendNewCheckOutDate || extendNewCheckOutDate <= selectedBooking.checkOutDate) {
       alert("Select a checkout date after the current one.");
       return;
@@ -614,6 +641,7 @@ const UserInventory = () => {
       return;
     }
 
+    setIsSubmittingExtendStay(true);
     try {
       const res = await fetch(`${config.BASE_URL}/api/bookings/${selectedBooking.id}/extensions`, {
         method: "POST",
@@ -641,11 +669,13 @@ const UserInventory = () => {
     } catch (err) {
       console.error(err);
       alert(err.message || "Failed to create extension booking. Please try again.");
+    } finally {
+      setIsSubmittingExtendStay(false);
     }
   };
 
   const handleCollectBalanceSubmit = async () => {
-    if (!selectedBooking) return;
+    if (!selectedBooking || isSubmittingCollectBalance) return;
     if (splitRows.some((r) => !r.paymentAccount || !r.amount || parseFloat(r.amount) <= 0)) {
       alert("Please select an account and enter an amount for every split row.");
       return;
@@ -658,6 +688,7 @@ const UserInventory = () => {
 
     const splitsPayload = splitRows.map((r) => ({ paymentAccountId: r.paymentAccount.value, amount: parseFloat(r.amount) }));
 
+    setIsSubmittingCollectBalance(true);
     try {
       const res = await fetch(`${config.BASE_URL}/api/bookings/${selectedBooking.id}/collect-balance`, {
         method: "PUT",
@@ -687,6 +718,8 @@ const UserInventory = () => {
     } catch (err) {
       console.error(err);
       alert(err.message || "Failed to collect balance. Please try again.");
+    } finally {
+      setIsSubmittingCollectBalance(false);
     }
   };
 
@@ -699,7 +732,7 @@ const UserInventory = () => {
   };
 
   const handleCheckInSubmit = async () => {
-    if (!selectedBooking) return;
+    if (!selectedBooking || isSubmittingCheckIn) return;
 
     const discountValue = parseFloat(checkInDiscount) || 0;
     const balanceDueForDiscount = selectedBooking.pendingBalanceAmount ?? selectedBooking.balanceAmount ?? 0;
@@ -725,6 +758,7 @@ const UserInventory = () => {
       splitsPayload = splitRows.map((r) => ({ paymentAccountId: r.paymentAccount.value, amount: parseFloat(r.amount) }));
     }
 
+    setIsSubmittingCheckIn(true);
     try {
       const params = new URLSearchParams();
       if (discountValue > 0) {
@@ -771,10 +805,13 @@ const UserInventory = () => {
     } catch (err) {
       console.error(err);
       alert(err.message || "Check-in failed. Please try again.");
+    } finally {
+      setIsSubmittingCheckIn(false);
     }
   };
 
   const handleEarlyCheckoutSubmit = async () => {
+    if (isSubmittingEarlyCheckout) return;
     if (!checkoutReason.trim()) return alert("Please enter a reason");
     if (refundAmount === "" || isNaN(parseFloat(refundAmount))) return alert("Please enter a valid numeric refund amount");
 
@@ -786,6 +823,7 @@ const UserInventory = () => {
 
     const calculatedTargetStatus = selectedBooking.status === "CHECKED_IN" ? "EARLY_CHECK_OUT" : "CANCELLED";
 
+    setIsSubmittingEarlyCheckout(true);
     try {
       const res = await fetch(`${config.BASE_URL}/api/bookings/${selectedBooking.id}/exit`, {
         method: "PUT",
@@ -819,6 +857,8 @@ const UserInventory = () => {
     } catch (err) {
       console.error(err);
       alert(err.message || "Failed to process booking exit. Please try again.");
+    } finally {
+      setIsSubmittingEarlyCheckout(false);
     }
   };
 
@@ -994,7 +1034,7 @@ const UserInventory = () => {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", borderBottom: "1px solid #eee", paddingBottom: "10px", marginBottom: "15px" }}>
                   <div>
                     <h3 style={{ margin: 0, color: "#333", fontSize: "22px", fontWeight: "bold" }}>{b.customerName} <span style={{ fontSize: "13px", fontWeight: "normal", color: "#777" }}>(ID: #{b.id})</span></h3>
-                    <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#555" }}>Contact: {b.customerContactNumber} | Source: <strong>{b.source}</strong></p>
+                    <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#555" }}>Contact: {b.customerContactNumber} | Source: <strong>{sourceLabel(b.source)}</strong></p>
                     {b.extendedFromBookingId && (
                       <p style={{ margin: "6px 0 0 0" }}>
                         <span
@@ -1109,6 +1149,23 @@ const UserInventory = () => {
                       {b.status === "CHECKED_IN" && !(b.balanceSplits?.length > 0) && b.balanceCreditedToAccountName && (
                         <p style={{ margin: 0 }}>
                           <strong>Balance Collected In:</strong> {b.balanceCreditedToAccountName}
+                        </p>
+                      )}
+                      {b.discountAmount > 0 && (
+                        <p style={{ margin: 0 }}>
+                          <span
+                            title={b.discountReason || undefined}
+                            style={{
+                              padding: "3px 10px",
+                              borderRadius: "10px",
+                              fontSize: "12px",
+                              fontWeight: "bold",
+                              background: "#fde8d8",
+                              color: "#a05a1a",
+                            }}
+                          >
+                            Discount Applied: ₹{b.discountAmount}{b.discountReason ? ` (${b.discountReason})` : ""}
+                          </span>
                         </p>
                       )}
                       {b.lateCheckoutCharge > 0 && (
@@ -1287,7 +1344,7 @@ const UserInventory = () => {
             {(selectedBooking.pendingBalanceAmount ?? selectedBooking.balanceAmount) > 0
               && (selectedBooking.source === "CALL" || selectedBooking.source === "CALLS_GST") && (
               <div className="checkin-modal__section">
-                <label className="field-label">Discount (optional) - CALL bookings only</label>
+                <label className="field-label">Discount (optional) - Vintara bookings only</label>
                 <input
                   type="number"
                   min="0"
@@ -1368,11 +1425,12 @@ const UserInventory = () => {
                 className="checkin-btn"
                 onClick={handleCheckInSubmit}
                 disabled={
+                  isSubmittingCheckIn ||
                   (effectiveBalanceDue > 0 && splitTotal !== effectiveBalanceDue) ||
                   (parseFloat(checkInDiscount) > 0 && !checkInDiscountReason.trim())
                 }
               >
-                Confirm Check-In
+                {isSubmittingCheckIn ? "Checking In..." : "Confirm Check-In"}
               </button>
               <button className="cancel-btn" onClick={() => setShowCheckInModal(false)}>
                 Cancel
@@ -1472,9 +1530,9 @@ const UserInventory = () => {
               <button
                 className="checkin-btn"
                 onClick={handleExtendStaySubmit}
-                disabled={!extendOptionsLoaded || extendRoomUnavailable}
+                disabled={isSubmittingExtendStay || !extendOptionsLoaded || extendRoomUnavailable}
               >
-                Create Extension Booking
+                {isSubmittingExtendStay ? "Creating..." : "Create Extension Booking"}
               </button>
               <button className="cancel-btn" onClick={() => setShowExtendStayModal(false)}>
                 Cancel
@@ -1547,9 +1605,9 @@ const UserInventory = () => {
               <button
                 className="checkin-btn"
                 onClick={handleCollectBalanceSubmit}
-                disabled={splitTotal !== (selectedBooking.pendingBalanceAmount ?? selectedBooking.balanceAmount)}
+                disabled={isSubmittingCollectBalance || splitTotal !== (selectedBooking.pendingBalanceAmount ?? selectedBooking.balanceAmount)}
               >
-                Confirm Collection
+                {isSubmittingCollectBalance ? "Collecting..." : "Confirm Collection"}
               </button>
               <button className="cancel-btn" onClick={() => setShowCollectBalanceModal(false)}>
                 Cancel
@@ -1606,8 +1664,8 @@ const UserInventory = () => {
             </div>
 
             <div className="checkin-modal__actions">
-              <button className="checkin-btn" onClick={handleLateCheckoutChargeSubmit}>
-                Add Charge
+              <button className="checkin-btn" onClick={handleLateCheckoutChargeSubmit} disabled={isSubmittingLateCheckout}>
+                {isSubmittingLateCheckout ? "Adding..." : "Add Charge"}
               </button>
               <button className="cancel-btn" onClick={() => setShowLateCheckoutModal(false)}>
                 Cancel
@@ -1664,8 +1722,8 @@ const UserInventory = () => {
             </div>
 
             <div className="checkin-modal__actions">
-              <button className="checkin-btn" onClick={handleExtraChargeSubmit}>
-                Add Charge
+              <button className="checkin-btn" onClick={handleExtraChargeSubmit} disabled={isSubmittingExtraCharge}>
+                {isSubmittingExtraCharge ? "Adding..." : "Add Charge"}
               </button>
               <button className="cancel-btn" onClick={() => setShowExtraChargeModal(false)}>
                 Cancel
@@ -1724,9 +1782,9 @@ const UserInventory = () => {
               <button
                 className="checkin-btn"
                 onClick={handleEarlyCheckoutSubmit}
-                disabled={parseFloat(refundAmount) > 0 && !refundAccount}
+                disabled={isSubmittingEarlyCheckout || (parseFloat(refundAmount) > 0 && !refundAccount)}
               >
-                Confirm
+                {isSubmittingEarlyCheckout ? "Processing..." : "Confirm"}
               </button>
               <button className="cancel-btn" onClick={() => setShowEarlyCheckoutModal(false)}>
                 Cancel

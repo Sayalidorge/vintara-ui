@@ -209,6 +209,7 @@ const ResortDailyFinance = () => {
   //---------------------------------------------------------
 
 const handleSave = async () => {
+  if (saving) return;
 
   if (!selectedResort) {
     alert("Please select a resort.");
@@ -236,6 +237,7 @@ const handleSave = async () => {
     paymentAccountId: selectedPaymentAccount ? selectedPaymentAccount.value : null,
   };
 console.log(payload);
+  setSaving(true);
   try {
 
     const res = await fetch(
@@ -261,6 +263,8 @@ console.log(payload);
 
     alert("Unable to save daily finance.");
 
+  } finally {
+    setSaving(false);
   }
 
 };
@@ -413,8 +417,9 @@ const totalProfit = totalFoodCollection - totalExpense;
 <button
     className="save-btn"
     onClick={handleSave}
+    disabled={saving}
 >
-    Save
+    {saving ? "Saving..." : "Save"}
 </button>
 
     </div>

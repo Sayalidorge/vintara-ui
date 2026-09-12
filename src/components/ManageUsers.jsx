@@ -26,6 +26,7 @@ const ManageUsers = () => {
   // Form state
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
@@ -131,6 +132,8 @@ const ManageUsers = () => {
   // Handle add or edit user
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       if (editId) {
         const body = {
@@ -167,6 +170,8 @@ const ManageUsers = () => {
     } catch (err) {
       console.error("Error submitting form:", err);
       alert("Something went wrong. Check console.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -345,9 +350,10 @@ const ManageUsers = () => {
           <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
             <button
               type="submit"
+              disabled={isSubmitting}
               style={{ padding: "8px 20px", cursor: "pointer", fontWeight: "bold", background: "var(--primary-purple)", color: "#fff", border: "none", borderRadius: "4px" }}
             >
-              {editId ? "Save Account Updates" : "Create User"}
+              {isSubmitting ? "Saving..." : editId ? "Save Account Updates" : "Create User"}
             </button>
             <button
               type="button"

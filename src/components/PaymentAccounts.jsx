@@ -13,6 +13,7 @@ const PaymentAccounts = ({ viewOnly = false }) => {
   const [name, setName] = useState("");
   const [editId, setEditId] = useState(null);
   const [companyAccount, setCompanyAccount] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchAccounts = async () => {
     try {
@@ -37,10 +38,12 @@ const PaymentAccounts = ({ viewOnly = false }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!name.trim()) return alert("Please enter an account name");
 
     const payload = { name: name.trim(), active: true, companyAccount };
 
+    setIsSubmitting(true);
     try {
       const url = editId
         ? `${config.BASE_URL}/api/payment-accounts/${editId}`
@@ -63,6 +66,8 @@ const PaymentAccounts = ({ viewOnly = false }) => {
     } catch (err) {
       console.error(err);
       alert(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -127,9 +132,10 @@ const PaymentAccounts = ({ viewOnly = false }) => {
               <div className="button-group" style={{ display: "flex", gap: "12px" }}>
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   style={{ padding: "0 24px", height: "40px", cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", fontSize: "14px" }}
                 >
-                  {editId ? "Update Account" : "Add Account"}
+                  {isSubmitting ? "Saving..." : editId ? "Update Account" : "Add Account"}
                 </button>
                 {editId && (
                   <button

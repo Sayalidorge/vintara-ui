@@ -20,6 +20,9 @@ const AdminLeaveDashboard = () => {
   const [userIdFilter, setUserIdFilter] = useState("");
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
+  // Per-row guard against double-click/slow-network double-submits on
+  // Approve/Reject - a Set of leave-request ids currently being acted on.
+  const [actingOnIds, setActingOnIds] = useState(new Set());
 
   // fetch users - USER + SUPER_USER only, matching the sibling dropdown in
   // TeamAttendanceLeave.jsx which already uses this endpoint.
@@ -59,20 +62,36 @@ useEffect(() => {
   }, [statusFilter, userIdFilter]);
 
   const handleApprove = async (id) => {
+    if (actingOnIds.has(id)) return;
+    setActingOnIds((prev) => new Set(prev).add(id));
     try {
       await approveLeave(id);
       fetchLeaves();
     } catch (err) {
       alert(err.message || "Failed to approve.");
+    } finally {
+      setActingOnIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
   const handleReject = async (id) => {
+    if (actingOnIds.has(id)) return;
+    setActingOnIds((prev) => new Set(prev).add(id));
     try {
       await rejectLeave(id);
       fetchLeaves();
     } catch (err) {
       alert(err.message || "Failed to reject.");
+    } finally {
+      setActingOnIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
@@ -165,14 +184,16 @@ useEffect(() => {
                           <button
                             className="btn-approve"
                             onClick={() => handleApprove(l.id)}
+                            disabled={actingOnIds.has(l.id)}
                           >
-                            Approve
+                            {actingOnIds.has(l.id) ? "..." : "Approve"}
                           </button>
                           <button
                             className="btn-reject"
                             onClick={() => handleReject(l.id)}
+                            disabled={actingOnIds.has(l.id)}
                           >
-                            Reject
+                            {actingOnIds.has(l.id) ? "..." : "Reject"}
                           </button>
                         </>
                       ) : (

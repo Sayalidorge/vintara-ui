@@ -28,6 +28,7 @@ const AdminExpensesDashboard = () => {
   const [paidBy, setPaidBy] = useState("");
   const [selectedResort, setSelectedResort] = useState(null); // react-select object {value, label}
   const [editId, setEditId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const selectedMonth = toLocalDateStr(selectedDate).slice(0, 7);
 
@@ -118,6 +119,7 @@ const AdminExpensesDashboard = () => {
   // Form submit handler
   const handleAddOrEdit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!description || !amount || !expenseDate || !paidBy || !selectedResort) {
       return alert("Please fill all fields");
     }
@@ -130,6 +132,7 @@ const AdminExpensesDashboard = () => {
       resortId: selectedResort.value,
     };
 
+    setIsSubmitting(true);
     try {
       const url = editId
         ? `${config.BASE_URL}/api/expenses/${editId}`
@@ -161,6 +164,8 @@ const AdminExpensesDashboard = () => {
     } catch (err) {
       console.error(err);
       alert(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -299,7 +304,7 @@ const AdminExpensesDashboard = () => {
           </div>
 
           <div className="expense-form-actions">
-            <button type="submit">{editId ? "Update Expense" : "Add Expense"}</button>
+            <button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving..." : editId ? "Update Expense" : "Add Expense"}</button>
             <button type="button" className="cancel-btn" onClick={() => {
               setEditId(null);
               setDescription("");

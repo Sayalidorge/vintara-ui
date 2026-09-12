@@ -56,6 +56,9 @@ const TeamAttendanceLeave = () => {
   const [pendingCorrections, setPendingCorrections] = useState([]);
   const [correctionsLoading, setCorrectionsLoading] = useState(false);
   const [attendanceUsers, setAttendanceUsers] = useState([]);
+  // Per-row guard against double-click/slow-network double-submits on
+  // Approve/Reject - a Set of correction-request ids currently being acted on.
+  const [actingOnIds, setActingOnIds] = useState(new Set());
   const [selectedCalendarUserId, setSelectedCalendarUserId] = useState("");
 
   const loadTeamAttendance = async (targetDate) => {
@@ -109,21 +112,37 @@ const TeamAttendanceLeave = () => {
   }, []);
 
   const handleApproveCorrection = async (id) => {
+    if (actingOnIds.has(id)) return;
+    setActingOnIds((prev) => new Set(prev).add(id));
     try {
       await approveCorrection(id);
       await loadPendingCorrections();
       await loadTeamAttendance(date);
     } catch (err) {
       alert(err.message || "Failed to approve.");
+    } finally {
+      setActingOnIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
   const handleRejectCorrection = async (id) => {
+    if (actingOnIds.has(id)) return;
+    setActingOnIds((prev) => new Set(prev).add(id));
     try {
       await rejectCorrection(id);
       await loadPendingCorrections();
     } catch (err) {
       alert(err.message || "Failed to reject.");
+    } finally {
+      setActingOnIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
@@ -226,11 +245,11 @@ const TeamAttendanceLeave = () => {
                   <td>
                     {canActOn(c) ? (
                       <>
-                        <button className="btn-approve" onClick={() => handleApproveCorrection(c.id)}>
-                          Approve
+                        <button className="btn-approve" onClick={() => handleApproveCorrection(c.id)} disabled={actingOnIds.has(c.id)}>
+                          {actingOnIds.has(c.id) ? "..." : "Approve"}
                         </button>
-                        <button className="btn-reject" onClick={() => handleRejectCorrection(c.id)}>
-                          Reject
+                        <button className="btn-reject" onClick={() => handleRejectCorrection(c.id)} disabled={actingOnIds.has(c.id)}>
+                          {actingOnIds.has(c.id) ? "..." : "Reject"}
                         </button>
                       </>
                     ) : (
