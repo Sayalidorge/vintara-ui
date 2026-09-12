@@ -150,11 +150,19 @@
 .admin-bookings-dashboard .table-wrapper {
   width: 100%;
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 70vh;
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-bookings-dashboard .bookings-table {
   width: 100%;
-  border-collapse: collapse;
+  /* border-collapse (not separate) is a well-known cause of sticky cells
+     breaking or the table's scroll behaving oddly in Safari/Chrome, since
+     sticky positioning + collapsed borders don't reliably compose - needed
+     now that columns 1-2 are sticky in both directions at once. */
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .admin-bookings-dashboard .bookings-table th,
@@ -204,6 +212,49 @@
 .admin-bookings-dashboard .bookings-table tfoot td.payment-col {
   background: rgba(128, 0, 128, 0.12);
   border-top: 2px solid var(--primary-purple);
+}
+
+/* Freeze the first 2 columns (ID, Customer) so scrolling through the wide
+   payment-details section never loses track of which booking a row belongs
+   to. Fixed widths are required here so column 2's sticky offset (left)
+   can be a known value - auto-sized columns would make that unpredictable.
+   Scoped to `thead tr:last-child` (the actual column-label row) and `tbody`
+   specifically - both the group-header row and the footer row's first cell
+   are colspan cells spanning the whole 14-column booking-details section,
+   not a 2-column-wide cell, so nth-child(1)/(2) would otherwise also match
+   those and force them down to a 70/170px width, breaking the layout.
+   Those two spanning cells are deliberately left un-pinned: pinning a
+   fraction of a colspan cell isn't meaningful, so they scroll normally
+   while the row(s) below/above them stay frozen. */
+.admin-bookings-dashboard .bookings-table thead tr:last-child th:nth-child(1),
+.admin-bookings-dashboard .bookings-table tbody td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  width: 70px;
+  min-width: 70px;
+  max-width: 70px;
+}
+
+.admin-bookings-dashboard .bookings-table thead tr:last-child th:nth-child(2),
+.admin-bookings-dashboard .bookings-table tbody td:nth-child(2) {
+  position: sticky;
+  left: 70px;
+  width: 170px;
+  min-width: 170px;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-bookings-dashboard .bookings-table thead tr:last-child th:nth-child(1),
+.admin-bookings-dashboard .bookings-table thead tr:last-child th:nth-child(2) {
+  z-index: 3;
+}
+
+.admin-bookings-dashboard .bookings-table tbody td:nth-child(1),
+.admin-bookings-dashboard .bookings-table tbody td:nth-child(2) {
+  z-index: 1;
+  background: #fff;
 }
 
 /* ==============================
@@ -302,6 +353,14 @@
 .admin-bookings-dashboard .account-card .sub-line .net {
   color: var(--text-dark);
   font-weight: 600;
+}
+
+/* Real Turnover ticker card - default .account-card border-top is already
+   purple (the "calculated" accent used throughout this page), so it just
+   needs a slightly stronger tint to stand out as the lead card in the row. */
+.admin-bookings-dashboard .account-card.real-turnover-card {
+  background: rgba(128, 0, 128, 0.05);
+  border-color: rgba(128, 0, 128, 0.22);
 }
 
 @media (max-width: 900px) {

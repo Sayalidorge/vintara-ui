@@ -7,8 +7,13 @@ import "./AdminBookingsDashboard.css";
 import config from "../config";
 import { toLocalDateStr } from "../utils/date";
 import { downloadCsv } from "../utils/csv";
-import { isSuperAdmin } from "../utils/auth";
+import { isSuperAdmin, getUserRole } from "../utils/auth";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+
+// Display-only relabeling of BookingSource values - see the matching
+// constant in UserInventory.jsx for the full rationale.
+const sourceLabel = (source) =>
+  ({ CALL: "Vintara", CALLS_GST: "Vintara + GST Bill" }[source]) || source;
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "-";
@@ -40,13 +45,31 @@ const statusBadgeColors = (status) => {
   return { background: "#fff3cd", color: "#856404" };
 };
 
+// Everyone except SUPER_ADMIN is limited to the rolling current-month +
+// last-month window (plus all future bookings) - enforced again on the
+// backend (see BookingService.findByResortAndDateRange), this is just the
+// UI-side default/min-date reflection of that same rule.
+const firstOfCurrentMonth = () => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+};
+const firstOfLastMonth = () => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth() - 1, 1);
+};
+
 const AdminBookingsDashboard = () => {
+  const role = getUserRole();
+  const contactVisible = role !== "ADMIN";
+  const dateRestricted = role !== "SUPER_ADMIN";
+
   const [resorts, setResorts] = useState([]);
   const [selectedResort, setSelectedResort] = useState(null);
   const [bookings, setBookings] = useState([]);
-  const [fromDate, setFromDate] = useState(new Date());
+  const [fromDate, setFromDate] = useState(dateRestricted ? firstOfCurrentMonth() : new Date());
   const [toDate, setToDate] = useState(null);
-  const contactVisible = isSuperAdmin();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCreatedBy, setSelectedCreatedBy] = useState(null);
 
   useEffect(() => {
     const fetchResorts = async () => {
@@ -94,8 +117,10 @@ const AdminBookingsDashboard = () => {
 
   const resetFilters = () => {
     setSelectedResort(resorts.length > 0 ? resorts[0] : null);
-    setFromDate(new Date());
+    setFromDate(dateRestricted ? firstOfCurrentMonth() : new Date());
     setToDate(null);
+    setSearchTerm("");
+    setSelectedCreatedBy(null);
   };
 
   const roomsFor = (b) =>
@@ -117,7 +142,7 @@ const AdminBookingsDashboard = () => {
     { key: "numberOfNights", label: "Nights", group: "booking", render: (b) => b.numberOfNights },
     { key: "adults", label: "Adults", group: "booking", render: (b) => b.adults ?? 0 },
     { key: "kids", label: "Kids", group: "booking", render: (b) => b.kids ?? 0 },
-    { key: "source", label: "Source", group: "booking", render: (b) => b.source },
+    { key: "source", label: "Source", group: "booking", render: (b) => sourceLabel(b.source) },
     { key: "rooms", label: "Rooms", group: "booking", render: (b) => roomsFor(b) },
     {
       key: "status",
@@ -140,22 +165,24 @@ const AdminBookingsDashboard = () => {
     { key: "createdByUser", label: "Created By", group: "booking", render: (b) => b.createdByUser || "-" },
     { key: "remarks", label: "Remarks", group: "booking", render: (b) => b.remarks || "-" },
 
-    // --- Payment details (kept contiguous - see thead/tfoot below) ---
+    // --- Payment details (kept contiguous - see thead/tfoot below).
+    // Total/Advance/Balance/Balance Split/GST group pulled to the front on
+    // request, everything else follows in its previous relative order. ---
     { key: "totalAmount", label: "Total", group: "payment", summable: true, render: (b) => b.totalAmount },
     { key: "advanceAmount", label: "Advance", group: "payment", summable: true, render: (b) => b.advanceAmount },
-    { key: "advanceCreditedToAccountName", label: "Advance Account", group: "payment", render: (b) => b.advanceCreditedToAccountName || "-" },
-    { key: "advanceReceivedAt", label: "Advance Received", group: "payment", render: (b) => formatDateTime(b.advanceReceivedAt) },
     { key: "balanceAmount", label: "Balance", group: "payment", summable: true, render: (b) => b.balanceAmount },
-    { key: "pendingBalanceAmount", label: "Pending Balance", group: "payment", summable: true, render: (b) => b.pendingBalanceAmount },
-    { key: "balanceCreditedToAccountName", label: "Balance Account", group: "payment", render: (b) => b.balanceCreditedToAccountName || "-" },
-    { key: "balanceSplits", label: "Balance Split", group: "payment", render: (b) => formatSplits(b.balanceSplits) },
-    { key: "balanceReceivedAt", label: "Balance Received", group: "payment", render: (b) => formatDateTime(b.balanceReceivedAt) },
-    { key: "discountAmount", label: "Discount", group: "payment", summable: true, render: (b) => b.discountAmount ?? "-" },
-    { key: "discountReason", label: "Discount Reason", group: "payment", render: (b) => b.discountReason || "-" },
+    { key: "balanceSplits", label: "Balance Split", group: "payment", summable: true, render: (b) => formatSplits(b.balanceSplits) },
     { key: "gstPercentage", label: "GST %", group: "payment", render: (b) => b.gstPercentage },
     { key: "gstAmount", label: "GST Amount", group: "payment", summable: true, render: (b) => b.gstAmount },
     { key: "gstOnAdvance", label: "GST On Advance", group: "payment", summable: true, render: (b) => b.gstOnAdvance ?? "-" },
     { key: "gstOnBalance", label: "GST On Balance", group: "payment", summable: true, render: (b) => b.gstOnBalance ?? "-" },
+    { key: "advanceCreditedToAccountName", label: "Advance Account", group: "payment", render: (b) => b.advanceCreditedToAccountName || "-" },
+    { key: "advanceReceivedAt", label: "Advance Received", group: "payment", render: (b) => formatDateTime(b.advanceReceivedAt) },
+    { key: "pendingBalanceAmount", label: "Pending Balance", group: "payment", summable: true, render: (b) => b.pendingBalanceAmount },
+    { key: "balanceCreditedToAccountName", label: "Balance Account", group: "payment", render: (b) => b.balanceCreditedToAccountName || "-" },
+    { key: "balanceReceivedAt", label: "Balance Received", group: "payment", render: (b) => formatDateTime(b.balanceReceivedAt) },
+    { key: "discountAmount", label: "Discount", group: "payment", summable: true, render: (b) => b.discountAmount ?? "-" },
+    { key: "discountReason", label: "Discount Reason", group: "payment", render: (b) => b.discountReason || "-" },
     { key: "otaCommission", label: "OTA Commission", group: "payment", summable: true, render: (b) => b.otaCommission ?? "-" },
     { key: "totalFoodAmount", label: "Food Total", group: "payment", summable: true, foodOnly: true, render: (b) => (b.foodPreorder ? b.totalFoodAmount ?? "-" : "-") },
     { key: "advanceFoodAmount", label: "Food Advance", group: "payment", summable: true, foodOnly: true, render: (b) => (b.foodPreorder ? b.advanceFoodAmount ?? "-" : "-") },
@@ -164,9 +191,11 @@ const AdminBookingsDashboard = () => {
     { key: "lateCheckoutCharge", label: "Late Checkout Charge", group: "payment", summable: true, render: (b) => b.lateCheckoutCharge ?? "-" },
     { key: "lateCheckoutReason", label: "Late Checkout Reason", group: "payment", render: (b) => b.lateCheckoutReason || "-" },
     { key: "lateCheckoutCreditedToAccountName", label: "Late Checkout Account", group: "payment", render: (b) => b.lateCheckoutCreditedToAccountName || "-" },
+    { key: "gstOnLateCheckoutCharge", label: "GST On Late Checkout", group: "payment", summable: true, render: (b) => b.gstOnLateCheckoutCharge ?? "-" },
     { key: "extraCharge", label: "Extra Charge", group: "payment", summable: true, render: (b) => b.extraCharge ?? "-" },
     { key: "extraChargeReason", label: "Extra Charge Reason", group: "payment", render: (b) => b.extraChargeReason || "-" },
     { key: "extraChargeCreditedToAccountName", label: "Extra Charge Account", group: "payment", render: (b) => b.extraChargeCreditedToAccountName || "-" },
+    { key: "gstOnExtraCharge", label: "GST On Extra Charge", group: "payment", summable: true, render: (b) => b.gstOnExtraCharge ?? "-" },
     { key: "refundAmount", label: "Refund Amount", group: "payment", summable: true, render: (b) => b.refundAmount ?? "-" },
     { key: "refundReason", label: "Refund Reason", group: "payment", render: (b) => b.refundReason || "-" },
     { key: "refundCreditedToAccountName", label: "Refund Account", group: "payment", render: (b) => b.refundCreditedToAccountName || "-" },
@@ -176,10 +205,43 @@ const AdminBookingsDashboard = () => {
   const bookingColumns = visibleColumns.filter((c) => c.group === "booking");
   const paymentColumns = visibleColumns.filter((c) => c.group === "payment");
 
+  // Who created a booking, for filtering by employee to see their individual
+  // turnover - derived from the current resort+date-filtered `bookings`
+  // (not `filteredBookings`, so switching resort/date always repopulates this
+  // with whoever actually has bookings in that filter, independent of
+  // whatever's currently typed in search or already selected here). Keyed by
+  // id, not name, so two staff who happen to share a name aren't conflated.
+  const createdByOptions = Array.from(
+    new Map(
+      bookings
+        .filter((b) => b.createdByUserId != null)
+        .map((b) => [b.createdByUserId, { value: b.createdByUserId, label: b.createdByUser || `User #${b.createdByUserId}` }])
+    ).values()
+  ).sort((a, b) => a.label.localeCompare(b.label));
+
+  // Client-side, on top of the resort/date filters already applied server-side
+  // - `bookings` is already the full resort+date-filtered set (fetched with
+  // size=1000), so narrowing it further here needs no extra request. Matches
+  // id, guest name, contact number, email, and room numbers - the fields
+  // staff would actually recognize a booking by.
+  const filteredBookings = bookings.filter((b) => {
+    if (selectedCreatedBy && b.createdByUserId !== selectedCreatedBy.value) return false;
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
+    return (
+      String(b.id).includes(term) ||
+      (b.customerName || "").toLowerCase().includes(term) ||
+      (b.customerContactNumber || "").toLowerCase().includes(term) ||
+      (b.customerEmail || "").toLowerCase().includes(term) ||
+      roomsFor(b).toLowerCase().includes(term)
+    );
+  });
+
   const exportBookings = () => {
     const resortLabel = selectedResort ? selectedResort.label : "all-resorts";
-    const rows = bookings.map((b) => ({
+    const rows = filteredBookings.map((b) => ({
       ...b,
+      source: sourceLabel(b.source),
       rooms: roomsFor(b),
       resortName: resortLabel,
       advanceReceivedAtText: formatDateTime(b.advanceReceivedAt),
@@ -227,9 +289,11 @@ const AdminBookingsDashboard = () => {
         { key: "lateCheckoutCharge", header: "Late Checkout Charge" },
         { key: "lateCheckoutReason", header: "Late Checkout Reason" },
         { key: "lateCheckoutCreditedToAccountName", header: "Late Checkout Account" },
+        { key: "gstOnLateCheckoutCharge", header: "GST On Late Checkout" },
         { key: "extraCharge", header: "Extra Charge" },
         { key: "extraChargeReason", header: "Extra Charge Reason" },
         { key: "extraChargeCreditedToAccountName", header: "Extra Charge Account" },
+        { key: "gstOnExtraCharge", header: "GST On Extra Charge" },
         { key: "refundAmount", header: "Refund Amount" },
         { key: "refundReason", header: "Refund Reason" },
         { key: "refundCreditedToAccountName", header: "Refund Account" },
@@ -239,14 +303,31 @@ const AdminBookingsDashboard = () => {
   };
 
   // Sums for the footer row - only the genuinely additive money columns
-  // (flagged `summable` above). Percentages, account names, splits, and
-  // headcounts aren't included: summing those across bookings with
-  // different date ranges/accounts isn't meaningful.
-  const sumColumn = (col) =>
-    bookings.reduce((total, b) => {
+  // (flagged `summable` above). Percentages, account names, and headcounts
+  // aren't included: summing those across bookings with different date
+  // ranges/accounts isn't meaningful. Balance (the column) is the amount
+  // charged/owed, NOT what's actually been paid - it stays fixed once set,
+  // regardless of collection (see pendingBalanceAmount for what's still
+  // due). Balance Split's footer is "balance actually collected" - same
+  // splits-or-legacy-account definition used everywhere else on this page
+  // (Turnover, the account tickers), not just a literal sum of the split
+  // rows shown in that column - a booking with no splits but a legacy
+  // single-account balanceCreditedTo still had its balance genuinely
+  // collected, so it counts here too, even though its cell just shows "-".
+  const sumColumn = (col) => {
+    if (col.key === "balanceSplits") {
+      return filteredBookings.reduce((total, b) => {
+        if (b.balanceSplits && b.balanceSplits.length > 0) {
+          return total + b.balanceSplits.reduce((s, split) => s + (split.amount || 0), 0);
+        }
+        return total + (b.balanceCreditedToAccountName ? (b.balanceAmount || 0) : 0);
+      }, 0);
+    }
+    return filteredBookings.reduce((total, b) => {
       const value = col.foodOnly ? (b.foodPreorder ? b[col.key] : 0) : b[col.key];
       return total + (value || 0);
     }, 0);
+  };
   const money = (n) => `₹${n.toLocaleString()}`;
 
   // Per-account collection summary for the currently filtered bookings -
@@ -257,17 +338,44 @@ const AdminBookingsDashboard = () => {
   // extra state or fetch needed.
   const computeAccountTotals = () => {
     const totals = new Map();
+    const bump = (key, field, amount) => {
+      if (!totals.has(key)) totals.set(key, { collected: 0, refunded: 0 });
+      totals.get(key)[field] += amount;
+    };
+    // Strict: a missing account here means the amount was never actually
+    // collected (e.g. balance with no split rows and no legacy account set -
+    // the guest hasn't checked in/paid yet), so it must be excluded, not
+    // bucketed anywhere.
     const addTo = (accountName, field, amount) => {
       if (!accountName || !amount) return;
-      if (!totals.has(accountName)) totals.set(accountName, { collected: 0, refunded: 0 });
-      totals.get(accountName)[field] += amount;
+      bump(accountName, field, amount);
     };
-    bookings.forEach((b) => {
+    // Lenient: for fields where the amount is definitely real/collected but
+    // the account tag can be missing on old data (e.g. a refund from before
+    // this session's refund-simplification migration, never backfilled) -
+    // silently dropping it would make the "All Accounts"/Turnover total
+    // wrong, not just that one account's card, so bucket it under "Unknown
+    // Account" instead, which also surfaces the data gap rather than hiding it.
+    const addToOrUnknown = (accountName, field, amount) => {
+      if (!amount) return;
+      bump(accountName || "Unknown Account", field, amount);
+    };
+    filteredBookings.forEach((b) => {
       addTo(b.advanceCreditedToAccountName, "collected", b.advanceAmount);
-      (b.balanceSplits || []).forEach((s) => addTo(s.accountName, "collected", s.amount));
+      if (b.balanceSplits && b.balanceSplits.length > 0) {
+        b.balanceSplits.forEach((s) => addTo(s.accountName, "collected", s.amount));
+      } else {
+        // No splits (a booking checked in before splits existed, or paid to
+        // a single account) - fall back to the legacy single-account field,
+        // same as the backend's collection logic and this table's own
+        // "Balance Account" column already do. Without this, a legacy
+        // booking's balance silently disappears from "Collected" entirely.
+        // Still strict: no legacy account either means genuinely uncollected.
+        addTo(b.balanceCreditedToAccountName, "collected", b.balanceAmount);
+      }
       addTo(b.lateCheckoutCreditedToAccountName, "collected", b.lateCheckoutCharge);
       addTo(b.extraChargeCreditedToAccountName, "collected", b.extraCharge);
-      addTo(b.refundCreditedToAccountName, "refunded", b.refundAmount);
+      addToOrUnknown(b.refundCreditedToAccountName, "refunded", b.refundAmount);
     });
     return Array.from(totals.entries())
       .map(([accountName, { collected, refunded }]) => ({ accountName, collected, refunded, net: collected - refunded }))
@@ -278,6 +386,13 @@ const AdminBookingsDashboard = () => {
     (acc, a) => ({ collected: acc.collected + a.collected, refunded: acc.refunded + a.refunded }),
     { collected: 0, refunded: 0 }
   );
+  // Real Turnover is cash-basis: money actually collected across every
+  // account, net of refunds - a booking's still-unpaid balance doesn't
+  // count. Matches SettlementService.populateResortTurnoverAndCollection's
+  // resortTurnover exactly (which is set to vintaraCollection +
+  // propertyCollection there for the same reason), so this is just the
+  // same net figure the "All Accounts" card already computes.
+  const realTurnover = allAccountsTotal.collected - allAccountsTotal.refunded;
 
   return (
     <div className="admin-bookings-dashboard">
@@ -305,6 +420,33 @@ const AdminBookingsDashboard = () => {
           />
         </div>
         <div className="filter-item">
+          <label>Created By</label>
+          <Select
+            options={createdByOptions}
+            value={selectedCreatedBy}
+            onChange={setSelectedCreatedBy}
+            placeholder="All employees"
+            isClearable
+            isDisabled={createdByOptions.length === 0}
+            classNamePrefix="react-select"
+            className="react-select-container"
+            menuPortalTarget={menuPortalTarget}
+            menuPosition={menuPosition}
+            styles={themedSelectStyles()}
+          />
+        </div>
+        <div className="filter-item">
+          <label>Search</label>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="ID, guest name, contact, email, room..."
+            className="date-picker"
+            style={{ minWidth: "220px" }}
+          />
+        </div>
+        <div className="filter-item">
           <label>From Date</label>
           <DatePicker
             selected={fromDate}
@@ -312,6 +454,7 @@ const AdminBookingsDashboard = () => {
             dateFormat="dd-MM-yyyy"
             className="date-picker"
             portalId="datepicker-portal"
+            minDate={dateRestricted ? firstOfLastMonth() : undefined}
           />
         </div>
         <div className="filter-item">
@@ -344,10 +487,20 @@ const AdminBookingsDashboard = () => {
       {/* Account-wise collection summary - derived from the same filtered
           `bookings` array the table below renders, so it's always in sync
           with what's visibly listed. */}
-      {bookings.length > 0 && (
+      {filteredBookings.length > 0 && (
         <div className="account-summary-wrap">
           <p className="account-summary-label">Collected by account · this filter</p>
           <div className="account-summary">
+            <div
+              className="account-card real-turnover-card"
+              title="Money actually collected across every account, net of refunds - a booking's still-unpaid balance doesn't count. Matches Monthly Settlement's Resort Turnover."
+            >
+              <div className="account-name">
+                Turnover <span className="rank">CASH BASIS</span>
+              </div>
+              <div className="collected-label">This filter</div>
+              <div className="collected">{money(realTurnover)}</div>
+            </div>
             <div className="account-card all-accounts">
               <div className="account-name">
                 All Accounts <span className="rank">TOTAL</span>
@@ -397,8 +550,8 @@ const AdminBookingsDashboard = () => {
             </tr>
           </thead>
           <tbody>
-            {bookings.length > 0 ? (
-              bookings.map((b) => (
+            {filteredBookings.length > 0 ? (
+              filteredBookings.map((b) => (
                 <tr key={b.id}>
                   {visibleColumns.map((c) => (
                     <td key={c.key} className={c.group === "payment" ? "payment-col" : undefined}>
@@ -413,10 +566,10 @@ const AdminBookingsDashboard = () => {
               </tr>
             )}
           </tbody>
-          {bookings.length > 0 && (
+          {filteredBookings.length > 0 && (
             <tfoot>
               <tr>
-                <td colSpan={bookingColumns.length}><strong>Total</strong></td>
+                <td colSpan={bookingColumns.length}><strong>Column Sum</strong></td>
                 {paymentColumns.map((c) => (
                   <td key={c.key} className="payment-col">
                     {c.summable ? <strong>{money(sumColumn(c))}</strong> : ""}

@@ -9,6 +9,11 @@ import config from "../config";
 import { toLocalDateStr } from "../utils/date";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 
+// Display-only relabeling of BookingSource values - see the matching
+// constant in UserInventory.jsx for the full rationale.
+const sourceLabel = (source) =>
+  ({ CALL: "Vintara", CALLS_GST: "Vintara + GST Bill" }[source]) || source;
+
 // Collapses check-in/check-out into one compact range, e.g. "08-09 Aug 2026"
 // when they fall in the same month/year, expanding only as far as needed
 // when they don't ("30 Aug - 02 Sep 2026", "30 Dec 2026 - 02 Jan 2027").
@@ -594,6 +599,22 @@ const UserDashboard = () => {
                         Extension
                       </span>
                     )}
+                    {b.discountAmount > 0 && (
+                      <span
+                        title={b.discountReason ? `Discount: ₹${b.discountAmount} (${b.discountReason})` : `Discount: ₹${b.discountAmount}`}
+                        style={{
+                          marginLeft: "6px",
+                          padding: "2px 8px",
+                          borderRadius: "10px",
+                          fontSize: "11px",
+                          fontWeight: "bold",
+                          background: "#fde8d8",
+                          color: "#a05a1a",
+                        }}
+                      >
+                        Discounted
+                      </span>
+                    )}
                   </td>
                   <td>{b.customerContactNumber}</td>
                   <td>{formatStayDuration(b.checkInDate, b.checkOutDate)}</td>
@@ -601,7 +622,7 @@ const UserDashboard = () => {
                   <td>{b.totalAmount}</td>
                   <td>{b.advanceAmount}</td>
                   <td>{b.balanceAmount}</td>
-                  <td>{b.source}</td>
+                  <td>{sourceLabel(b.source)}</td>
 <td>
   {b.bookingItems?.length
     ? b.bookingItems.map((item, i) => (
@@ -702,6 +723,12 @@ const UserDashboard = () => {
                           <div>
                             <span className="row-details-label">Extended Into</span>
                             <span>Booking #{b.extendedIntoBookingId}</span>
+                          </div>
+                        )}
+                        {b.discountAmount > 0 && (
+                          <div>
+                            <span className="row-details-label">Discount Applied</span>
+                            <span>₹{b.discountAmount}{b.discountReason ? ` - ${b.discountReason}` : ""}</span>
                           </div>
                         )}
                         <div>
