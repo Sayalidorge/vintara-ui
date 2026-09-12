@@ -70,6 +70,27 @@
     box-shadow: 0 0 0 1px var(--primary-teal);
 }
 
+.monthly-settlement-page .settlement-filters .date-picker {
+    height: 40px;
+    width: 100%;
+    padding: 0 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.monthly-settlement-page .settlement-filters .date-picker:focus {
+    border-color: var(--primary-teal);
+    outline: none;
+    box-shadow: 0 0 0 1px var(--primary-teal);
+}
+
+.monthly-settlement-page .period-mode-toggle {
+    display: flex;
+    gap: 8px;
+    height: 40px;
+}
+
 .monthly-settlement-page .btn {
     height: 40px;
     padding: 0 20px;
@@ -172,6 +193,11 @@
 .monthly-settlement-page .pill-finalized {
     background: #d4edda;
     color: #155724;
+}
+
+.monthly-settlement-page .pill-preview {
+    background: #e2e3ff;
+    color: #3730a3;
 }
 
 .monthly-settlement-page .result-actions {
