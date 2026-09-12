@@ -215,6 +215,8 @@
 .user-dashboard .table-wrapper {
   width: 100%;
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 70vh;
   position: relative;
 }
 
@@ -230,7 +232,10 @@
                          overflow-x:auto scroll horizontally past it instead of every
                          column (and the Action buttons inside them) getting squeezed
                          and mid-word-wrapping at narrow viewport widths. */
-  border-collapse: collapse;
+  /* separate + 0 spacing (not collapse) - sticky <th> below needs this or
+     the header's border/background breaks up as the body scrolls under it. */
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .user-dashboard .bookings-table th,
@@ -251,6 +256,12 @@
   color: #fff;
   font-weight: 600;
   text-align: left;
+}
+
+.user-dashboard .bookings-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 /* Edit/Send Confirmation/Cancel used to be bare sibling buttons directly in

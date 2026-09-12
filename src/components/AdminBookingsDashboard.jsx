@@ -80,8 +80,9 @@ const AdminBookingsDashboard = () => {
         );
         const data = await res.json();
         const options = data.map((r) => ({ value: r.id, label: r.name }));
-        setResorts(options);
-        if (options.length > 0) setSelectedResort(options[0]);
+        const allResortsOption = { value: null, label: "All Resorts" };
+        setResorts([allResortsOption, ...options]);
+        setSelectedResort(allResortsOption);
       } catch (err) {
         console.error(err);
         setResorts([]);
@@ -100,7 +101,11 @@ const AdminBookingsDashboard = () => {
         // relying on the endpoint's default (20) - GET /api/bookings?resortId=
         // returns a paginated {content, totalElements, ...} object now, not
         // a plain array.
-        let url = `${config.BASE_URL}/api/bookings?resortId=${selectedResort.value}&page=0&size=1000`;
+        // A blank resortId (selectedResort.value === null, "All Resorts")
+        // still sends the param name - the backend distinguishes "all
+        // resorts I'm allowed to see" from the separate, unrestricted
+        // GET /api/bookings (no resortId at all) used elsewhere.
+        let url = `${config.BASE_URL}/api/bookings?resortId=${selectedResort.value ?? ""}&page=0&size=1000`;
         if (fromDate) url += `&fromDate=${toLocalDateStr(fromDate)}`;
         if (toDate) url += `&toDate=${toLocalDateStr(toDate)}`;
         const res = await fetch(url, { headers: config.getHeaders() });
@@ -116,7 +121,8 @@ const AdminBookingsDashboard = () => {
   }, [selectedResort, fromDate, toDate]);
 
   const resetFilters = () => {
-    setSelectedResort(resorts.length > 0 ? resorts[0] : null);
+    // resorts[0] is the "All Resorts" entry, matching the initial default.
+    setSelectedResort(resorts[0] || null);
     setFromDate(dateRestricted ? firstOfCurrentMonth() : new Date());
     setToDate(null);
     setSearchTerm("");
@@ -135,6 +141,10 @@ const AdminBookingsDashboard = () => {
   const columns = [
     { key: "id", label: "ID", group: "booking", render: (b) => b.id },
     { key: "customerName", label: "Customer", group: "booking", render: (b) => b.customerName },
+    // Only shown for "All Resorts" - inserted after the two sticky/pinned
+    // columns (ID, Customer - see the nth-child(1)/(2) CSS) so it doesn't
+    // shift which columns are frozen.
+    ...(!selectedResort?.value ? [{ key: "resort", label: "Resort", group: "booking", render: (b) => b.property || "-" }] : []),
     { key: "customerContactNumber", label: "Contact", group: "booking", contactOnly: true, render: (b) => b.customerContactNumber },
     { key: "customerEmail", label: "Email", group: "booking", contactOnly: true, render: (b) => b.customerEmail || "-" },
     { key: "checkInDate", label: "Check-In", group: "booking", render: (b) => formatDate(b.checkInDate) },
@@ -243,7 +253,9 @@ const AdminBookingsDashboard = () => {
       ...b,
       source: sourceLabel(b.source),
       rooms: roomsFor(b),
-      resortName: resortLabel,
+      // Per-row actual resort (not the filter's constant label) - matters
+      // once "All Resorts" mixes bookings from more than one property.
+      resortName: b.property || resortLabel,
       advanceReceivedAtText: formatDateTime(b.advanceReceivedAt),
       balanceReceivedAtText: formatDateTime(b.balanceReceivedAt),
       balanceSplitsText: formatSplits(b.balanceSplits),
