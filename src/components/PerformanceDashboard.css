@@ -1,0 +1,145 @@
+.performance-dashboard {
+    padding: 24px;
+}
+
+.performance-dashboard .page-title {
+    margin: 0 0 20px;
+}
+
+.performance-dashboard .filters {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+}
+
+.performance-dashboard .filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 190px;
+}
+
+.performance-dashboard .filter-item--narrow {
+    min-width: 100px;
+}
+
+.performance-dashboard .filter-item label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+}
+
+.performance-dashboard .filter-item input[type="number"] {
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.performance-dashboard .chart-card {
+    background: #fff;
+    border: 1px solid #e2dce6;
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+}
+
+.performance-dashboard .chart-card-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.performance-dashboard .chart-card-header h3 {
+    margin: 0;
+}
+
+.performance-dashboard .filter-item--inline.filter-item--narrow {
+    min-width: 90px;
+}
+
+.performance-dashboard .filter-item--inline {
+    min-width: 160px;
+}
+
+.performance-dashboard .chart-card h3 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    color: var(--text-dark);
+}
+
+.performance-dashboard .ticker-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.performance-dashboard .ticker-card {
+    background: #fbf9fc;
+    border: 1px solid #e2dce6;
+    border-top: 3px solid var(--primary-teal);
+    border-radius: 8px;
+    padding: 14px 18px;
+    min-width: 190px;
+    flex: 1 1 190px;
+}
+
+.performance-dashboard .ticker-card .ticker-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+}
+
+.performance-dashboard .ticker-card .ticker-value {
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-dark);
+    line-height: 1.15;
+}
+
+.performance-dashboard .top-performers table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.performance-dashboard .top-performers th,
+.performance-dashboard .top-performers td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+.performance-dashboard .top-performers th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #8b938e;
+}
+
+.performance-dashboard .top-performers td.numeric {
+    font-variant-numeric: tabular-nums;
+}
+
+.performance-dashboard .top-performers .rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--primary-purple);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    margin-right: 8px;
+}

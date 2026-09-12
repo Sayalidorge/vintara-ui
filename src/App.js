@@ -7,6 +7,7 @@ import ResetPassword from "./components/ResetPassword";
 import ChangePassword from "./components/ChangePassword";
 import AdminDashboard from "./components/AdminDashboard";
 import AdminBookingsDashboard from "./components/AdminBookingsDashboard";
+import PerformanceDashboard from "./components/PerformanceDashboard";
 import ManageResorts from "./components/ManageResorts";
 import ManageUsers from "./components/ManageUsers";
 import AdminExpensesDashboard from "./components/AdminExpensesDashboard";
@@ -65,6 +66,7 @@ function App() {
   >
     <Route path="dashboard" element={<ProtectedRoute requiredPermission="view_occupancy"><AdminDashboard /></ProtectedRoute>} />
     <Route path="bookings" element={<ProtectedRoute requiredPermission="view_admin_bookings"><AdminBookingsDashboard /></ProtectedRoute>} />
+    <Route path="performance" element={<ProtectedRoute requiredPermission="view_performance"><PerformanceDashboard /></ProtectedRoute>} />
     <Route path="resorts" element={<ProtectedRoute requiredPermission="manage_resorts"><ManageResorts /></ProtectedRoute>} />
     <Route path="users" element={<ProtectedRoute requiredPermission="manage_users"><ManageUsers /></ProtectedRoute>} />
     <Route path="expenses" element={<ProtectedRoute requiredPermission="view_expenses"><AdminExpensesDashboard /></ProtectedRoute>} />

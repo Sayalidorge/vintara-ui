@@ -19,6 +19,7 @@ import {
   FaHistory,
   FaMoneyCheckAlt,
   FaCoins,
+  FaChartLine,
 } from "react-icons/fa";
 
 // Single source of truth for the sidebar. Each item is shown only if the
@@ -26,10 +27,11 @@ import {
 // — see PermissionService on the backend for the role -> permission map.
 const MENU_CONFIG = [
   { label: "Occupancy", path: "/admin/dashboard", icon: FaTachometerAlt, requiredPermission: "view_occupancy" },
-  { label: "Bookings", path: "/admin/bookings", icon: FaBook, requiredPermission: "view_admin_bookings" },
   { label: "Dashboard", path: "/user/dashboard", icon: FaHome, requiredPermission: "view_user_dashboard" },
   { label: "Create Booking", path: "/user/create-booking", icon: FaCalendarPlus, requiredPermission: "create_booking" },
   { label: "Inventory", path: "/user/inventory", icon: FaBoxes, requiredPermission: "view_inventory" },
+  { label: "Bookings", path: "/admin/bookings", icon: FaBook, requiredPermission: "view_admin_bookings" },
+  { label: "Performance", path: "/admin/performance", icon: FaChartLine, requiredPermission: "view_performance" },
   {
     label: "Daily Entry",
     path: "/user/daily-entries",
