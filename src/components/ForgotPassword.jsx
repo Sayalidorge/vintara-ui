@@ -10,14 +10,24 @@ const ForgotPassword = () => {
     e.preventDefault();
 
  try {
-  await fetch(`${config.BASE_URL}/auth/forgot-password?email=${encodeURIComponent(email)}`, {
+  const res = await fetch(`${config.BASE_URL}/auth/forgot-password?email=${encodeURIComponent(email)}`, {
     method: "POST",
   });
 
-  alert("If the email exists, reset link has been sent.");
-  navigate("/");
+  // 404 (email not registered) gets the SAME message as success -
+  // deliberately, so this can't be used to probe which emails are
+  // registered. Only a genuine server-side failure (e.g. mail send error)
+  // gets a distinct message, since retrying silently wouldn't help there.
+  if (res.ok || res.status === 404) {
+    alert("If the email exists, reset link has been sent.");
+    navigate("/");
+    return;
+  }
+
+  const message = await res.text().catch(() => null);
+  alert(message || "Something went wrong. Please try again later.");
 } catch (err) {
-  alert("Something went wrong");
+  alert("Something went wrong. Please try again later.");
 }
   };
 

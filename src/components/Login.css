@@ -11,10 +11,42 @@ body, html {
   align-items: center;
   min-height: 100vh;
   padding: 20px;
-  background: var(--bg-light);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f2ecf7 0%, #eaf5f5 100%);
+}
+
+/* Soft blurred brand-color "blobs" for depth behind everything. */
+.login-container::before,
+.login-container::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  z-index: 0;
+}
+
+.login-container::before {
+  width: 420px;
+  height: 420px;
+  top: -140px;
+  left: -120px;
+  background: var(--primary-purple);
+  opacity: 0.18;
+}
+
+.login-container::after {
+  width: 380px;
+  height: 380px;
+  bottom: -130px;
+  right: -110px;
+  background: var(--primary-teal);
+  opacity: 0.18;
 }
 
 .login-box {
+  position: relative;
+  z-index: 1;
   background: white;
   padding: 40px;
   border-radius: 12px;
@@ -51,6 +83,44 @@ body, html {
 .login-box input:focus {
   border-color: var(--primary-teal);
   box-shadow: 0 0 5px var(--primary-teal);
+}
+
+.password-input-wrap {
+  position: relative;
+  display: flex;
+}
+
+.password-input-wrap input {
+  flex: 1;
+  padding-right: 40px;
+  margin-bottom: 0;
+}
+
+.login-box .password-input-wrap {
+  margin-bottom: 15px;
+}
+
+/* Higher specificity than ".login-box button" (the teal submit-button
+   style), which would otherwise override this - see .login-box button
+   below. */
+.login-box .password-toggle-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #888;
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+}
+
+.login-box .password-toggle-btn:hover {
+  background: none;
+  color: var(--primary-teal);
 }
 
 .login-box button {

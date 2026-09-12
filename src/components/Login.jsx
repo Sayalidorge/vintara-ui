@@ -1,5 +1,6 @@
 // src/components/Login.jsx
 import React, { useState } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import "./Login.css";
 import "../css/theme.css";
 import logo from "../assets/logo.jpg";
@@ -10,6 +11,7 @@ import config from "../config";
 const Login = () => {
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -68,13 +70,24 @@ if (data.role === "ADMIN" || data.role === "SUPER_ADMIN") {
           />
 
           <label>Password</label>
-          <input
-            type="password"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <div className="password-input-wrap">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button
+              type="button"
+              className="password-toggle-btn"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              tabIndex={-1}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
+          </div>
 <div className="forgot-password">
   <a href="/forgot-password" className="forgot-password-link">
     Forgot Password?

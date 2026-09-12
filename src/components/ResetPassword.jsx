@@ -13,17 +13,22 @@ const ResetPassword = () => {
     e.preventDefault();
 
 try {
-  await fetch(
+  const res = await fetch(
     `${config.BASE_URL}/auth/reset-password?token=${encodeURIComponent(token)}&newPassword=${encodeURIComponent(password)}`,
     {
       method: "POST",
     }
   );
 
+  if (!res.ok) {
+    const message = await res.text().catch(() => null);
+    throw new Error(message || "Invalid or expired token");
+  }
+
   alert("Password reset successful. Please login.");
   navigate("/");
 } catch (err) {
-  alert("Invalid or expired token");
+  alert(err.message || "Invalid or expired token");
 }
   };
 
