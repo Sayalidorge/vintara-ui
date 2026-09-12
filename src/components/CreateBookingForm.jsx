@@ -45,6 +45,7 @@ const CreateBookingForm = () => {
   // -----------------------------
   const [resortOptions, setResortOptions] = useState([]);
   const [resort, setResort] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [categoryOptions, setCategoryOptions] = useState([]);
 
@@ -87,6 +88,17 @@ const CreateBookingForm = () => {
   const [totalAmount, setTotalAmount] = useState("");
   const [advanceAmount, setAdvanceAmount] = useState("");
   const [balanceAmount, setBalanceAmount] = useState(0);
+
+  // Only shown when the selected resort has more than one configured
+  // advance-collection account - otherwise it's resolved automatically on
+  // the backend with no choice needed, same as before this existed.
+  const [advanceAccountOptions, setAdvanceAccountOptions] = useState([]);
+  const [advanceAccount, setAdvanceAccount] = useState(null);
+  // Captured from an edit-mode booking fetch before advanceAccountOptions
+  // has necessarily loaded yet (the two fetches - booking data, and the
+  // resort's advance accounts - run independently) - applied once both are
+  // available, see the effect below.
+  const [pendingAdvanceAccountId, setPendingAdvanceAccountId] = useState(null);
 
   const [gstPercent, setGstPercent] = useState("5");
   const [gstAmount, setGstAmount] = useState(0);
@@ -324,6 +336,48 @@ const CreateBookingForm = () => {
     fetchResorts();
   }, [bookingId, prefillBookingData, prefillResortId]);
 
+  // Which accounts this resort's advance can be collected into - a dropdown
+  // is only shown (below, in the payment section) when there's more than
+  // one, otherwise it's resolved automatically on the backend exactly as
+  // before this existed.
+  useEffect(() => {
+    if (!resort) {
+      setAdvanceAccountOptions([]);
+      setAdvanceAccount(null);
+      return;
+    }
+
+    const fetchAdvanceAccounts = async () => {
+      try {
+        const res = await fetch(
+          `${config.BASE_URL}/api/resorts/${resort.value}/advance-accounts`,
+          { headers: config.getHeaders() }
+        );
+        const data = await res.json();
+        const options = data.map((a) => ({ value: a.id, label: a.name }));
+        setAdvanceAccountOptions(options);
+      } catch (err) {
+        console.error(err);
+        setAdvanceAccountOptions([]);
+      }
+    };
+
+    fetchAdvanceAccounts();
+    setAdvanceAccount(null);
+  }, [resort]);
+
+  // Applies an edit-mode booking's previously-chosen advance account once
+  // both the booking data and this resort's advance-account options have
+  // loaded (the two fetches run independently).
+  useEffect(() => {
+    if (!pendingAdvanceAccountId || advanceAccountOptions.length === 0) return;
+    const match = advanceAccountOptions.find((o) => o.value === pendingAdvanceAccountId);
+    if (match) {
+      setAdvanceAccount(match);
+      setPendingAdvanceAccountId(null);
+    }
+  }, [pendingAdvanceAccountId, advanceAccountOptions]);
+
   // -----------------------------
   // Edit Booking
   // -----------------------------
@@ -358,6 +412,7 @@ const CreateBookingForm = () => {
 
         setTotalAmount(data.totalAmount || "");
         setAdvanceAmount(data.advanceAmount || 0);
+        setPendingAdvanceAccountId(data.advanceAccountId || null);
 
         setGstPercent(data.gstPercentage || "5");
         setTransactionId(data.transactionId || "");
@@ -485,6 +540,7 @@ if (data.bookingItems?.length > 0) {
   // -----------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (!resort) {
       return alert("Select Resort");
@@ -526,6 +582,7 @@ if (data.bookingItems?.length > 0) {
 
       totalAmount: parseFloat(totalAmount) || 0,
       advanceAmount: parseFloat(advanceAmount) || 0,
+      advanceAccountId: advanceAccount?.value ?? null,
       balanceAmount: parseFloat(balanceAmount) || 0,
 
       gstPercentage: parseFloat(gstPercent) || 0,
@@ -552,6 +609,7 @@ if (data.bookingItems?.length > 0) {
 
     console.log("BOOKING DATA SENT TO BACKEND");
 console.log(JSON.stringify(bookingDataToSend, null, 2));
+    setIsSubmitting(true);
     try {
       let res;
 
@@ -582,6 +640,8 @@ console.log(JSON.stringify(bookingDataToSend, null, 2));
     } catch (err) {
       console.error(err);
       alert(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   // -----------------------------
@@ -965,6 +1025,22 @@ const roomOptions = Array.from(roomOptionsMap.values());
               />
             </div>
           )}
+          {bookingSource !== "WALKIN" && advanceAccountOptions.length > 1 && (
+            <div className="form-group">
+              <label>Advance Collection Account</label>
+
+              <Select
+                options={advanceAccountOptions}
+                value={advanceAccount}
+                onChange={setAdvanceAccount}
+                placeholder="Select account..."
+                classNamePrefix="react-select"
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+                styles={themedSelectStyles()}
+              />
+            </div>
+          )}
           <div className="form-row">
 
             <div className="form-group">
@@ -1099,8 +1175,8 @@ const roomOptions = Array.from(roomOptionsMap.values());
           </div>
         </div>
 
-        <button type="submit" className="submit-btn">
-          {bookingId ? "Update Booking" : "Create Booking"}
+        <button type="submit" className="submit-btn" disabled={isSubmitting}>
+          {isSubmitting ? "Saving..." : bookingId ? "Update Booking" : "Create Booking"}
         </button>
 
       </form>

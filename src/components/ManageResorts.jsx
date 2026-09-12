@@ -28,19 +28,25 @@ const ManageResorts = () => {
   const navigate = useNavigate();
   const currentUser = JSON.parse(localStorage.getItem("user") || "null");
   const isSuperAdmin = currentUser?.role === "SUPER_ADMIN";
+  // Payment Accounts tab: SUPER_USER gets the same add/edit access as
+  // SUPER_ADMIN here - only resort deletion below stays SUPER_ADMIN-only.
+  const canManagePaymentAccounts = isSuperAdmin || currentUser?.role === "SUPER_USER";
   const formSectionRef = useRef(null);
   const nameInputRef = useRef(null);
   const [locations, setLocations] = useState([]);
   const [newLocation, setNewLocation] = useState("");
+  const [isAddingLocation, setIsAddingLocation] = useState(false);
   const [contactError, setContactError] = useState("");
   const [commissionModel, setCommissionModel] = useState("");
   const [commissionPercentage, setCommissionPercentage] = useState("");
+  const [otherOtaCommissionPercentage, setOtherOtaCommissionPercentage] = useState("");
   const [paymentAccounts, setPaymentAccounts] = useState([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState([]);
-  // Which of this resort's assigned accounts its advance defaults to -
-  // null means "use the global VINTARA account" (see
-  // BookingService.resolveAdvanceAccount on the backend).
-  const [defaultAdvanceAccountId, setDefaultAdvanceAccountId] = useState(null);
+  // Which of this resort's assigned accounts are eligible to collect its
+  // advance - empty means "use the global VINTARA account". More than one
+  // means staff pick which account at booking-creation time (see
+  // BookingService.resolveAdvanceAccountForBooking on the backend).
+  const [advanceAccountIds, setAdvanceAccountIds] = useState([]);
 const STANDARD_CATEGORIES = [
   { label: "Standard Room", value: "Standard Room", prefix: "S" },
   { label: "Deluxe Room", value: "Deluxe Room", prefix: "D" },
@@ -179,6 +185,12 @@ const COMMISSION_PERCENTAGES = [
   { value: 20, label: "20%" },
 ];
 
+const OTHER_OTA_COMMISSION_PERCENTAGES = [
+  { value: 0, label: "0%" },
+  { value: 5, label: "5%" },
+  { value: 10, label: "10%" },
+];
+
 const getCommissionModelLabel = (value) =>
   COMMISSION_MODELS.find((m) => m.value === value)?.label || value;
   // Room category handlers
@@ -222,7 +234,8 @@ const getCommissionModelLabel = (value) =>
   propertyContact,
   commissionModel,
   commissionPercentage,
-  defaultAdvanceAccountId,
+  otherOtaCommissionPercentage,
+  advanceAccountIds,
   // Clean, lean payload mapping to your updated backend structure
   roomCategories: roomCategories.map((cat) => ({
     id: cat.id || null,
@@ -285,9 +298,10 @@ const getCommissionModelLabel = (value) =>
     setPropertyContact("");
     setCommissionModel("");
     setCommissionPercentage("");
+    setOtherOtaCommissionPercentage("");
     setRoomCategories([]);
     setSelectedAccountIds([]);
-    setDefaultAdvanceAccountId(null);
+    setAdvanceAccountIds([]);
     setEditId(null);
     setShowForm(false);
 
@@ -309,7 +323,8 @@ const getCommissionModelLabel = (value) =>
     setPropertyContact(resort.propertyContact || "");
     setCommissionModel(resort.commissionModel || "");
     setCommissionPercentage(resort.commissionPercentage || "");
-    setDefaultAdvanceAccountId(resort.defaultAdvanceAccountId || null);
+    setOtherOtaCommissionPercentage(resort.otherOtaCommissionPercentage ?? "");
+    setAdvanceAccountIds(resort.advanceAccountIds || []);
     setRoomCategories(
       resort.roomCategories?.map((c) => ({
         id: c.id || null,
@@ -420,7 +435,7 @@ const getCommissionModelLabel = (value) =>
         </button>
       </div>
 
-      {activeTab === "PAYMENT_ACCOUNTS" && <PaymentAccounts viewOnly={!isSuperAdmin} />}
+      {activeTab === "PAYMENT_ACCOUNTS" && <PaymentAccounts viewOnly={!canManagePaymentAccounts} />}
 
       {activeTab === "RESORTS" && (
       <>
@@ -436,9 +451,10 @@ const getCommissionModelLabel = (value) =>
               setPropertyContact("");
               setCommissionModel("");
               setCommissionPercentage("");
+              setOtherOtaCommissionPercentage("");
               setRoomCategories([]);
               setSelectedAccountIds([]);
-              setDefaultAdvanceAccountId(null);
+              setAdvanceAccountIds([]);
               setShowForm(true);
             }}
             style={{ padding: "10px 20px", cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", fontSize: "14px" }}
@@ -509,9 +525,12 @@ const getCommissionModelLabel = (value) =>
                 />
                 <button
                   type="button"
+                  disabled={isAddingLocation}
                   style={{ height: "38px", boxSizing: "border-box", padding: "0 18px", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}
                   onClick={async () => {
+                    if (isAddingLocation) return;
                     if (!newLocation.trim()) return alert("Enter a location");
+                    setIsAddingLocation(true);
                     try {
                       const res = await fetch(`${config.BASE_URL}/api/locations`, {
                         method: "POST",
@@ -526,10 +545,12 @@ const getCommissionModelLabel = (value) =>
                     } catch (err) {
                       console.error(err);
                       alert(err.message);
+                    } finally {
+                      setIsAddingLocation(false);
                     }
                   }}
                 >
-                  Add
+                  {isAddingLocation ? "Adding..." : "Add"}
                 </button>
               </div>
             </div>
@@ -580,19 +601,20 @@ const getCommissionModelLabel = (value) =>
 
           <div className="form-row" style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Default Advance Collection Account</label>
+              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Advance Collection Account(s)</label>
               <Select
-                isClearable
+                isMulti
                 options={paymentAccountOptions.filter((opt) => selectedAccountIds.includes(opt.value))}
-                value={paymentAccountOptions.find((opt) => opt.value === defaultAdvanceAccountId) || null}
-                onChange={(selected) => setDefaultAdvanceAccountId(selected ? selected.value : null)}
+                value={paymentAccountOptions.filter((opt) => advanceAccountIds.includes(opt.value))}
+                onChange={(selected) => setAdvanceAccountIds((selected || []).map((opt) => opt.value))}
                 placeholder="VINTARA (default)"
                 menuPortalTarget={menuPortalTarget}
                 menuPosition={menuPosition}
-                styles={customSelectStyles}
+                styles={multiSelectStyles}
               />
               <p style={{ fontSize: "12px", color: "#999", margin: 0 }}>
                 Leave blank to keep collecting this resort's advance into the VINTARA account. Only accounts assigned to this resort (above) can be picked.
+                Selecting more than one lets staff choose which account at booking creation; selecting exactly one keeps it fully automatic, same as leaving it blank.
               </p>
             </div>
           </div>
@@ -655,7 +677,7 @@ const getCommissionModelLabel = (value) =>
         color: "#555",
       }}
     >
-      Commission Percentage
+      Vintara Commission Percentage
     </label>
 
     <Select
@@ -667,6 +689,41 @@ const getCommissionModelLabel = (value) =>
       }
       onChange={(selected) =>
         setCommissionPercentage(selected?.value || "")
+      }
+      placeholder="Select Percentage"
+      styles={customSelectStyles}
+      menuPortalTarget={menuPortalTarget}
+      menuPosition={menuPosition}
+    />
+  </div>
+
+  <div
+    style={{
+      flex: 1,
+      display: "flex",
+      flexDirection: "column",
+      gap: "6px",
+    }}
+  >
+    <label
+      style={{
+        fontWeight: "600",
+        fontSize: "14px",
+        color: "#555",
+      }}
+    >
+      OTA Handling Charges
+    </label>
+
+    <Select
+      options={OTHER_OTA_COMMISSION_PERCENTAGES}
+      value={
+        OTHER_OTA_COMMISSION_PERCENTAGES.find(
+          (o) => o.value === otherOtaCommissionPercentage
+        ) || null
+      }
+      onChange={(selected) =>
+        setOtherOtaCommissionPercentage(selected?.value ?? "")
       }
       placeholder="Select Percentage"
       styles={customSelectStyles}
@@ -777,7 +834,7 @@ const getCommissionModelLabel = (value) =>
             <button
               type="button"
               onClick={() => {
-                setEditId(null); setName(""); setLocation(""); setGoogleMapLink(""); setPropertyContact(""); setCommissionModel("");setCommissionPercentage("");setRoomCategories([]);setSelectedAccountIds([]);setDefaultAdvanceAccountId(null);
+                setEditId(null); setName(""); setLocation(""); setGoogleMapLink(""); setPropertyContact(""); setCommissionModel("");setCommissionPercentage("");setOtherOtaCommissionPercentage("");setRoomCategories([]);setSelectedAccountIds([]);setAdvanceAccountIds([]);
                 setShowForm(false);
               }}
               style={{ padding: "0 24px", height: "40px", cursor: "pointer", backgroundColor: "var(--primary-teal)", border: "1px solid #ccc", borderRadius: "4px", color: "#ffffff", fontSize: "14px", display: "inline-block", width: "auto" }}
@@ -868,7 +925,10 @@ const getCommissionModelLabel = (value) =>
                         ? `${getCommissionModelLabel(resort.commissionModel)}${resort.commissionPercentage ? ` (${resort.commissionPercentage}%)` : ""}`
                         : "-"}
                       <div style={{ fontSize: "11px", color: "#999", marginTop: "4px" }}>
-                        Advance to: {resort.defaultAdvanceAccountName || "VINTARA (default)"}
+                        OTA Handling Charges: {resort.otherOtaCommissionPercentage != null ? `${resort.otherOtaCommissionPercentage}%` : "-"}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#999", marginTop: "4px" }}>
+                        Advance to: {resort.advanceAccountNames?.length ? resort.advanceAccountNames.join(", ") : "VINTARA (default)"}
                       </div>
                     </td>
                     <td style={{ padding: "10px" }}>
