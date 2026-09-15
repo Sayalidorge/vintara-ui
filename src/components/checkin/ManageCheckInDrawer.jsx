@@ -1,6 +1,7 @@
 // src/components/ManageCheckInDrawer.jsx
 
 import React, { useEffect, useState } from "react";
+import { FaChevronDown } from "react-icons/fa";
 import "./ManageCheckInDrawer.css";
 import config from "../../config";
 import Select from "react-select";
@@ -15,6 +16,12 @@ const ManageCheckInDrawer = ({
     const [guests, setGuests] = useState([]);
 
     const [expandedGuest, setExpandedGuest] = useState(null);
+
+    // The booking-summary block never shrank the way each guest card does -
+    // on mobile it stacks to 5 full-width rows (see the max-width:768px CSS),
+    // eating most of the screen and leaving very little room for the actual
+    // guest/documents list below it. Collapsed by default; tap to expand.
+    const [showBookingSummary, setShowBookingSummary] = useState(false);
 
     const [rejectGuestId, setRejectGuestId] = useState(null);
 
@@ -292,42 +299,61 @@ const ManageCheckInDrawer = ({
 
                 </div>
 
-                <div className="booking-summary">
+                <button
+                    type="button"
+                    className="booking-summary-toggle"
+                    onClick={() => setShowBookingSummary(prev => !prev)}
+                    aria-expanded={showBookingSummary}
+                >
+                    <span className="booking-summary-toggle__text">
+                        {booking.customerName} · {booking.checkInDate} → {booking.checkOutDate}
+                    </span>
+                    <FaChevronDown
+                        className={
+                            "booking-summary-toggle__icon" +
+                            (showBookingSummary ? " booking-summary-toggle__icon--open" : "")
+                        }
+                    />
+                </button>
 
-                    <div>
-                        <label>Guest</label>
-                        <span>{booking.customerName}</span>
+                {showBookingSummary && (
+                    <div className="booking-summary">
+
+                        <div>
+                            <label>Guest</label>
+                            <span>{booking.customerName}</span>
+                        </div>
+
+                        <div>
+                            <label>Contact</label>
+                            <span>{booking.customerContactNumber}</span>
+                        </div>
+
+                        <div>
+                            <label>Stay</label>
+                            <span>
+                                {booking.checkInDate}
+                                {" "}
+                                →
+                                {" "}
+                                {booking.checkOutDate}
+                            </span>
+                        </div>
+
+                        <div>
+                            <label>Guests</label>
+                            <span>{booking.adults ?? 0} Adults, {booking.kids ?? 0} Kids</span>
+                        </div>
+
+                        <div>
+                            <label>Balance</label>
+                            <span style={{ color: (booking.status === "CHECKED_IN" || booking.balanceAmount === 0) ? "green" : "red", fontWeight: "bold" }}>
+                                ₹{booking.status === "CHECKED_IN" ? 0 : booking.balanceAmount}
+                            </span>
+                        </div>
+
                     </div>
-
-                    <div>
-                        <label>Contact</label>
-                        <span>{booking.customerContactNumber}</span>
-                    </div>
-
-                    <div>
-                        <label>Stay</label>
-                        <span>
-                            {booking.checkInDate}
-                            {" "}
-                            →
-                            {" "}
-                            {booking.checkOutDate}
-                        </span>
-                    </div>
-
-                    <div>
-                        <label>Guests</label>
-                        <span>{booking.adults ?? 0} Adults, {booking.kids ?? 0} Kids</span>
-                    </div>
-
-                    <div>
-                        <label>Balance</label>
-                        <span style={{ color: (booking.status === "CHECKED_IN" || booking.balanceAmount === 0) ? "green" : "red", fontWeight: "bold" }}>
-                            ₹{booking.status === "CHECKED_IN" ? 0 : booking.balanceAmount}
-                        </span>
-                    </div>
-
-                </div>
+                )}
 
                 <div className="guest-list">
 

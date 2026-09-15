@@ -61,6 +61,40 @@
     font-size: 18px;
 }
 
+.booking-summary-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    background: #fafafa;
+    border: none;
+    border-bottom: 1px solid #ececec;
+    padding: 14px 20px;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+}
+
+.booking-summary-toggle__text {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.booking-summary-toggle__icon {
+    color: #888;
+    flex-shrink: 0;
+    transition: transform .2s ease;
+}
+
+.booking-summary-toggle__icon--open {
+    transform: rotate(180deg);
+}
+
 .booking-summary {
     display: grid;
     grid-template-columns: repeat(2,1fr);
