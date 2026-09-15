@@ -107,6 +107,14 @@ const CreateBookingForm = () => {
   const [bookingSource, setBookingSource] = useState("CALL");
   const [bookingSourceOptions, setBookingSourceOptions] = useState([]);
 
+  // Who gets performance credit for this sale - defaults to whoever's
+  // logged in (the common case), overridable when entering a booking on
+  // someone else's behalf (they took the call, this person is just typing
+  // it in). Kept separate from createdByUserId (below), which always stays
+  // the actual logged-in user regardless of this selection.
+  const [leadOwnerOptions, setLeadOwnerOptions] = useState([]);
+  const [leadOwner, setLeadOwner] = useState(null);
+
   // Derived from the backend's BookingSource.isOta() (via /api/bookings/sources)
   // instead of a hardcoded list here, which had drifted out of sync (a
   // "GOIBIBO" entry that isn't a real source, and was missing EASEMYTRIP).
@@ -335,6 +343,39 @@ const CreateBookingForm = () => {
 
     fetchResorts();
   }, [bookingId, prefillBookingData, prefillResortId]);
+
+  // -----------------------------
+  // Load Lead Owner options (USER + SUPER_USER staff)
+  // -----------------------------
+  useEffect(() => {
+    const fetchLeadOwnerOptions = async () => {
+      try {
+        const res = await fetch(`${config.BASE_URL}/users/attendance-users`, {
+          headers: config.getHeaders(),
+        });
+        const data = await res.json();
+        const options = (data || []).map((u) => ({ value: u.id, label: u.name }));
+        setLeadOwnerOptions(options);
+
+        if (bookingId && prefillBookingData?.leadOwnerUserId) {
+          const existing = options.find((o) => o.value === prefillBookingData.leadOwnerUserId);
+          if (existing) {
+            setLeadOwner(existing);
+            return;
+          }
+        }
+        // Default to whoever's logged in - the common case (same person
+        // took the call and is entering it) needs no extra action.
+        const self = options.find((o) => o.value === currentUser?.id);
+        if (self) setLeadOwner(self);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchLeadOwnerOptions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingId, prefillBookingData]);
 
   // Which accounts this resort's advance can be collected into - a dropdown
   // is only shown (below, in the payment section) when there's more than
@@ -593,6 +634,7 @@ if (data.bookingItems?.length > 0) {
 
       createdByUserId: currentUser?.id,
       editedByUserId: currentUser?.id,
+      leadOwnerUserId: leadOwner?.value ?? currentUser?.id,
 
       foodPreorder,
       totalFoodAmount: foodPreorder ? (parseFloat(totalFoodAmount) || 0) : 0,
@@ -1125,6 +1167,23 @@ const roomOptions = Array.from(roomOptionsMap.values());
         {/* CARD 4: Additional Details */}
         <div className="booking-section-card">
           <h3 className="booking-section-title">Additional Details</h3>
+
+          <div className="form-group">
+
+            <label>Lead Owner</label>
+
+            <Select
+              classNamePrefix="react-select"
+              options={leadOwnerOptions}
+              value={leadOwner}
+              onChange={setLeadOwner}
+              placeholder="Who gets credit for this sale?"
+              menuPortalTarget={menuPortalTarget}
+              menuPosition={menuPosition}
+              styles={themedSelectStyles()}
+            />
+
+          </div>
 
           <div className="form-group food-preorder-toggle">
             <label>

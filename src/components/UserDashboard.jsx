@@ -42,7 +42,6 @@ const UserDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const user = JSON.parse(localStorage.getItem("user") || "null");
 
   const [resorts, setResorts] = useState([]);
   const [selectedResort, setSelectedResortState] = useState(null);
@@ -164,11 +163,6 @@ const UserDashboard = () => {
     setSearchResults(null);
     setSearchQuery("");
   };
-
-  // Plain USER can only cancel bookings they personally created; every other
-  // role can cancel any booking — mirrors BookingService.processBookingExit.
-  const canCancelBooking = (booking) =>
-    user?.role !== "USER" || booking.createdByUserId === user?.id;
 
   const isTerminalStatus = (status) => status === "CANCELLED" || status === "EARLY_CHECK_OUT";
 
@@ -691,8 +685,6 @@ const UserDashboard = () => {
                           <button
                             onClick={() => openCancelModal(b)}
                             className="btn-cancel"
-                            disabled={!canCancelBooking(b)}
-                            title={canCancelBooking(b) ? undefined : "Only the creator or an admin can cancel this booking"}
                           >
                             Cancel
                           </button>
@@ -710,8 +702,8 @@ const UserDashboard = () => {
                           <span>{b.numberOfNights}</span>
                         </div>
                         <div className="row-details-narrow">
-                          <span className="row-details-label">Created By</span>
-                          <span>{b.createdByUser || "-"}</span>
+                          <span className="row-details-label">Lead Owner</span>
+                          <span>{b.leadOwnerName || "-"}</span>
                         </div>
                         {b.extendedFromBookingId && (
                           <div>

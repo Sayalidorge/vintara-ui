@@ -70,6 +70,7 @@ const AdminBookingsDashboard = () => {
   const [toDate, setToDate] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCreatedBy, setSelectedCreatedBy] = useState(null);
+  const [selectedLeadOwner, setSelectedLeadOwner] = useState(null);
 
   useEffect(() => {
     const fetchResorts = async () => {
@@ -127,6 +128,7 @@ const AdminBookingsDashboard = () => {
     setToDate(null);
     setSearchTerm("");
     setSelectedCreatedBy(null);
+    setSelectedLeadOwner(null);
   };
 
   const roomsFor = (b) =>
@@ -173,6 +175,7 @@ const AdminBookingsDashboard = () => {
       ),
     },
     { key: "createdByUser", label: "Created By", group: "booking", render: (b) => b.createdByUser || "-" },
+    { key: "leadOwnerName", label: "Lead Owner", group: "booking", render: (b) => b.leadOwnerName || "-" },
     { key: "remarks", label: "Remarks", group: "booking", render: (b) => b.remarks || "-" },
 
     // --- Payment details (kept contiguous - see thead/tfoot below).
@@ -229,6 +232,17 @@ const AdminBookingsDashboard = () => {
     ).values()
   ).sort((a, b) => a.label.localeCompare(b.label));
 
+  // Same derivation as createdByOptions, but for Lead Owner (who actually
+  // gets performance credit - see PerformanceService) rather than who
+  // technically submitted the create-booking request.
+  const leadOwnerOptions = Array.from(
+    new Map(
+      bookings
+        .filter((b) => b.leadOwnerUserId != null)
+        .map((b) => [b.leadOwnerUserId, { value: b.leadOwnerUserId, label: b.leadOwnerName || `User #${b.leadOwnerUserId}` }])
+    ).values()
+  ).sort((a, b) => a.label.localeCompare(b.label));
+
   // Client-side, on top of the resort/date filters already applied server-side
   // - `bookings` is already the full resort+date-filtered set (fetched with
   // size=1000), so narrowing it further here needs no extra request. Matches
@@ -236,6 +250,7 @@ const AdminBookingsDashboard = () => {
   // staff would actually recognize a booking by.
   const filteredBookings = bookings.filter((b) => {
     if (selectedCreatedBy && b.createdByUserId !== selectedCreatedBy.value) return false;
+    if (selectedLeadOwner && b.leadOwnerUserId !== selectedLeadOwner.value) return false;
     const term = searchTerm.trim().toLowerCase();
     if (!term) return true;
     return (
@@ -277,6 +292,7 @@ const AdminBookingsDashboard = () => {
         { key: "rooms", header: "Rooms" },
         { key: "status", header: "Status" },
         { key: "createdByUser", header: "Created By" },
+        { key: "leadOwnerName", header: "Lead Owner" },
         { key: "remarks", header: "Remarks" },
         { key: "totalAmount", header: "Total Amount" },
         { key: "advanceAmount", header: "Advance" },
@@ -440,6 +456,22 @@ const AdminBookingsDashboard = () => {
             placeholder="All employees"
             isClearable
             isDisabled={createdByOptions.length === 0}
+            classNamePrefix="react-select"
+            className="react-select-container"
+            menuPortalTarget={menuPortalTarget}
+            menuPosition={menuPosition}
+            styles={themedSelectStyles()}
+          />
+        </div>
+        <div className="filter-item">
+          <label>Lead Owner</label>
+          <Select
+            options={leadOwnerOptions}
+            value={selectedLeadOwner}
+            onChange={setSelectedLeadOwner}
+            placeholder="All employees"
+            isClearable
+            isDisabled={leadOwnerOptions.length === 0}
             classNamePrefix="react-select"
             className="react-select-container"
             menuPortalTarget={menuPortalTarget}

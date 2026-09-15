@@ -380,12 +380,6 @@ const UserInventory = () => {
     todayStr >= booking.checkInDate && todayStr < booking.checkOutDate;
 
 
-  // Plain USER can only cancel/checkout bookings they personally created;
-  // every other role (supervisory or front-desk) can act on any booking —
-  // mirrors the backend check in BookingService.processBookingExit.
-  const canModifyBooking = (booking) =>
-    user?.role !== "USER" || booking.createdByUserId === user?.id;
-
   // Initialize collapse states
   useEffect(() => {
     if (!categories.length) return;
@@ -1245,9 +1239,6 @@ const UserInventory = () => {
                       <button
                         className="checkin-btn"
                         onClick={() => openEarlyCheckoutModal(b)}
-                        disabled={!canModifyBooking(b)}
-                        title={canModifyBooking(b) ? undefined : "Only the creator or an admin can cancel this booking"}
-                        style={!canModifyBooking(b) ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
                       >
                         Cancel Booking
                       </button>
@@ -1257,15 +1248,13 @@ const UserInventory = () => {
                       <button
                         className="checkin-btn"
                         onClick={() => openEarlyCheckoutModal(b)}
-                        disabled={!canModifyBooking(b) || !canEarlyCheckoutToday(b)}
+                        disabled={!canEarlyCheckoutToday(b)}
                         title={
-                          !canModifyBooking(b)
-                            ? "Only the creator or an admin can check out this booking"
-                            : !canEarlyCheckoutToday(b)
+                          !canEarlyCheckoutToday(b)
                             ? `Early checkout is only available before the scheduled checkout date (${formatDateDMY(b.checkOutDate)})`
                             : undefined
                         }
-                        style={!canModifyBooking(b) || !canEarlyCheckoutToday(b) ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
+                        style={!canEarlyCheckoutToday(b) ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
                       >
                         Process Early Checkout
                       </button>
