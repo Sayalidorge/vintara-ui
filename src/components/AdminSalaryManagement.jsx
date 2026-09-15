@@ -1,6 +1,6 @@
 // src/components/AdminSalaryManagement.jsx
 import React, { useEffect, useState } from "react";
-import { getAllCurrentSalaries, setSalary, getPayslip } from "../services/SalaryService";
+import { getAllCurrentSalaries, setSalary, getPayslip, getSalaryHistory, finalizePayslip } from "../services/SalaryService";
 import { toLocalDateStr } from "../utils/date";
 import "../css/theme.css";
 import "./AdminSalaryManagement.css";
@@ -36,6 +36,11 @@ const AdminSalaryManagement = () => {
   const [payslip, setPayslip] = useState(null);
   const [payslipError, setPayslipError] = useState(null);
   const [payslipLoading, setPayslipLoading] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+
+  const [historyTarget, setHistoryTarget] = useState(null); // userId or null
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const loadSalaries = async () => {
     try {
@@ -109,6 +114,42 @@ const AdminSalaryManagement = () => {
     }
     load();
   }, [payslipTarget, payslipYear, payslipMonth]);
+
+  const handleFinalize = async () => {
+    if (!payslipTarget) return;
+    if (!window.confirm("Finalize this payslip? This freezes it permanently - later attendance corrections won't change it.")) return;
+    setFinalizing(true);
+    try {
+      const data = await finalizePayslip(payslipTarget, payslipYear, payslipMonth);
+      setPayslip(data);
+    } catch (err) {
+      alert(err.message || "Failed to finalize payslip.");
+    } finally {
+      setFinalizing(false);
+    }
+  };
+
+  const openHistory = (userId) => {
+    setHistoryTarget(userId);
+    setHistory([]);
+  };
+
+  useEffect(() => {
+    if (!historyTarget) return;
+    async function load() {
+      setHistoryLoading(true);
+      try {
+        const data = await getSalaryHistory(historyTarget);
+        setHistory(data || []);
+      } catch (err) {
+        console.error("Failed to load salary history:", err);
+        setHistory([]);
+      } finally {
+        setHistoryLoading(false);
+      }
+    }
+    load();
+  }, [historyTarget]);
 
   return (
     <div className="page-container admin-salary-management">
@@ -197,6 +238,9 @@ const AdminSalaryManagement = () => {
                   <td>
                     <button className="btn-view-payslip" onClick={() => openPayslip(s.userId)}>
                       View Payslip
+                    </button>{" "}
+                    <button className="btn-view-payslip" onClick={() => openHistory(s.userId)}>
+                      View History
                     </button>
                   </td>
                 </tr>
@@ -213,7 +257,14 @@ const AdminSalaryManagement = () => {
       {payslipTarget && (
         <div className="salary-admin-card">
           <div className="salary-header">
-            <h2>Payslip - {payslipTarget}</h2>
+            <h2>
+              Payslip - {payslipTarget}{" "}
+              {payslip && (
+                <span className={`salary-pill ${payslip.finalized ? "salary-pill-finalized" : "salary-pill-draft"}`}>
+                  {payslip.finalized ? "Finalized" : "Draft"}
+                </span>
+              )}
+            </h2>
             <div className="month-picker">
               <select value={payslipMonth} onChange={(e) => setPayslipMonth(Number(e.target.value))}>
                 {MONTH_NAMES.map((m, idx) => (
@@ -233,20 +284,75 @@ const AdminSalaryManagement = () => {
           {payslipError && <p className="salary-error">{payslipError}</p>}
 
           {payslip && (
-            <table className="salary-breakdown">
+            <>
+              <table className="salary-breakdown">
+                <tbody>
+                  <tr><td>Base Salary</td><td>{formatAmount(payslip.baseSalary)}</td></tr>
+                  <tr><td>Days in Month</td><td>{payslip.daysInMonth}</td></tr>
+                  <tr><td>Weekly Off Days</td><td>{payslip.weeklyOffDaysInMonth}</td></tr>
+                  <tr><td>Per-Day Rate (÷ working days)</td><td>{formatAmount(payslip.perDayRate)}</td></tr>
+                  <tr><td>Absent Days</td><td>{payslip.absentDays}</td></tr>
+                  <tr><td>Half Days</td><td>{payslip.halfDays}</td></tr>
+                  <tr><td>Unpaid Leave Days</td><td>{payslip.unpaidLeaveDays}</td></tr>
+                  <tr><td>WFH Days This Month</td><td>{payslip.wfhDaysThisMonth}</td></tr>
+                  <tr><td>Excess WFH Days</td><td>{payslip.excessWfhDays}</td></tr>
+                  <tr className="total-deduction-row"><td>Total Deduction Days</td><td>{payslip.totalDeductionDays}</td></tr>
+                  <tr><td>Deduction Amount</td><td>-{formatAmount(payslip.deductionAmount)}</td></tr>
+                  <tr><td>Health Insurance</td><td>-{formatAmount(payslip.healthInsuranceCost)}</td></tr>
+                  <tr><td>Professional Tax</td><td>-{formatAmount(payslip.professionalTax)}</td></tr>
+                  <tr className="total-deduction-row"><td>Net Pay</td><td>{formatAmount(payslip.netPay)}</td></tr>
+                </tbody>
+              </table>
+              {!payslip.finalized && (
+                <button className="btn-save-salary" onClick={handleFinalize} disabled={finalizing}>
+                  {finalizing ? "Finalizing..." : "Finalize"}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {historyTarget && (
+        <div className="salary-admin-card">
+          <div className="salary-header">
+            <h2>Salary History - {historyTarget}</h2>
+            <button className="secondary-btn" onClick={() => setHistoryTarget(null)}>Close</button>
+          </div>
+
+          {historyLoading && <p>Loading...</p>}
+
+          {!historyLoading && (
+            <table>
+              <thead>
+                <tr>
+                  <th>Monthly Salary</th>
+                  <th>Health Insurance</th>
+                  <th>Professional Tax</th>
+                  <th>Permanent WFH</th>
+                  <th>Effective From</th>
+                  <th>Set By</th>
+                  <th>Set At</th>
+                </tr>
+              </thead>
               <tbody>
-                <tr><td>Base Salary</td><td>{formatAmount(payslip.baseSalary)}</td></tr>
-                <tr><td>Days in Month</td><td>{payslip.daysInMonth}</td></tr>
-                <tr><td>Per-Day Rate</td><td>{formatAmount(payslip.perDayRate)}</td></tr>
-                <tr><td>Absent Days</td><td>{payslip.absentDays}</td></tr>
-                <tr><td>Unpaid Leave Days</td><td>{payslip.unpaidLeaveDays}</td></tr>
-                <tr><td>WFH Days This Month</td><td>{payslip.wfhDaysThisMonth}</td></tr>
-                <tr><td>Excess WFH Days</td><td>{payslip.excessWfhDays}</td></tr>
-                <tr className="total-deduction-row"><td>Total Deduction Days</td><td>{payslip.totalDeductionDays}</td></tr>
-                <tr><td>Deduction Amount</td><td>-{formatAmount(payslip.deductionAmount)}</td></tr>
-                <tr><td>Health Insurance</td><td>-{formatAmount(payslip.healthInsuranceCost)}</td></tr>
-                <tr><td>Professional Tax</td><td>-{formatAmount(payslip.professionalTax)}</td></tr>
-                <tr className="total-deduction-row"><td>Net Pay</td><td>{formatAmount(payslip.netPay)}</td></tr>
+                {history.length > 0 ? (
+                  history.map((h) => (
+                    <tr key={h.id}>
+                      <td>{formatAmount(h.monthlySalary)}</td>
+                      <td>{formatAmount(h.healthInsuranceCost)}</td>
+                      <td>{formatAmount(h.professionalTax)}</td>
+                      <td>{h.permanentWfh ? "Yes" : "No"}</td>
+                      <td>{h.effectiveFrom || "Not set"}</td>
+                      <td>{h.setBy || "-"}</td>
+                      <td>{h.setAt ? new Date(h.setAt).toLocaleString() : "-"}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: "center" }}>No history found</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           )}

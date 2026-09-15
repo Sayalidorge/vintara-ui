@@ -50,3 +50,10 @@ export const getPayslip = async (userId, year, month) => {
 export const getAllCurrentSalaries = async () => {
   return safeFetch(`${config.BASE_URL}/api/salary/all-current`);
 };
+
+/** Admin-only. Freezes this month's payslip - no unlock/un-finalize path. */
+export const finalizePayslip = async (userId, year, month) => {
+  return safeFetch(`${config.BASE_URL}/api/salary/user/${userId}/payslip/finalize?year=${year}&month=${month}`, {
+    method: "POST",
+  });
+};

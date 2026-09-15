@@ -100,13 +100,35 @@
   border-radius: 4px;
 }
 
-.month-picker .secondary-btn {
+.salary-header .secondary-btn {
   padding: 6px 14px;
   border: none;
   border-radius: 6px;
   background: #e0e0e0;
   color: #333;
   cursor: pointer;
+}
+
+.salary-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+  margin-left: 8px;
+}
+
+.salary-pill-draft {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.salary-pill-finalized {
+  background: #d4edda;
+  color: #155724;
 }
 
 .salary-error {

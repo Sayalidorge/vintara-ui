@@ -49,7 +49,14 @@ const MySalary = () => {
     <div className="page-container my-salary">
       <div className="salary-card">
         <div className="salary-header">
-          <h2>My Salary</h2>
+          <h2>
+            My Salary{" "}
+            {payslip && (
+              <span className={`salary-pill ${payslip.finalized ? "salary-pill-finalized" : "salary-pill-draft"}`}>
+                {payslip.finalized ? "Finalized" : "Draft"}
+              </span>
+            )}
+          </h2>
           <div className="month-picker">
             <select value={month} onChange={(e) => setMonth(Number(e.target.value))}>
               {MONTH_NAMES.map((m, idx) => (
@@ -84,12 +91,20 @@ const MySalary = () => {
                   <td>{payslip.daysInMonth}</td>
                 </tr>
                 <tr>
-                  <td>Per-Day Rate</td>
+                  <td>Weekly Off Days</td>
+                  <td>{payslip.weeklyOffDaysInMonth}</td>
+                </tr>
+                <tr>
+                  <td>Per-Day Rate (÷ working days)</td>
                   <td>{formatAmount(payslip.perDayRate)}</td>
                 </tr>
                 <tr>
                   <td>Absent Days</td>
                   <td>{payslip.absentDays}</td>
+                </tr>
+                <tr>
+                  <td>Half Days</td>
+                  <td>{payslip.halfDays}</td>
                 </tr>
                 <tr>
                   <td>Unpaid Leave Days</td>
