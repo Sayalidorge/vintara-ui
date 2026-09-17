@@ -11,7 +11,6 @@ import PerformanceDashboard from "./components/PerformanceDashboard";
 import ManageResorts from "./components/ManageResorts";
 import ManageUsers from "./components/ManageUsers";
 import AdminExpensesDashboard from "./components/AdminExpensesDashboard";
-import RecordExpenseForm from "./components/RecordExpenseForm";
 import ViewBookingEnquiry from "./components/ViewBookingEnquiry";
 import UserDashboard from "./components/UserDashboard";
 import CreateBookingForm from "./components/CreateBookingForm";
@@ -70,7 +69,6 @@ function App() {
     <Route path="resorts" element={<ProtectedRoute requiredPermission="manage_resorts"><ManageResorts /></ProtectedRoute>} />
     <Route path="users" element={<ProtectedRoute requiredPermission="manage_users"><ManageUsers /></ProtectedRoute>} />
     <Route path="expenses" element={<ProtectedRoute requiredPermission="view_expenses"><AdminExpensesDashboard /></ProtectedRoute>} />
-    <Route path="record-expense" element={<ProtectedRoute requiredPermission="view_expenses"><RecordExpenseForm /></ProtectedRoute>} />
     <Route path="enquiries" element={<ProtectedRoute requiredPermission="view_enquiries"><ViewBookingEnquiry /></ProtectedRoute>} />
     <Route path="revenue" element={<ProtectedRoute requiredPermission="view_revenue"><RevenueDashboard /></ProtectedRoute>} />
     <Route path="leaves" element={<ProtectedRoute requiredPermission="manage_leaves"><TeamAttendanceLeave /></ProtectedRoute>} />
