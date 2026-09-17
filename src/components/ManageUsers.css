@@ -1,289 +1,205 @@
-/* Outer container */
-.manage-users-container {
-  padding: 60px 20px 40px 20px;
-  display: flex;
-  justify-content: flex-start;
-  background: #f4f4f4;
-  min-height: 100vh;
-}
+/* Every rule below is scoped under .admin-manage-container (this page's own
+   root wrapper). Previously .page-title/.edit-btn/.delete-btn/.form-row and
+   the entire "Resort form"/"Resort buttons" block (lines that literally
+   said "Resort" despite this being the Users page - dead, copy-pasted CSS
+   matching nothing in this file's own JSX) were bare global selectors,
+   which both leaked out into other pages (this file's dead .resort-form
+   rules were confirmed silently painting ManageResorts' Cancel button
+   white-on-white) and left this page vulnerable to the same from others.
+   .manage-users-container/.form-wrapper/.header-section/.back-btn were
+   dead too - this file's actual JSX root uses .admin-manage-container,
+   not .manage-users-container. */
 
-/* Card wrapper */
-.form-wrapper {
-  background: white;
-  padding: 40px;
-  border-radius: 12px;
-  max-width: 100%;
-  width: 100%;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-}
-
-/* Header */
-.header-section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 30px;
-  position: relative;
-}
-
-.page-title {
-  flex: 1;
-  text-align: center;
-  margin: 0;
-  font-weight: 700;
-  font-size: 1.5rem;
-  color: var(--primary-purple);
-}
-
-.back-btn {
-  flex-shrink: 0;
-  position: absolute;
-  left: 0;
-  background: var(--primary-purple);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 15px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background 0.3s;
-}
-
-.back-btn:hover {
-  background: var(--primary-teal);
-}
-
-/* User form */
-.user-form label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.user-form input,
-.user-form select {
-  width: 100%;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 1rem;
-  display: block;
+.admin-manage-container {
+  padding: 0 20px 20px 20px;
   box-sizing: border-box;
 }
 
-/* React-select container width */
-.basic-multi-select {
-  width: 100%;
-  margin-bottom: 15px;
+/* Form card */
+.admin-manage-container .user-form-card {
+  border: 1px solid var(--gray-300);
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-8);
+  background: #fff;
+  box-sizing: border-box;
 }
 
-/* Users button wrapper */
-.user-form .button-group {
+.admin-manage-container .user-form-card h3 {
+  margin: 0 0 var(--space-5) 0;
+  color: var(--gray-900);
+  font-size: var(--font-size-lg);
+}
+
+/* Form rows */
+.admin-manage-container .form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+  width: 100%;
+}
+
+.admin-manage-container .form-row--2col {
+  grid-template-columns: 1fr 1fr;
+}
+
+.admin-manage-container .form-field {
   display: flex;
-  justify-content: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.admin-manage-container .form-field label {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--gray-800);
+}
+
+.admin-manage-container .form-field input[type="text"],
+.admin-manage-container .form-field input[type="email"],
+.admin-manage-container .form-field input[type="tel"] {
   width: 100%;
-  margin-top: 15px;
+  padding: 8px 12px;
+  height: 38px;
+  box-sizing: border-box;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
+  font-size: var(--font-size-base);
 }
 
-/* Users buttons */
-.user-form button[type="submit"],
-.user-form .cancel-btn {
-  width: 140px;
-  padding: 10px 18px;
-  border-radius: 6px;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-  color: white;
-  text-align: center;
-  transition: background 0.3s;
+/* Every plain text input on this page had no themed focus state at all -
+   just the browser's default blue outline, inconsistent with every
+   react-select control (purple border on focus, no glow). Applies to every
+   text input across the page (form fields, search box), not just one spot. */
+.admin-manage-container input[type="text"]:focus,
+.admin-manage-container input[type="email"]:focus,
+.admin-manage-container input[type="tel"]:focus {
+  outline: none;
+  border-color: var(--primary-purple);
 }
 
-.user-form button[type="submit"] {
-  background: var(--primary-teal);
+.admin-manage-container .form-field .field-hint {
+  font-size: var(--font-size-xs);
+  color: var(--gray-600);
+  margin: 0;
 }
 
-.user-form button[type="submit"]:hover {
-  background: var(--primary-purple);
+.admin-manage-container .form-field .field-error {
+  color: var(--color-danger-text);
+  font-size: var(--font-size-xs);
+  margin-top: 2px;
 }
 
-.user-form .cancel-btn {
-  background: var(--primary-purple);
+/* react-select in the form */
+.admin-manage-container .form-field .react-select-container {
+  width: 100%;
 }
 
-.user-form .cancel-btn:hover {
-  background: var(--primary-teal);
+.admin-manage-container .form-field .resorts-select {
+  max-width: 320px;
 }
 
-/* Lets the table scroll horizontally on its own instead of overflowing the
-   page when the Actions column (Edit/Reset Password/Delete) needs more
-   room than a narrow viewport has. Scoped to .admin-manage-container (this
-   page's own wrapper) since plain .table-wrapper is reused, unscoped, by
-   many other pages' CSS - a bare rule here would leak into all of them
-   since CRA bundles all component CSS globally. */
+.admin-manage-container .button-group {
+  display: flex;
+  justify-content: flex-start;
+  gap: var(--space-3);
+}
+
+/* Toolbar (search + role/resort filters) */
+.admin-manage-container .users-toolbar {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+
+.admin-manage-container .users-toolbar input[type="text"] {
+  padding: 8px 12px;
+  height: 38px;
+  min-width: 200px;
+  box-sizing: border-box;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
+  font-size: var(--font-size-base);
+}
+
+.admin-manage-container .users-toolbar .filter-select {
+  width: 160px;
+}
+
+.admin-manage-container .users-toolbar .result-count {
+  font-size: var(--font-size-sm);
+  color: var(--gray-700);
+}
+
+/* Table */
 .admin-manage-container .table-wrapper {
+  width: 100%;
   overflow-x: auto;
 }
 
-/* Users table */
-.users-table {
+.admin-manage-container .users-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: auto;
 }
 
-.users-table th,
-.users-table td {
-  padding: 12px;
-  border: 1px solid #ddd;
+.admin-manage-container .users-table th,
+.admin-manage-container .users-table td {
+  padding: var(--space-3);
+  border: 1px solid var(--gray-300);
 }
 
-.users-table th {
+.admin-manage-container .users-table th {
   background: var(--primary-teal);
   color: white;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  text-align: left;
 }
 
-.edit-btn {
-  margin-right: 5px;
-  padding: 5px 10px;
-  background: var(--primary-purple);
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
+.admin-manage-container .users-table td {
+  color: var(--gray-900);
 }
 
-.edit-btn:hover {
-  background: var(--primary-teal);
-}
-
-.delete-btn {
-  padding: 5px 10px;
-  background: red;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.delete-btn:hover {
-  background: darkred;
-}
-
-/* Resort form */
-.resort-form input {
-  width: 250px;
-  margin-bottom: 10px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 1rem;
-  display: block;
-}
-
-/* Resort button wrapper */
-.resort-form .button-group {
+.admin-manage-container .row-actions {
   display: flex;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  margin-top: 15px;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
-/* Resort buttons */
-.resort-form button {
-  width: 140px;
-  padding: 10px 18px;
-  border-radius: 6px;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-  color: white;
-  text-align: center;
-  transition: background 0.3s;
+.admin-manage-container .row-actions-line {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
 }
 
-.resort-form button[type="submit"] {
-  background: var(--primary-teal);
+.admin-manage-container .row-actions-line .vt-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.resort-form button[type="submit"]:hover {
-  background: var(--primary-purple);
-}
-
-.resort-form .cancel-btn {
-  background: var(--primary-purple);
-}
-
-.resort-form .cancel-btn:hover {
-  background: var(--primary-teal);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .header-section {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .page-title {
-    margin-top: 10px;
-  }
-
-  .back-btn {
-    width: 100%;
-    max-width: 300px;
-    position: static;
-    margin-bottom: 10px;
-  }
-
-  /* Full-width buttons on mobile */
-  .user-form .button-group,
-  .resort-form .button-group {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .user-form button[type="submit"],
-  .user-form .cancel-btn,
-  .resort-form button[type="submit"],
-  .resort-form .cancel-btn {
-    width: 100%;
-  }
-
-  /* .form-row gets its display/gap from an inline style in ManageUsers.jsx,
-     which never sets flex-direction, so this reaches the real element. */
-  .form-row {
-    flex-direction: column;
-  }
-
-  .form-row > div {
-    width: 100%;
-  }
-
-  .user-form input,
-  .user-form select,
-  .basic-multi-select {
-    max-width: 100%;
-  }
-}
-
-/* Keep Role and Permitted Property Access side by side down to phone widths;
-   only stack them on very narrow screens. */
-@media (min-width: 481px) and (max-width: 768px) {
-  .user-form .role-property-row {
-    flex-direction: row;
-  }
-
-  .user-form .role-property-row > div {
-    width: auto;
-  }
-}
-
-.alert-text {
-  color: red;
+.admin-manage-container .alert-text {
+  color: var(--color-danger-text);
   font-size: 0.85rem;
   margin-top: 3px;
   display: block;
+}
+
+@media (max-width: 768px) {
+  .admin-manage-container .form-row,
+  .admin-manage-container .form-row--2col {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-manage-container .users-toolbar {
+    width: 100%;
+  }
+
+  .admin-manage-container .users-toolbar .filter-select,
+  .admin-manage-container .users-toolbar input[type="text"] {
+    width: 100%;
+  }
 }

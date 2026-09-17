@@ -1,11 +1,14 @@
 // src/components/ManageUsers.jsx
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import "../css/theme.css";
+import "../css/components.css";
 import "./ManageUsers.css";
 import { useNavigate } from "react-router-dom";
 import Select from "react-select";
 import config from "../config";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+import ToastContainer, { useToast } from "./common/Toast";
+import { useConfirm } from "./common/useConfirm";
 
 // Roles a SUPER_USER isn't allowed to assign or edit (mirrors the backend
 // guard in UserService.assertCanAssignRole) - kept in sync manually since
@@ -14,6 +17,8 @@ const PROTECTED_ROLES = ["SUPER_ADMIN", "ADMIN", "SUPER_USER"];
 
 const ManageUsers = () => {
   const navigate = useNavigate();
+  const { toasts, showToast, dismissToast } = useToast();
+  const { confirm, ConfirmDialogElement } = useConfirm();
   const formSectionRef = useRef(null);
   const nameInputRef = useRef(null);
   const currentUser = JSON.parse(localStorage.getItem("user") || "null");
@@ -99,6 +104,52 @@ const ManageUsers = () => {
     label: r.name
   }));
 
+  // Explicit height so the single-select Role control and the multi-select
+  // Assigned Resorts control (which react-select otherwise sizes slightly
+  // differently by default, even both empty) match exactly.
+  const customSelectStyles = themedSelectStyles({
+    control: (base, state) => ({
+      ...base,
+      minHeight: "38px",
+      height: "38px",
+      boxSizing: "border-box",
+    }),
+    valueContainer: (base) => ({
+      ...base,
+      height: "38px",
+      padding: "0 12px",
+    }),
+    indicatorsContainer: (base) => ({
+      ...base,
+      height: "38px",
+    }),
+    input: (base) => ({ ...base, margin: "0px" }),
+  });
+
+  // Multi-select variant: lets the control grow past 38px to fit multiple
+  // chips instead of clipping, while still starting at the same height as
+  // the single-select control above.
+  const multiSelectStyles = {
+    ...customSelectStyles,
+    control: (base, state) => ({
+      ...customSelectStyles.control(base, state),
+      height: "auto",
+      minHeight: "38px",
+    }),
+    valueContainer: (base) => ({
+      ...customSelectStyles.valueContainer(base),
+      height: "auto",
+      flexWrap: "wrap",
+    }),
+  };
+
+  const roleOptions = roles.map((r) => ({ value: r, label: r }));
+  const roleFilterOptions = [{ value: "", label: "All Roles" }, ...roleOptions];
+  const resortFilterOptions = [
+    { value: "", label: "All Resorts" },
+    ...resorts.map((r) => ({ value: r.name, label: r.name })),
+  ];
+
   const filteredUsers = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return users.filter((user) => {
@@ -149,6 +200,10 @@ const ManageUsers = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
+    if (!role) {
+      showToast("Please select a role.", "warning");
+      return;
+    }
     setIsSubmitting(true);
     try {
       if (editId) {
@@ -192,7 +247,7 @@ const ManageUsers = () => {
       resetForm();
     } catch (err) {
       console.error("Error submitting form:", err);
-      alert(err.message || "Something went wrong. Check console.");
+      showToast(err.message || "Something went wrong. Check console.", "danger");
     } finally {
       setIsSubmitting(false);
     }
@@ -235,7 +290,8 @@ const ManageUsers = () => {
 
   const handleResetPassword = async (user) => {
     if (isSuperUser && PROTECTED_ROLES.includes(user.role)) return;
-    if (!window.confirm(`Reset ${user.name}'s password to the default ("welcome")?`)) return;
+    const ok = await confirm(`Reset ${user.name}'s password to the default ("welcome")?`);
+    if (!ok) return;
 
     try {
       const res = await fetch(`${config.BASE_URL}/users/${user.id}/reset-password`, {
@@ -246,15 +302,21 @@ const ManageUsers = () => {
         const errBody = await res.json().catch(() => null);
         throw new Error(errBody?.error || errBody?.message || "Failed to reset password");
       }
-      alert(`Password for ${user.name} has been reset to "welcome".`);
+      showToast(`Password for ${user.name} has been reset to "welcome".`, "success");
     } catch (err) {
       console.error("Error resetting password:", err);
-      alert(err.message);
+      showToast(err.message, "danger");
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
+    const ok = await confirm({
+      title: "Delete user?",
+      message: "Are you sure you want to delete this user?",
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (ok) {
       try {
         await fetch(`${config.BASE_URL}/users/${id}`, {
           method: "DELETE",
@@ -268,9 +330,12 @@ const ManageUsers = () => {
   };
 
   return (
-    <div className="admin-manage-container" style={{ padding: "0px 20px 20px 20px" }}>
-      <div className="page-header">
-        <h2 style={{ fontSize: "24px", fontWeight: 800, color: "var(--primary-purple)", textAlign: "left", letterSpacing: "0.4px", marginTop: "6px", marginBottom: "18px" }}>Admin Management Panel</h2>
+    <div className="admin-manage-container">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      {ConfirmDialogElement}
+
+      <div className="vt-page-header">
+        <h2>Users</h2>
       </div>
 
       {!showForm && (
@@ -281,20 +346,20 @@ const ManageUsers = () => {
               resetForm();
               setShowForm(true);
             }}
-            style={{ padding: "10px 20px", cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", fontSize: "14px" }}
+            className="vt-btn vt-btn-primary"
           >
-            + Create User
+            + Add User
           </button>
         </div>
       )}
 
       {/* USER PROVISION FORM */}
       {showForm && (
-      <div className="user-management-section" ref={formSectionRef} style={{ border: "1px solid #ccc", padding: "20px", borderRadius: "6px", marginBottom: "30px" }}>
-        <h3>{editId ? `Modify User Profile (ID: #${editId})` : "Create System User Account"}</h3>
-        <form className="user-form" onSubmit={handleSubmit}>
-          <div className="form-row" style={{ display: "flex", gap: "15px", marginBottom: "15px" }}>
-            <div style={{ flex: 1 }}>
+      <div className="user-form-card" ref={formSectionRef}>
+        <h3>{editId ? `Edit User #${editId}` : "Add New User"}</h3>
+        <form onSubmit={handleSubmit}>
+          <div className="form-row">
+            <div className="form-field">
               <label>Full Name</label>
               <input
                 type="text"
@@ -303,10 +368,9 @@ const ManageUsers = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                style={{ width: "100%", padding: "6px", boxSizing: "border-box" }}
               />
             </div>
-            <div style={{ flex: 1 }}>
+            <div className="form-field">
               <label>Email Address</label>
               <input
                 type="email"
@@ -314,11 +378,10 @@ const ManageUsers = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                style={{ width: "100%", padding: "6px", boxSizing: "border-box" }}
               />
             </div>
             {editId && (
-              <div style={{ flex: 1 }}>
+              <div className="form-field">
                 <label>Login ID</label>
                 <input
                   type="text"
@@ -326,12 +389,11 @@ const ManageUsers = () => {
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
                   required
-                  style={{ width: "100%", padding: "6px", boxSizing: "border-box" }}
                 />
-                <span style={{ fontSize: "11px", color: "#999" }}>Used to log in - must be unique.</span>
+                <span className="field-hint">Used to log in - must be unique.</span>
               </div>
             )}
-            <div style={{ flex: 1 }}>
+            <div className="form-field">
               <label>Contact Number</label>
               <input
                 type="tel"
@@ -347,56 +409,56 @@ const ManageUsers = () => {
                     setContactAlert("");
                   }
                 }}
-                style={{ width: "100%", padding: "6px", boxSizing: "border-box" }}
               />
-              {contactAlert && <div style={{ color: "red", fontSize: "11px", marginTop: "2px" }}>{contactAlert}</div>}
+              {contactAlert && <span className="field-error">{contactAlert}</span>}
             </div>
           </div>
 
-          <div className="form-row role-property-row" style={{ display: "flex", gap: "15px", marginBottom: "20px", alignItems: "flex-start" }}>
-            <div style={{ flex: 1 }}>
-              <label>Assigned Authorization Role</label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                required
-                style={{ width: "100%", padding: "6px", height: "38px" }}
-              >
-                <option value="" disabled>Select Role...</option>
-                {roles.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
+          <div className="form-row form-row--2col">
+            <div className="form-field">
+              <label>Role</label>
+              <Select
+                options={roleOptions}
+                value={roleOptions.find((o) => o.value === role) || null}
+                onChange={(selected) => setRole(selected ? selected.value : "")}
+                placeholder="Select role..."
+                isSearchable={false}
+                classNamePrefix="react-select"
+                className="react-select-container"
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+                styles={customSelectStyles}
+              />
             </div>
-            <div style={{ flex: 1 }}>
-              <label>Permitted Property Access</label>
+            <div className="form-field">
+              <label>Assigned Resorts</label>
               <Select
                 isMulti
                 options={resortOptions}
                 value={assignedResorts}
                 onChange={setAssignedResorts}
-                placeholder="Select Resort Profiles..."
-                className="basic-multi-select"
-                classNamePrefix="select"
+                placeholder="Select resorts..."
+                classNamePrefix="react-select"
+                className="react-select-container resorts-select"
                 menuPortalTarget={menuPortalTarget}
                 menuPosition={menuPosition}
-                styles={themedSelectStyles()}
+                styles={multiSelectStyles}
               />
             </div>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
+          <div className="button-group">
             <button
               type="submit"
               disabled={isSubmitting}
-              style={{ padding: "8px 20px", cursor: "pointer", fontWeight: "bold", background: "var(--primary-purple)", color: "#fff", border: "none", borderRadius: "4px" }}
+              className="vt-btn vt-btn-primary"
             >
-              {isSubmitting ? "Saving..." : editId ? "Save Account Updates" : "Create User"}
+              {isSubmitting ? "Saving..." : editId ? "Save Changes" : "Add User"}
             </button>
             <button
               type="button"
               onClick={resetForm}
-              style={{ padding: "8px 20px", cursor: "pointer", background: "#fff", border: "1px solid #ccc", borderRadius: "4px" }}
+              className="vt-btn vt-btn-purple"
             >
               Cancel
             </button>
@@ -406,44 +468,45 @@ const ManageUsers = () => {
       )}
 
       {/* USERS DATA TABLE */}
-      <h3>Configured Properties Access Matrix Pool</h3>
+      <h3>Users ({users.length})</h3>
 
-      <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap", marginBottom: "15px" }}>
+      <div className="users-toolbar">
         <input
           type="text"
           placeholder="Search by name or email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ padding: "7px 10px", minWidth: "160px", flex: "0 1 200px", border: "1px solid #ccc", borderRadius: "4px", boxSizing: "border-box" }}
         />
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-          style={{ padding: "7px 10px", height: "34px", border: "1px solid #ccc", borderRadius: "4px" }}
-        >
-          <option value="">All Roles</option>
-          {roles.map((r) => (
-            <option key={r} value={r}>{r}</option>
-          ))}
-        </select>
-        <select
-          value={resortFilter}
-          onChange={(e) => setResortFilter(e.target.value)}
-          style={{ padding: "7px 10px", height: "34px", border: "1px solid #ccc", borderRadius: "4px" }}
-        >
-          <option value="">All Resorts</option>
-          {resorts.map((r) => (
-            <option key={r.id} value={r.name}>{r.name}</option>
-          ))}
-        </select>
-        <span style={{ fontSize: "13px", color: "#666" }}>
+        <Select
+          options={roleFilterOptions}
+          value={roleFilterOptions.find((o) => o.value === roleFilter)}
+          onChange={(selected) => setRoleFilter(selected ? selected.value : "")}
+          isSearchable={false}
+          classNamePrefix="react-select"
+          className="react-select-container filter-select"
+          menuPortalTarget={menuPortalTarget}
+          menuPosition={menuPosition}
+          styles={themedSelectStyles()}
+        />
+        <Select
+          options={resortFilterOptions}
+          value={resortFilterOptions.find((o) => o.value === resortFilter)}
+          onChange={(selected) => setResortFilter(selected ? selected.value : "")}
+          isSearchable={false}
+          classNamePrefix="react-select"
+          className="react-select-container filter-select"
+          menuPortalTarget={menuPortalTarget}
+          menuPosition={menuPosition}
+          styles={themedSelectStyles()}
+        />
+        <span className="result-count">
           Showing {filteredUsers.length} of {users.length} users
         </span>
         {hasActiveFilters && (
           <button
             type="button"
             onClick={clearFilters}
-            style={{ padding: "7px 14px", background: "#fff", color: "#555", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer" }}
+            className="vt-btn vt-btn-purple"
           >
             Clear Filters
           </button>
@@ -451,57 +514,61 @@ const ManageUsers = () => {
       </div>
 
       <div className="table-wrapper">
-        <table className="users-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+        <table className="users-table">
           <thead>
-            <tr style={{ background: "#f2f2f2", textAlign: "left" }}>
-              <th style={{ padding: "10px", borderBottom: "2px solid #ddd" }}>ID</th>
-              <th style={{ padding: "10px", borderBottom: "2px solid #ddd" }}>Name</th>
-              <th style={{ padding: "10px", borderBottom: "2px solid #ddd" }}>Email</th>
-              <th style={{ padding: "10px", borderBottom: "2px solid #ddd" }}>Contact Number</th>
-              <th style={{ padding: "10px", borderBottom: "2px solid #ddd" }}>Role</th>
-              <th style={{ padding: "10px", borderBottom: "2px solid #ddd" }}>Assigned Resorts</th>
-              <th style={{ padding: "10px", borderBottom: "2px solid #ddd" }}>Actions Control</th>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Contact Number</th>
+              <th>Role</th>
+              <th>Assigned Resorts</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredUsers.length > 0 ? (
               filteredUsers.map((user) => (
-                <tr key={user.id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: "10px" }}>{user.id}</td>
-                  <td style={{ padding: "10px" }}>{user.name}</td>
-                  <td style={{ padding: "10px" }}>{user.email}</td>
-                  <td style={{ padding: "10px" }}>{user.contactNumber || "-"}</td>
-                  <td style={{ padding: "10px" }}><strong style={{ color: "#333" }}>{user.role}</strong></td>
-                  <td style={{ padding: "10px" }}>{user.resortNames?.length ? user.resortNames.join(", ") : "None Assigned"}</td>
-                  <td style={{ padding: "10px" }}>
+                <tr key={user.id}>
+                  <td>{user.id}</td>
+                  <td>{user.name}</td>
+                  <td>{user.email}</td>
+                  <td>{user.contactNumber || "-"}</td>
+                  <td><strong>{user.role}</strong></td>
+                  <td>{user.resortNames?.length ? user.resortNames.join(", ") : "None Assigned"}</td>
+                  <td>
                     {(() => {
                       const restricted = isSuperUser && PROTECTED_ROLES.includes(user.role);
                       return (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                          <button
-                            onClick={() => handleEdit(user)}
-                            disabled={restricted}
-                            title={restricted ? "You do not have permission to edit this account" : undefined}
-                            style={{ padding: "6px 14px", cursor: restricted ? "not-allowed" : "pointer", backgroundColor: restricted ? "#ccc" : "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", whiteSpace: "nowrap" }}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleResetPassword(user)}
-                            disabled={restricted}
-                            title={restricted ? "You do not have permission to reset this account's password" : undefined}
-                            style={{ padding: "6px 14px", cursor: restricted ? "not-allowed" : "pointer", backgroundColor: restricted ? "#ccc" : "var(--primary-teal)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", whiteSpace: "nowrap" }}
-                          >
-                            Reset Password
-                          </button>
-                          <button
-                            onClick={() => handleDelete(user.id)}
-                            disabled={restricted}
-                            title={restricted ? "You do not have permission to delete this account" : undefined}
-                            style={{ padding: "6px 14px", cursor: restricted ? "not-allowed" : "pointer", backgroundColor: restricted ? "#ccc" : "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", whiteSpace: "nowrap" }}
-                          >
-                            Delete
-                          </button>
+                        <div className="row-actions">
+                          <div className="row-actions-line">
+                            <button
+                              onClick={() => handleEdit(user)}
+                              disabled={restricted}
+                              title={restricted ? "You do not have permission to edit this account" : undefined}
+                              className="vt-btn vt-btn-primary"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(user.id)}
+                              disabled={restricted}
+                              title={restricted ? "You do not have permission to delete this account" : undefined}
+                              className="vt-btn vt-btn-danger"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                          <div className="row-actions-line">
+                            <button
+                              onClick={() => handleResetPassword(user)}
+                              disabled={restricted}
+                              title={restricted ? "You do not have permission to reset this account's password" : undefined}
+                              className="vt-btn vt-btn-teal"
+                            >
+                              Reset Password
+                            </button>
+                          </div>
                         </div>
                       );
                     })()}
@@ -512,7 +579,7 @@ const ManageUsers = () => {
               <tr>
                 <td colSpan="7" style={{ textAlign: "center", padding: "20px" }}>
                   {users.length === 0
-                    ? "No active user provision registry records tracked in database."
+                    ? "No users found."
                     : "No users match your search/filters."}
                 </td>
               </tr>
