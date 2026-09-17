@@ -1,0 +1,203 @@
+/* Shared UI primitives built on the design tokens in theme.css. Import this
+   alongside theme.css wherever a module is migrated to the new design
+   system - not global-by-default, same per-component-import convention
+   theme.css already uses.
+
+   Classes are prefixed vt- (Vintara) deliberately: this app bundles all CSS
+   globally with no scoping (CRA/webpack), and unprefixed names like .btn,
+   .card, .badge, .page-header, .btn-primary/.btn-secondary are already used
+   with different definitions in UserDashboard.css, RevenueDashboard.css,
+   ManageResorts.css, AdminBookingsDashboard.css, etc. Reusing those names
+   here would silently reskin unrelated, un-migrated pages. */
+
+/* ===============================
+   Buttons
+================================ */
+.vt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+}
+
+.vt-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.vt-btn-primary {
+  background-color: var(--primary-teal);
+  border-color: var(--primary-teal);
+  color: #fff;
+}
+
+.vt-btn-primary:hover:not(:disabled) {
+  background-color: #006666;
+  border-color: #006666;
+}
+
+.vt-btn-secondary {
+  background-color: var(--gray-200);
+  border-color: var(--gray-300);
+  color: var(--gray-900);
+}
+
+.vt-btn-secondary:hover:not(:disabled) {
+  background-color: var(--gray-300);
+}
+
+.vt-btn-danger {
+  background-color: var(--color-danger-text);
+  border-color: var(--color-danger-text);
+  color: #fff;
+}
+
+.vt-btn-danger:hover:not(:disabled) {
+  background-color: #006666;
+  border-color: #006666;
+}
+
+.vt-btn-teal {
+  background-color: var(--primary-teal);
+  border-color: var(--primary-teal);
+  color: #fff;
+}
+
+.vt-btn-teal:hover:not(:disabled) {
+  background-color: var(--primary-purple);
+  border-color: var(--primary-purple);
+}
+
+/* For Cancel buttons specifically - this app's convention is purple for
+   Cancel, not the neutral gray .vt-btn-secondary (which stays for other
+   non-primary actions like pagination/Clear Filters). */
+.vt-btn-purple {
+  background-color: var(--primary-purple);
+  border-color: var(--primary-purple);
+  color: #fff;
+}
+
+.vt-btn-purple:hover:not(:disabled) {
+  background-color: var(--primary-teal);
+  border-color: var(--primary-teal);
+}
+
+/* ===============================
+   Card
+================================ */
+.vt-card {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-5);
+}
+
+/* ===============================
+   Page header
+================================ */
+.vt-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.vt-page-header h1,
+.vt-page-header h2 {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--primary-purple);
+}
+
+/* ===============================
+   Badges
+================================ */
+.vt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.vt-badge-success {
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.vt-badge-danger {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.vt-badge-warning {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+/* ===============================
+   Data table
+================================ */
+.vt-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-base);
+}
+
+.vt-data-table th {
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--gray-100);
+  color: var(--gray-800);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  border-bottom: 1px solid var(--gray-300);
+}
+
+.vt-data-table td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--gray-200);
+  color: var(--gray-900);
+}
+
+.vt-data-table tbody tr:hover {
+  background-color: var(--gray-50);
+}
+
+/* ===============================
+   Tabs (pill style, matches ManageResorts' resorts-tab-btn)
+================================ */
+.vt-tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.vt-tab {
+  padding: 8px 20px;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-base);
+  background: var(--gray-200);
+  color: var(--gray-900);
+}
+
+.vt-tab.active {
+  background: var(--primary-purple);
+  color: #fff;
+}

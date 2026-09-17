@@ -50,7 +50,7 @@ export function themedSelectStyles(overrides = {}) {
       backgroundColor: state.isSelected
         ? "var(--primary-purple)"
         : state.isFocused
-        ? "#f3e6f5"
+        ? "var(--color-select-hover-bg)"
         : "#fff",
       color: state.isSelected ? "#fff" : "#333",
       cursor: "pointer",
