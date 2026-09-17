@@ -6,9 +6,11 @@ import "../css/theme.css";
 import logo from "../assets/logo.jpg";
 import { useNavigate } from "react-router-dom";
 import config from "../config";
+import ToastContainer, { useToast } from "./common/Toast";
 
 
 const Login = () => {
+  const { toasts, showToast, dismissToast } = useToast();
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -18,7 +20,7 @@ const Login = () => {
   e.preventDefault();
 
   if (!userId || !password) {
-    alert("Please enter User ID and password");
+    showToast("Please enter User ID and password", "warning");
     return;
   }
 
@@ -49,13 +51,14 @@ if (data.role === "ADMIN" || data.role === "SUPER_ADMIN") {
   window.location.href = "/user/dashboard";
 }
   } catch (err) {
-    alert(err.message);
+    showToast(err.message, "danger");
   }
 };
 
 
   return (
     <div className="login-container">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="login-box">
         <img src={logo} alt="Vintara Resorts Logo" className="login-logo" />
 

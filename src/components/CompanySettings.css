@@ -1,0 +1,189 @@
+/* CompanySettings.jsx previously had no dedicated CSS file at all - every
+   style was inline. Scoped under .company-settings-page throughout; shares
+   .resorts-page-container/.page-header with ManageResorts.css/GstInvoicePage
+   deliberately (same pattern as PaymentAccounts.jsx). */
+
+.company-settings-page .cs-tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+  border-bottom: 2px solid var(--gray-200);
+}
+
+.company-settings-page .cs-tab-btn {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-base);
+  color: var(--gray-700);
+  cursor: pointer;
+}
+
+.company-settings-page .cs-tab-btn--active {
+  border-bottom-color: var(--primary-purple);
+  color: var(--primary-purple);
+}
+
+.company-settings-page .cs-card {
+  border: 1px solid var(--gray-300);
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-8);
+  background: #fff;
+  box-sizing: border-box;
+  max-width: 600px;
+}
+
+.company-settings-page .cs-card h3 {
+  margin: 0 0 var(--space-2) 0;
+  color: var(--gray-900);
+  font-size: var(--font-size-lg);
+}
+
+.company-settings-page .cs-card > p {
+  font-size: var(--font-size-sm);
+  color: var(--gray-700);
+  margin: 0 0 var(--space-5) 0;
+}
+
+.company-settings-page .cs-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.company-settings-page .cs-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.company-settings-page .cs-field-row {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.company-settings-page .cs-field-row .cs-field {
+  flex: 1;
+  min-width: 160px;
+}
+
+.company-settings-page .cs-field label {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--gray-800);
+}
+
+.company-settings-page .cs-field input,
+.company-settings-page .cs-field textarea {
+  padding: 8px 12px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
+  font-size: var(--font-size-base);
+  box-sizing: border-box;
+}
+
+.company-settings-page .cs-field textarea {
+  height: auto;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.company-settings-page .cs-field input:focus,
+.company-settings-page .cs-field textarea:focus {
+  outline: none;
+  border-color: var(--primary-purple);
+}
+
+.company-settings-page .cs-section-divider {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--gray-200);
+}
+
+.company-settings-page .cs-section-divider h4 {
+  margin: 0 0 4px 0;
+  color: var(--gray-900);
+  font-size: var(--font-size-base);
+}
+
+.company-settings-page .cs-section-divider p {
+  font-size: var(--font-size-sm);
+  color: var(--gray-700);
+  margin: 0;
+}
+
+.company-settings-page .cs-upload-section {
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--gray-200);
+}
+
+.company-settings-page .cs-upload-section > label {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--gray-800);
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.company-settings-page .cs-upload-section > p {
+  font-size: var(--font-size-sm);
+  color: var(--gray-700);
+  margin: 0 0 var(--space-3) 0;
+}
+
+.company-settings-page .cs-upload-preview {
+  display: block;
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  padding: 6px;
+}
+
+/* Native <input type="file"> renders its own OS-styled "Choose File"
+   button by default, which ::file-selector-button lets us actually theme
+   (the surrounding text/filename part still can't be styled - that's the
+   browser's own chrome). */
+.company-settings-page input[type="file"] {
+  font-size: var(--font-size-sm);
+  color: var(--gray-700);
+}
+
+.company-settings-page input[type="file"]::file-selector-button {
+  padding: 8px 16px;
+  margin-right: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--primary-teal);
+  background: #fff;
+  color: var(--primary-teal);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.company-settings-page input[type="file"]::file-selector-button:hover {
+  background: var(--primary-teal);
+  color: #fff;
+}
+
+.company-settings-page input[type="file"]:disabled::file-selector-button {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.company-settings-page .cs-uploading-text {
+  margin-left: var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--gray-700);
+}
+
+@media (max-width: 768px) {
+  .company-settings-page .cs-field-row {
+    flex-direction: column;
+  }
+}

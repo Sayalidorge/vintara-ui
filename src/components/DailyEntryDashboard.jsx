@@ -9,6 +9,7 @@ import config from "../config";
 import "./DailyEntryDashboard.css";
 import { toLocalDateStr } from "../utils/date";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+import ToastContainer, { useToast } from "./common/Toast";
 
 // Set via the `styles` prop (real inline styles) instead of CSS classes:
 // the .react-select__* class names are already fought over by five other
@@ -40,6 +41,7 @@ const statusSelectStyles = themedSelectStyles({
 });
 
 const DailyEntryDashboard = () => {
+  const { toasts, showToast, dismissToast } = useToast();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -151,7 +153,7 @@ const handleStatusChange = async (id, newStatus) => {
     );
   } catch (err) {
     console.error("Error updating status:", err);
-    alert("Failed to update status.");
+    showToast("Failed to update status.", "danger");
   }
 };
 
@@ -169,6 +171,7 @@ const handleStatusChange = async (id, newStatus) => {
 
   return (
     <div className="daily-entries-page">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       {/* Header */}
 <div className="page-header">
   <h2 style={{ fontSize: "23px", fontWeight: 700, color: "var(--primary-purple)", textAlign: "left", marginTop: "6px", marginBottom: "16px" }}>Daily Enquiries</h2>

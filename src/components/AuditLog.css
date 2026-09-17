@@ -1,0 +1,117 @@
+/* src/components/AuditLog.css
+   Previously this page had no dedicated CSS file at all - it silently
+   borrowed .resorts-page-container/.page-header/.form-row/.table-wrapper/
+   .resorts-table from ManageResorts.css (a fragile cross-file dependency
+   that file's own comment already flags for PaymentAccounts.jsx). This file
+   gives AuditLog its own styling on the shared design tokens instead. */
+
+.audit-log-content {
+  padding: var(--space-5);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.audit-log-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+
+.audit-log-filters label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--gray-700);
+  font-weight: var(--font-weight-semibold);
+}
+
+.audit-log-date-input {
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
+  font-size: var(--font-size-base);
+  height: 36px;
+  box-sizing: border-box;
+  background: #fff;
+  color: var(--gray-900);
+}
+
+/* Border-color only, no glow - matches every react-select control
+   (themedSelectStyles() sets boxShadow: "none" unconditionally). */
+.audit-log-date-input:focus {
+  outline: none;
+  border-color: var(--primary-purple);
+}
+
+.audit-log-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* Solid teal header, matching every other admin table (ManageResorts,
+   ManageUsers, AdminExpensesDashboard/PaymentAccounts, ViewBookingEnquiry)
+   - the generic .vt-data-table primitive's neutral gray header looked
+   washed-out and inconsistent next to those. */
+.audit-log-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.audit-log-table th,
+.audit-log-table td {
+  padding: var(--space-3);
+  border: 1px solid var(--gray-300);
+  text-align: left;
+}
+
+.audit-log-table th {
+  background: var(--primary-teal);
+  color: white;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+}
+
+.audit-log-table td {
+  color: var(--gray-900);
+}
+
+.audit-log-table .audit-log-empty-cell {
+  text-align: center;
+  color: var(--gray-600);
+  padding: var(--space-5);
+}
+
+.audit-log-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.audit-log-page-info {
+  font-size: var(--font-size-sm);
+  color: var(--gray-700);
+}
+
+@media (max-width: 480px) {
+  .audit-log-content {
+    padding: var(--space-3);
+    gap: var(--space-3);
+  }
+
+  .audit-log-filters {
+    gap: var(--space-3);
+  }
+
+  .audit-log-filters > div {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .audit-log-date-input {
+    width: 100%;
+  }
+}

@@ -1,8 +1,13 @@
 // src/components/CompanySettings.jsx
 import React, { useState, useEffect } from "react";
 import config from "../config";
+import "../css/theme.css";
+import "../css/components.css";
+import "./CompanySettings.css";
+import ToastContainer, { useToast } from "./common/Toast";
 
 const CompanySettings = () => {
+  const { toasts, showToast, dismissToast } = useToast();
   const [legalName, setLegalName] = useState("");
   const [gstin, setGstin] = useState("");
   const [registeredAddress, setRegisteredAddress] = useState("");
@@ -45,7 +50,7 @@ const CompanySettings = () => {
       setPaymentQrImageUrl(data.paymentQrImageUrl || null);
     } catch (err) {
       console.error(err);
-      alert("Failed to load company GST settings");
+      showToast("Failed to load company GST settings", "danger");
     } finally {
       setLoading(false);
     }
@@ -74,10 +79,10 @@ const CompanySettings = () => {
         }),
       });
       if (!res.ok) throw new Error("Failed to save company GST settings");
-      alert("Company GST settings saved");
+      showToast("Company GST settings saved", "success");
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to save company GST settings");
+      showToast(err.message || "Failed to save company GST settings", "danger");
     } finally {
       setSaving(false);
     }
@@ -112,7 +117,7 @@ const CompanySettings = () => {
       setStampSignatureImageUrl(data.stampSignatureImageUrl || null);
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to upload stamp/signature image");
+      showToast(err.message || "Failed to upload stamp/signature image", "danger");
     } finally {
       setUploadingStamp(false);
       e.target.value = "";
@@ -129,7 +134,7 @@ const CompanySettings = () => {
       setLogoImageUrl(data.logoImageUrl || null);
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to upload logo");
+      showToast(err.message || "Failed to upload logo", "danger");
     } finally {
       setUploadingLogo(false);
       e.target.value = "";
@@ -146,7 +151,7 @@ const CompanySettings = () => {
       setPaymentQrImageUrl(data.paymentQrImageUrl || null);
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to upload payment QR code");
+      showToast(err.message || "Failed to upload payment QR code", "danger");
     } finally {
       setUploadingPaymentQr(false);
       e.target.value = "";
@@ -156,25 +161,18 @@ const CompanySettings = () => {
   if (loading) return <p style={{ padding: "20px" }}>Loading settings...</p>;
 
   return (
-    <div className="resorts-page-container" style={{ padding: "0px 20px 20px 20px", boxSizing: "border-box" }}>
-      <div className="page-header">
-        <h2 style={{ fontSize: "22px", fontWeight: 700, color: "var(--primary-purple)", textAlign: "left", marginTop: "6px", marginBottom: "20px" }}>Settings</h2>
+    <div className="company-settings-page resorts-page-container" style={{ padding: "0px 20px 20px 20px", boxSizing: "border-box" }}>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      <div className="vt-page-header">
+        <h2>Settings</h2>
       </div>
 
-      <div style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "2px solid #eee" }}>
+      <div className="cs-tabs">
         <button
           type="button"
           onClick={() => setActiveTab("company-gst")}
-          style={{
-            padding: "10px 20px",
-            background: "none",
-            border: "none",
-            borderBottom: activeTab === "company-gst" ? "3px solid var(--primary-purple)" : "3px solid transparent",
-            fontWeight: "bold",
-            fontSize: "14px",
-            color: activeTab === "company-gst" ? "var(--primary-purple)" : "#666",
-            cursor: "pointer",
-          }}
+          className={`cs-tab-btn ${activeTab === "company-gst" ? "cs-tab-btn--active" : ""}`}
         >
           Company &amp; GST
         </button>
@@ -184,99 +182,89 @@ const CompanySettings = () => {
       </div>
 
       {activeTab === "company-gst" && (
-      <div className="user-management-section" style={{ border: "1px solid #ccc", padding: "25px", borderRadius: "6px", marginBottom: "30px", background: "#fff", boxSizing: "border-box", maxWidth: "600px" }}>
-        <h3 style={{ marginTop: 0, marginBottom: "20px", color: "#333" }}>Company GST Registration</h3>
-        <p style={{ fontSize: "13px", color: "#666", marginTop: "-10px", marginBottom: "20px" }}>
+      <div className="cs-card">
+        <h3>Company GST Registration</h3>
+        <p>
           Printed as the seller on every GST invoice, regardless of which resort the booking is for.
         </p>
 
-        <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Legal Name</label>
+        <form onSubmit={handleSave} className="cs-form">
+          <div className="cs-field">
+            <label>Legal Name</label>
             <input
               type="text"
               value={legalName}
               onChange={(e) => setLegalName(e.target.value)}
               placeholder="e.g. Vintara Hospitality Pvt. Ltd."
-              style={{ padding: "8px 12px", height: "38px", borderRadius: "4px", border: "1px solid #ccc", boxSizing: "border-box" }}
             />
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>GSTIN</label>
+          <div className="cs-field">
+            <label>GSTIN</label>
             <input
               type="text"
               value={gstin}
               onChange={(e) => setGstin(e.target.value)}
               placeholder="15-character GSTIN"
-              style={{ padding: "8px 12px", height: "38px", borderRadius: "4px", border: "1px solid #ccc", boxSizing: "border-box" }}
             />
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Registered Address</label>
+          <div className="cs-field">
+            <label>Registered Address</label>
             <textarea
               value={registeredAddress}
               onChange={(e) => setRegisteredAddress(e.target.value)}
-              rows={3}
-              style={{ padding: "8px 12px", borderRadius: "4px", border: "1px solid #ccc", boxSizing: "border-box", fontFamily: "inherit", fontSize: "14px" }}
+              rows={5}
             />
           </div>
 
-          <div style={{ paddingTop: "8px", borderTop: "1px solid #eee" }}>
-            <h4 style={{ margin: "0 0 4px 0", color: "#333", fontSize: "14px" }}>Bank &amp; Payment Details</h4>
-            <p style={{ fontSize: "13px", color: "#666", margin: "0 0 12px 0" }}>
-              Printed to the left of the stamp on every invoice.
-            </p>
+          <div className="cs-section-divider">
+            <h4>Bank &amp; Payment Details</h4>
+            <p>Printed to the left of the stamp on every invoice.</p>
           </div>
 
-          <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: "200px" }}>
-              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Account Holder Name</label>
+          <div className="cs-field-row">
+            <div className="cs-field">
+              <label>Account Holder Name</label>
               <input
                 type="text"
                 value={bankAccountHolderName}
                 onChange={(e) => setBankAccountHolderName(e.target.value)}
-                style={{ padding: "8px 12px", height: "38px", borderRadius: "4px", border: "1px solid #ccc", boxSizing: "border-box" }}
               />
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: "200px" }}>
-              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Bank Name</label>
+            <div className="cs-field">
+              <label>Bank Name</label>
               <input
                 type="text"
                 value={bankName}
                 onChange={(e) => setBankName(e.target.value)}
-                style={{ padding: "8px 12px", height: "38px", borderRadius: "4px", border: "1px solid #ccc", boxSizing: "border-box" }}
               />
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: "200px" }}>
-              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Account Number</label>
+          <div className="cs-field-row">
+            <div className="cs-field">
+              <label>Account Number</label>
               <input
                 type="text"
                 value={bankAccountNumber}
                 onChange={(e) => setBankAccountNumber(e.target.value)}
-                style={{ padding: "8px 12px", height: "38px", borderRadius: "4px", border: "1px solid #ccc", boxSizing: "border-box" }}
               />
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: "160px" }}>
-              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>IFSC Code</label>
+            <div className="cs-field">
+              <label>IFSC Code</label>
               <input
                 type="text"
                 value={bankIfscCode}
                 onChange={(e) => setBankIfscCode(e.target.value)}
-                style={{ padding: "8px 12px", height: "38px", borderRadius: "4px", border: "1px solid #ccc", boxSizing: "border-box" }}
               />
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: "160px" }}>
-              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Branch Name</label>
+            <div className="cs-field">
+              <label>Branch Name</label>
               <input
                 type="text"
                 value={bankBranchName}
                 onChange={(e) => setBankBranchName(e.target.value)}
-                style={{ padding: "8px 12px", height: "38px", borderRadius: "4px", border: "1px solid #ccc", boxSizing: "border-box" }}
               />
             </div>
           </div>
@@ -284,25 +272,23 @@ const CompanySettings = () => {
           <button
             type="submit"
             disabled={saving}
-            style={{ alignSelf: "flex-start", padding: "8px 24px", height: "40px", cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}
+            className="vt-btn vt-btn-primary"
+            style={{ alignSelf: "flex-start" }}
           >
             {saving ? "Saving…" : "Save"}
           </button>
         </form>
 
-        <div style={{ marginTop: "28px", paddingTop: "20px", borderTop: "1px solid #eee" }}>
-          <label style={{ fontWeight: "600", fontSize: "14px", color: "#555", display: "block", marginBottom: "6px" }}>
-            Company Logo
-          </label>
-          <p style={{ fontSize: "13px", color: "#666", marginTop: 0, marginBottom: "12px" }}>
-            Shown in the header of every generated GST invoice.
-          </p>
+        <div className="cs-upload-section">
+          <label>Company Logo</label>
+          <p>Shown in the header of every generated GST invoice.</p>
 
           {logoImageUrl && (
             <img
               src={`${config.BASE_URL}${logoImageUrl}`}
               alt="Logo preview"
-              style={{ maxHeight: "70px", maxWidth: "220px", display: "block", marginBottom: "12px", border: "1px solid #eee", borderRadius: "4px", padding: "6px" }}
+              className="cs-upload-preview"
+              style={{ maxHeight: "70px", maxWidth: "220px" }}
             />
           )}
 
@@ -312,22 +298,19 @@ const CompanySettings = () => {
             onChange={handleLogoFileSelected}
             disabled={uploadingLogo}
           />
-          {uploadingLogo && <span style={{ marginLeft: "10px", fontSize: "13px", color: "#666" }}>Uploading…</span>}
+          {uploadingLogo && <span className="cs-uploading-text">Uploading…</span>}
         </div>
 
-        <div style={{ marginTop: "28px", paddingTop: "20px", borderTop: "1px solid #eee" }}>
-          <label style={{ fontWeight: "600", fontSize: "14px", color: "#555", display: "block", marginBottom: "6px" }}>
-            Stamp / Signature
-          </label>
-          <p style={{ fontSize: "13px", color: "#666", marginTop: 0, marginBottom: "12px" }}>
-            Embedded into the "Authorized Signatory" section of every generated GST invoice.
-          </p>
+        <div className="cs-upload-section">
+          <label>Stamp / Signature</label>
+          <p>Embedded into the "Authorized Signatory" section of every generated GST invoice.</p>
 
           {stampSignatureImageUrl && (
             <img
               src={`${config.BASE_URL}${stampSignatureImageUrl}`}
               alt="Stamp / signature preview"
-              style={{ maxHeight: "80px", maxWidth: "200px", display: "block", marginBottom: "12px", border: "1px solid #eee", borderRadius: "4px", padding: "6px" }}
+              className="cs-upload-preview"
+              style={{ maxHeight: "80px", maxWidth: "200px" }}
             />
           )}
 
@@ -337,22 +320,19 @@ const CompanySettings = () => {
             onChange={handleStampFileSelected}
             disabled={uploadingStamp}
           />
-          {uploadingStamp && <span style={{ marginLeft: "10px", fontSize: "13px", color: "#666" }}>Uploading…</span>}
+          {uploadingStamp && <span className="cs-uploading-text">Uploading…</span>}
         </div>
 
-        <div style={{ marginTop: "28px", paddingTop: "20px", borderTop: "1px solid #eee" }}>
-          <label style={{ fontWeight: "600", fontSize: "14px", color: "#555", display: "block", marginBottom: "6px" }}>
-            Payment QR Code
-          </label>
-          <p style={{ fontSize: "13px", color: "#666", marginTop: 0, marginBottom: "12px" }}>
-            Shown next to the stamp, under "Scan to Pay", on every generated GST invoice (e.g. export a UPI QR from your banking app).
-          </p>
+        <div className="cs-upload-section">
+          <label>Payment QR Code</label>
+          <p>Shown next to the stamp, under "Scan to Pay", on every generated GST invoice (e.g. export a UPI QR from your banking app).</p>
 
           {paymentQrImageUrl && (
             <img
               src={`${config.BASE_URL}${paymentQrImageUrl}`}
               alt="Payment QR code preview"
-              style={{ maxHeight: "120px", maxWidth: "120px", display: "block", marginBottom: "12px", border: "1px solid #eee", borderRadius: "4px", padding: "6px" }}
+              className="cs-upload-preview"
+              style={{ maxHeight: "120px", maxWidth: "120px" }}
             />
           )}
 
@@ -362,7 +342,7 @@ const CompanySettings = () => {
             onChange={handlePaymentQrFileSelected}
             disabled={uploadingPaymentQr}
           />
-          {uploadingPaymentQr && <span style={{ marginLeft: "10px", fontSize: "13px", color: "#666" }}>Uploading…</span>}
+          {uploadingPaymentQr && <span className="cs-uploading-text">Uploading…</span>}
         </div>
       </div>
       )}

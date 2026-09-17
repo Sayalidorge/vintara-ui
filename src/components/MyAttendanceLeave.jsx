@@ -4,6 +4,7 @@ import { checkIn, checkOut, getTodayStatus } from "../services/AttendanceService
 import EmployeeLeavePortal from "./EmployeeLeavePortal";
 import "../css/theme.css";
 import "./MyAttendanceLeave.css";
+import ToastContainer, { useToast } from "./common/Toast";
 
 const LOCATION_BADGE = {
   OFFICE: { label: "Office", className: "badge-office" },
@@ -43,6 +44,7 @@ function getLocation() {
 }
 
 const MyAttendanceLeave = () => {
+  const { toasts, showToast, dismissToast } = useToast();
   const [today, setToday] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -69,7 +71,7 @@ const MyAttendanceLeave = () => {
       const result = await checkIn(lat, lng);
       setToday(result);
     } catch (err) {
-      alert(err.message || "Check-in failed");
+      showToast(err.message || "Check-in failed", "danger");
     } finally {
       setBusy(false);
     }
@@ -82,7 +84,7 @@ const MyAttendanceLeave = () => {
       const result = await checkOut(lat, lng);
       setToday(result);
     } catch (err) {
-      alert(err.message || "Check-out failed");
+      showToast(err.message || "Check-out failed", "danger");
     } finally {
       setBusy(false);
     }
@@ -93,6 +95,7 @@ const MyAttendanceLeave = () => {
 
   return (
     <div className="page-container my-attendance-leave">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="attendance-card">
         <h2>Today's Attendance</h2>
 

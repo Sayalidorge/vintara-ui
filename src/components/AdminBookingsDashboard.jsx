@@ -3,6 +3,7 @@ import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "../css/theme.css";
+import "../css/components.css";
 import "./AdminBookingsDashboard.css";
 import config from "../config";
 import { toLocalDateStr } from "../utils/date";
@@ -13,7 +14,7 @@ import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/rea
 // Display-only relabeling of BookingSource values - see the matching
 // constant in UserInventory.jsx for the full rationale.
 const sourceLabel = (source) =>
-  ({ CALL: "Vintara", CALLS_GST: "Vintara + GST Bill" }[source]) || source;
+  ({ CALL: "VINTARA", CALLS_GST: "VINTARA + GST BILL" }[source]) || source;
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "-";
@@ -39,10 +40,10 @@ const formatSplits = (splits) =>
     ? splits.map((s) => `${s.accountName}: ₹${s.amount}`).join(", ")
     : "-";
 
-const statusBadgeColors = (status) => {
-  if (status === "CHECKED_IN") return { background: "#d4edda", color: "#155724" };
-  if (status === "CANCELLED" || status === "EARLY_CHECK_OUT") return { background: "#f8d7da", color: "#721c24" };
-  return { background: "#fff3cd", color: "#856404" };
+const statusBadgeClass = (status) => {
+  if (status === "CHECKED_IN") return "vt-badge-success";
+  if (status === "CANCELLED" || status === "EARLY_CHECK_OUT") return "vt-badge-danger";
+  return "vt-badge-warning";
 };
 
 // Everyone except SUPER_ADMIN is limited to the rolling current-month +
@@ -161,15 +162,7 @@ const AdminBookingsDashboard = () => {
       label: "Status",
       group: "booking",
       render: (b) => (
-        <span
-          style={{
-            padding: "3px 8px",
-            borderRadius: "12px",
-            fontSize: "12px",
-            fontWeight: "bold",
-            ...statusBadgeColors(b.status),
-          }}
-        >
+        <span className={`vt-badge ${statusBadgeClass(b.status)}`}>
           {b.status}
         </span>
       ),
@@ -424,10 +417,8 @@ const AdminBookingsDashboard = () => {
 
   return (
     <div className="admin-bookings-dashboard">
-      <div className="page-header">
-        <h2 style={{ fontSize: "23px", fontWeight: 700, color: "var(--text-dark)", textAlign: "left" }}>
-          Bookings
-        </h2>
+      <div className="vt-page-header">
+        <h2>Bookings</h2>
       </div>
 
       {/* Filters */}
@@ -495,7 +486,7 @@ const AdminBookingsDashboard = () => {
           <DatePicker
             selected={fromDate}
             onChange={setFromDate}
-            dateFormat="dd-MM-yyyy"
+            dateFormat="dd/MM/yyyy"
             className="date-picker"
             portalId="datepicker-portal"
             minDate={dateRestricted ? firstOfLastMonth() : undefined}
@@ -506,7 +497,7 @@ const AdminBookingsDashboard = () => {
           <DatePicker
             selected={toDate}
             onChange={setToDate}
-            dateFormat="dd-MM-yyyy"
+            dateFormat="dd/MM/yyyy"
             placeholderText="Optional"
             className="date-picker"
             portalId="datepicker-portal"
@@ -606,7 +597,7 @@ const AdminBookingsDashboard = () => {
               ))
             ) : (
               <tr>
-                <td colSpan={visibleColumns.length}>No bookings found</td>
+                <td colSpan={visibleColumns.length} className="empty-row-cell">No bookings found</td>
               </tr>
             )}
           </tbody>

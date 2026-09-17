@@ -6,6 +6,7 @@ import "./RecordDailyEntryForm.css";
 import config from "../config";
 import Select from "react-select";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+import ToastContainer, { useToast } from "./common/Toast";
 
 // Formats a Date as "yyyy-MM-dd" using local Y/M/D (not toISOString, which
 // converts to UTC and can shift the date across a day boundary depending on
@@ -29,6 +30,7 @@ const emptyEnquiry = {
 };
 
 const RecordDailyEntryForm = () => {
+  const { toasts, showToast, dismissToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -124,7 +126,7 @@ const RecordDailyEntryForm = () => {
     );
 
     if (invalidEntry) {
-      alert("Please enter a valid 10-digit Contact Number for all entries.");
+      showToast("Please enter a valid 10-digit Contact Number for all entries.", "warning");
       return;
     }
 
@@ -171,7 +173,7 @@ const RecordDailyEntryForm = () => {
       }
     } catch (err) {
       console.error("Error saving entries:", err);
-      alert("Error saving entries. Please try again.");
+      showToast("Error saving entries. Please try again.", "danger");
     }
   };
 
@@ -190,6 +192,7 @@ const RecordDailyEntryForm = () => {
 
   return (
     <div className="daily-entry-form-wrapper">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <h2 className="page-title" style={{ fontSize: "21px", fontWeight: 700, color: "var(--primary-teal)", textAlign: "center", letterSpacing: "0.2px", marginTop: 0, marginBottom: "18px" }}>
         {dailyEntryToEdit ? "Edit Daily Entry" : "Record Daily Entry"}
       </h2>

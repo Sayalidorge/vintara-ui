@@ -1,6 +1,40 @@
 // src/components/PaymentAccounts.jsx
 import React, { useState, useEffect } from "react";
+import Select from "react-select";
 import config from "../config";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+import ToastContainer, { useToast } from "./common/Toast";
+import "../css/theme.css";
+import "../css/components.css";
+import "./ManageResorts.css";
+import "./PaymentAccounts.css";
+
+const STATUS_OPTIONS = [
+  { value: "ACTIVE", label: "Active" },
+  { value: "INACTIVE", label: "Inactive" },
+];
+
+// Brand-only tint (teal/gray, no green), matching ManageResorts.jsx's own
+// per-row status Select.
+const statusSelectStyles = (isActive) => {
+  const tone = isActive
+    ? { bg: "var(--color-success-bg)", text: "var(--color-success-text)" }
+    : { bg: "var(--color-warning-bg)", text: "var(--color-warning-text)" };
+  return themedSelectStyles({
+    control: (base) => ({
+      ...base,
+      minHeight: "32px",
+      height: "32px",
+      backgroundColor: tone.bg,
+      borderColor: tone.bg,
+      boxShadow: "none",
+    }),
+    valueContainer: (base) => ({ ...base, height: "32px", padding: "0 8px" }),
+    indicatorsContainer: (base) => ({ ...base, height: "32px" }),
+    singleValue: (base) => ({ ...base, color: tone.text, fontWeight: 600 }),
+    input: (base) => ({ ...base, margin: 0, padding: 0 }),
+  });
+};
 
 // Always rendered embedded now (as a tab inside ManageResorts.jsx - see
 // App.js/menuConfig.js for why there's no standalone route/page anymore).
@@ -8,6 +42,7 @@ import config from "../config";
 // enforcement is server-side (PaymentAccountController only allows
 // SUPER_ADMIN to POST/PUT), this is just matching UX to that.
 const PaymentAccounts = ({ viewOnly = false }) => {
+  const { toasts, showToast, dismissToast } = useToast();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
@@ -26,7 +61,7 @@ const PaymentAccounts = ({ viewOnly = false }) => {
       setAccounts(data);
     } catch (err) {
       console.error(err);
-      alert("Error fetching payment accounts");
+      showToast("Error fetching payment accounts", "danger");
     } finally {
       setLoading(false);
     }
@@ -39,7 +74,7 @@ const PaymentAccounts = ({ viewOnly = false }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
-    if (!name.trim()) return alert("Please enter an account name");
+    if (!name.trim()) return showToast("Please enter an account name", "warning");
 
     const payload = { name: name.trim(), active: true, companyAccount };
 
@@ -65,7 +100,7 @@ const PaymentAccounts = ({ viewOnly = false }) => {
       fetchAccounts();
     } catch (err) {
       console.error(err);
-      alert(err.message);
+      showToast(err.message, "danger");
     } finally {
       setIsSubmitting(false);
     }
@@ -91,35 +126,34 @@ const PaymentAccounts = ({ viewOnly = false }) => {
       fetchAccounts();
     } catch (err) {
       console.error(err);
-      alert(err.message);
+      showToast(err.message, "danger");
     }
   };
 
   return (
     <div className="resorts-page-container" style={{ padding: "0px 20px 20px 20px", boxSizing: "border-box" }}>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
       {!viewOnly && (
-        <div className="user-management-section" style={{ border: "1px solid #ccc", padding: "25px", borderRadius: "6px", marginBottom: "30px", background: "#fff", boxSizing: "border-box" }}>
-          <h3 style={{ marginTop: 0, marginBottom: "20px", color: "#333" }}>
-            {editId ? `Edit Payment Account (ID: #${editId})` : "Add Payment Account"}
-          </h3>
+        <div className="resort-form-card">
+          <h3>{editId ? `Edit Payment Account #${editId}` : "Add Payment Account"}</h3>
 
           <form onSubmit={handleSubmit}>
-            <div className="form-row" style={{ display: "flex", gap: "20px", marginBottom: "20px", alignItems: "flex-end" }}>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Account Name *</label>
+            <div className="payment-account-form-row">
+              <div className="form-field">
+                <label>Account Name *</label>
                 <input
                   type="text"
                   placeholder="e.g. CASH, VINTARA, or a stakeholder's name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  style={{ width: "100%", padding: "8px 12px", height: "38px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
                 />
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Company Account?</label>
-                <label style={{ display: "flex", alignItems: "center", gap: "6px", height: "38px", fontSize: "14px", color: "#333" }}>
+              <div className="payment-account-checkbox-field">
+                <label>Company Account?</label>
+                <label className="payment-account-checkbox-label">
                   <input
                     type="checkbox"
                     checked={companyAccount}
@@ -129,11 +163,11 @@ const PaymentAccounts = ({ viewOnly = false }) => {
                 </label>
               </div>
 
-              <div className="button-group" style={{ display: "flex", gap: "12px" }}>
+              <div className="button-group">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  style={{ padding: "0 24px", height: "40px", cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", fontSize: "14px" }}
+                  className="vt-btn vt-btn-primary"
                 >
                   {isSubmitting ? "Saving..." : editId ? "Update Account" : "Add Account"}
                 </button>
@@ -141,7 +175,7 @@ const PaymentAccounts = ({ viewOnly = false }) => {
                   <button
                     type="button"
                     onClick={() => { setEditId(null); setName(""); setCompanyAccount(false); }}
-                    style={{ padding: "0 24px", height: "40px", cursor: "pointer", backgroundColor: "var(--primary-teal)", border: "1px solid #ccc", borderRadius: "4px", color: "#ffffff", fontSize: "14px" }}
+                    className="vt-btn vt-btn-purple"
                   >
                     Cancel
                   </button>
@@ -152,16 +186,16 @@ const PaymentAccounts = ({ viewOnly = false }) => {
         </div>
       )}
 
-      <h3>Configured Payment Accounts</h3>
+      <h3>Payment Accounts ({accounts.length})</h3>
       {loading ? <p>Loading payment accounts...</p> : (
-        <div className="table-wrapper" style={{ overflowX: "auto" }}>
-          <table className="resorts-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div className="table-wrapper">
+          <table className="resorts-table">
             <thead>
-              <tr style={{ background: "#f2f2f2", textAlign: "left" }}>
-                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Name</th>
-                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Status</th>
-                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Company Account</th>
-                {!viewOnly && <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Actions</th>}
+              <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Company Account</th>
+                {!viewOnly && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -169,32 +203,33 @@ const PaymentAccounts = ({ viewOnly = false }) => {
                 <tr><td colSpan={viewOnly ? 3 : 4} style={{ textAlign: "center", padding: "20px" }}>No payment accounts configured</td></tr>
               ) : (
                 accounts.map((account) => (
-                  <tr key={account.id} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "10px" }}>{account.name}</td>
-                    <td style={{ padding: "10px" }}>
+                  <tr key={account.id}>
+                    <td>{account.name}</td>
+                    <td>
                       {viewOnly ? (
-                        <span className={account.active ? "active-status" : "inactive-status"}>
+                        <span className={`vt-badge ${account.active ? "vt-badge-success" : "vt-badge-warning"}`}>
                           {account.active ? "Active" : "Inactive"}
                         </span>
                       ) : (
-                        <select
-                          value={account.active ? "ACTIVE" : "INACTIVE"}
-                          className={`status-dropdown ${account.active ? "active-status" : "inactive-status"}`}
+                        <Select
+                          options={STATUS_OPTIONS}
+                          value={STATUS_OPTIONS.find((o) => o.value === (account.active ? "ACTIVE" : "INACTIVE"))}
                           onChange={() => handleToggleActive(account)}
-                          style={{ padding: "4px", borderRadius: "4px" }}
-                        >
-                          <option value="ACTIVE">Active</option>
-                          <option value="INACTIVE">Inactive</option>
-                        </select>
+                          isSearchable={false}
+                          classNamePrefix="react-select"
+                          className="react-select-container status-select"
+                          menuPortalTarget={menuPortalTarget}
+                          menuPosition={menuPosition}
+                          styles={statusSelectStyles(account.active)}
+                        />
                       )}
                     </td>
-                    <td style={{ padding: "10px" }}>{account.companyAccount ? "Yes" : "No"}</td>
+                    <td>{account.companyAccount ? "Yes" : "No"}</td>
                     {!viewOnly && (
-                      <td className="actions" style={{ padding: "10px", whiteSpace: "nowrap" }}>
+                      <td className="actions">
                         <button
-                          className="edit-btn"
+                          className="vt-btn vt-btn-primary"
                           onClick={() => handleEdit(account)}
-                          style={{ padding: "6px 14px", cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}
                         >
                           Edit
                         </button>

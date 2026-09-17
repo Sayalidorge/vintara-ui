@@ -2,11 +2,15 @@ import React, { useCallback, useEffect, useState } from "react";
 import Select from "react-select";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import config from "../config";
+import "../css/theme.css";
+import "../css/components.css";
 import "./PerformanceDashboard.css";
 import { getUserRole } from "../utils/auth";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 
-const BAR_COLORS = ["#2f9e8f", "#7c5cbf", "#e07a3f", "#3f7de0", "#c94f6d", "#4fae4f", "#b08900", "#7d3f8f"];
+// Brand-only (teal/purple derived), not an arbitrary rainbow - each user's
+// bar gets a different shade of teal or purple rather than an unrelated hue.
+const BAR_COLORS = ["#008080", "#800080", "#4da6a6", "#b366b3", "#005f5f", "#590059", "#7fbfbf", "#cc99cc"];
 
 const money = (n) => (n === null || n === undefined ? "-" : `₹${Number(n).toLocaleString()}`);
 
@@ -99,9 +103,9 @@ const PerformanceDashboard = () => {
     const renderChart = (series) => (
         <ResponsiveContainer width="100%" height={320}>
             <BarChart data={series?.rows || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e4e2dd" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#8b938e" }} axisLine={{ stroke: "#d3d0c9" }} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: "#8b938e" }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fill: "var(--chart-axis)" }} axisLine={{ stroke: "var(--chart-axis-line)" }} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: "var(--chart-axis)" }} axisLine={false} tickLine={false} />
                 <Tooltip formatter={(v) => money(v)} />
                 <Legend />
                 {(series?.users || []).map((u, i) => (
@@ -118,7 +122,9 @@ const PerformanceDashboard = () => {
 
     return (
         <div className="performance-dashboard">
-            <h2 className="page-title">Performance</h2>
+            <div className="vt-page-header">
+                <h2>Performance</h2>
+            </div>
 
             <div className="filters">
                 <div className="filter-item">

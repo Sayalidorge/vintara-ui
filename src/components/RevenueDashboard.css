@@ -1,172 +1,135 @@
-/* Container & page */
-.page-container.revenue-dashboard {
-  padding: 20px 24px;
-  background-color: #f5f5f5;
+/* Every selector below is scoped under .revenue-dashboard. It wasn't before -
+   .card, .cards, .summary-cards, .page-title, .chart-header, and
+   .recharts-tooltip-wrapper were all bare global selectors that collided
+   with same-named rules in AdminDashboard.css and others (CRA bundles all
+   CSS globally, no scoping - see the defensive-prefixing comment at the top
+   of AdminBookingsDashboard.css for the same pattern). .card additionally
+   had `color: #fff` on a `background: white` card - invisible text,
+   whichever file happened to win the bundle-order tie. */
+
+.revenue-dashboard {
+  padding: var(--space-5) 24px;
+  background-color: var(--bg-light);
   display: flex;
   flex-direction: column;
-  gap: 40px;
-}
-
-.page-title {
-  font-size: 28px;
-  font-weight: 700;
-  
-  color: var(--primary-teal);
+  gap: var(--space-8);
 }
 
 /* Revenue section card */
-.revenue-section {
+.revenue-dashboard .revenue-section {
   background-color: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--space-5);
 }
 
 /* Section header: title + filters */
-.section-header {
+.revenue-dashboard .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
-.section-header h3 {
-  font-size: 20px;
-  font-weight: 600;
+.revenue-dashboard .section-header h3 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
   margin: 0;
   color: var(--primary-purple);
 }
 
-/* Filters dropdown */
-.filters {
+.revenue-dashboard .filters {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
-.filters select,
-.section-header select {
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 14px;
-  background-color: #fff;
-  cursor: pointer;
+/* react-select filter dropdowns (Year/Month/Resort) are direct flex
+   children of .filters with no per-field wrapper column, so they need an
+   explicit width instead of react-select's default 100%. */
+.revenue-dashboard .filter-select {
+  width: 130px;
+  flex: none;
+}
+
+.revenue-dashboard .filter-select--resort {
+  width: 200px;
 }
 
 /* Summary cards */
-.cards,
-.summary-cards {
+.revenue-dashboard .cards {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
   flex-wrap: wrap;
 }
 
-.card,
-.summary-card {
+.revenue-dashboard .card {
   background: white;
-  color: #fff;
-  padding: 10px 12px;    /* slightly smaller padding */
-  border-radius: 8px;
-  font-weight: 600;
-  flex: 1 1 100px;       /* smaller base width */
-  min-width: 100px;      /* reduce minimum width */
+  color: var(--primary-purple);
+  padding: 10px var(--space-3);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  flex: 1 1 100px;
+  min-width: 100px;
   text-align: center;
-  border: 2px solid var(--primary-teal);  /* teal border */
+  border: 2px solid var(--primary-teal);
 }
 
-.card h4,
-.summary-card h4 {
-  margin: 0 0 6px 0;     /* reduce spacing */
-  font-size: 14px;       /* smaller font */
-  font-weight: 600;
+.revenue-dashboard .card h4 {
+  margin: 0 0 var(--space-1) 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--gray-700);
 }
 
-.card p,
-.summary-card p {
-  font-size: 16px;       /* smaller number text */
-  font-weight: 700;
+.revenue-dashboard .card p {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
   margin: 0;
+  color: var(--primary-purple);
 }
 
 /* Chart wrapper */
-.chart-wrapper {
+.revenue-dashboard .chart-wrapper {
   width: 100%;
   overflow-x: auto;
 }
 
-.chart-wrapper svg {
+.revenue-dashboard .chart-wrapper svg {
   max-height: 320px;
 }
 
-/* Chart card (optional wrapper for better spacing) */
-.chart-card {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  padding: 20px;
-  margin-bottom: 30px;
-}
-
-/* Chart header inside chart wrapper */
-.chart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-
-.chart-header h3 {
-  margin: 0;
-  font-weight: 600;
-  color: var(--primary-purple);
-}
-
-.chart-header select {
-  margin-left: 10px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 0.9rem;
-  background: #fff;
-  cursor: pointer;
-}
-
-/* Tooltip custom styling */
-.recharts-tooltip-wrapper {
-  font-size: 14px;
+/* Tooltip custom styling - the outer wrapper recharts renders; the content
+   inside is RevenueTooltip's own inline-styled div. */
+.revenue-dashboard .recharts-tooltip-wrapper {
+  font-size: var(--font-size-base);
   font-weight: 500;
-}
-
-.recharts-tooltip-wrapper div {
-  padding: 6px 10px;
-  border-radius: 6px;
-  background-color: #fff !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .section-header {
+  .revenue-dashboard .section-header {
     flex-direction: column;
     align-items: flex-start;
   }
-  
-  .filters select,
-  .section-header select {
-    margin-left: 0;
-    margin-top: 8px;
+
+  .revenue-dashboard .filter-select,
+  .revenue-dashboard .filter-select--resort {
+    width: 100%;
   }
 
-  .cards,
-  .summary-cards {
+  .revenue-dashboard .filters {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .revenue-dashboard .cards {
     flex-direction: column;
-    gap: 12px;
+    gap: var(--space-3);
   }
 }

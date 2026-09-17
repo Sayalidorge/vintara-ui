@@ -1,3 +1,13 @@
+/* .page-container (previously on the JSX root alongside this class) turned
+   out to be a no-op - the only .page-container rules elsewhere in the app
+   are compound selectors requiring a second class this page never had
+   (.page-container.admin-leave-dashboard, .page-container.leave-portal), so
+   this page had no page-level padding at all. Give it its own. */
+.admin-salary-management {
+  padding: 0 20px 20px 20px;
+  box-sizing: border-box;
+}
+
 .admin-salary-management .salary-admin-card {
   background: #fff;
   border-radius: 8px;
@@ -25,7 +35,6 @@
   color: #555;
 }
 
-.salary-form select,
 .salary-form input[type="number"],
 .salary-form input[type="date"] {
   padding: 8px 10px;
@@ -33,28 +42,23 @@
   border-radius: 4px;
 }
 
-.checkbox-label {
+.salary-form input[type="number"]:focus,
+.salary-form input[type="date"]:focus {
+  outline: none;
+  border-color: var(--primary-purple);
+}
+
+.admin-salary-management .checkbox-label {
   display: flex !important;
   align-items: center;
   gap: 8px;
   flex-direction: row !important;
+  margin-top: 12px;
 }
 
-.btn-save-salary {
+.admin-salary-management .salary-form .vt-btn {
   margin-top: 16px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  background: var(--primary-purple);
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
   align-self: flex-start;
-}
-
-.btn-save-salary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .admin-salary-management table {
@@ -69,14 +73,10 @@
   border-bottom: 1px solid #eee;
 }
 
-.btn-view-payslip {
-  padding: 6px 14px;
-  border: none;
-  border-radius: 6px;
-  background: var(--primary-teal, #008080);
+.admin-salary-management table:not(.salary-breakdown) th {
+  background: var(--primary-teal);
   color: #fff;
-  cursor: pointer;
-  font-weight: 600;
+  padding: 10px;
 }
 
 .salary-header {
@@ -94,19 +94,8 @@
   align-items: center;
 }
 
-.month-picker select {
-  padding: 6px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.salary-header .secondary-btn {
-  padding: 6px 14px;
-  border: none;
-  border-radius: 6px;
-  background: #e0e0e0;
-  color: #333;
-  cursor: pointer;
+.month-picker .filter-select {
+  width: 130px;
 }
 
 .salary-pill {
@@ -121,19 +110,20 @@
   margin-left: 8px;
 }
 
+/* Brand-only (teal/purple/gray) - previously amber/green/red. */
 .salary-pill-draft {
-  background: #fff3cd;
-  color: #856404;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
 }
 
 .salary-pill-finalized {
-  background: #d4edda;
-  color: #155724;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .salary-error {
-  color: #b91c1c;
-  background: #fee2e2;
+  color: var(--color-danger-text);
+  background: var(--color-danger-bg);
   padding: 10px 14px;
   border-radius: 6px;
 }

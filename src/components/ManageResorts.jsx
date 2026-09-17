@@ -5,8 +5,54 @@ import Select from "react-select";
 import config from "../config";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 import PaymentAccounts from "./PaymentAccounts";
+import SimpleSelect from "./common/SimpleSelect";
+import ToastContainer, { useToast } from "./common/Toast";
+import { useConfirm } from "./common/useConfirm";
 import "../css/theme.css";
+import "../css/components.css";
 import "./ManageResorts.css";
+
+const STATUS_FILTER_OPTIONS = [
+  { value: "ALL", label: "All Statuses" },
+  { value: "ACTIVE", label: "Active" },
+  { value: "INACTIVE", label: "Inactive" },
+  { value: "REMOVED", label: "Removed" },
+];
+
+const ROW_STATUS_OPTIONS = [
+  { value: "ACTIVE", label: "Active" },
+  { value: "INACTIVE", label: "Inactive" },
+  { value: "REMOVED", label: "Delete" },
+];
+
+// Per-row status Select's colors, brand-only (teal/purple/gray, no green/
+// red) - reuses the same tokens as .active-status/.inactive-status/
+// .removed-status below, just applied via react-select's `styles` prop
+// instead of a className, since react-select ignores plain CSS
+// background-color on its own control the way a native <select> would take
+// it directly.
+const statusSelectStyles = (status) => {
+  const tone =
+    status === "ACTIVE"
+      ? { bg: "var(--color-success-bg)", text: "var(--color-success-text)" }
+      : status === "REMOVED"
+      ? { bg: "var(--color-danger-bg)", text: "var(--color-danger-text)" }
+      : { bg: "var(--color-warning-bg)", text: "var(--color-warning-text)" };
+  return themedSelectStyles({
+    control: (base) => ({
+      ...base,
+      minHeight: "32px",
+      height: "32px",
+      backgroundColor: tone.bg,
+      borderColor: tone.bg,
+      boxShadow: "none",
+    }),
+    valueContainer: (base) => ({ ...base, height: "32px", padding: "0 8px" }),
+    indicatorsContainer: (base) => ({ ...base, height: "32px" }),
+    singleValue: (base) => ({ ...base, color: tone.text, fontWeight: 600 }),
+    input: (base) => ({ ...base, margin: 0, padding: 0 }),
+  });
+};
 
 const ManageResorts = () => {
   // "RESORTS" (the existing page content) or "PAYMENT_ACCOUNTS" (folded in
@@ -24,6 +70,8 @@ const ManageResorts = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ACTIVE");
   const [showForm, setShowForm] = useState(false);
+  const { toasts, showToast, dismissToast } = useToast();
+  const { confirm, ConfirmDialogElement } = useConfirm();
 
   const navigate = useNavigate();
   const currentUser = JSON.parse(localStorage.getItem("user") || "null");
@@ -123,7 +171,7 @@ const STANDARD_CATEGORIES = [
       setResorts(normalized);
     } catch (err) {
       console.error(err);
-      alert("Error fetching resorts");
+      showToast("Error fetching resorts", "danger");
     } finally {
       setLoading(false);
     }
@@ -213,18 +261,18 @@ const getCommissionModelLabel = (value) =>
   const handleAddOrEdit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
-    if (!name || !location) return alert("Please fill resort name and location");
+    if (!name || !location) return showToast("Please fill resort name and location", "warning");
 
     const categoryNames = roomCategories.map((c) => (c.name || "").trim().toLowerCase());
     const duplicateName = categoryNames.find((n, i) => n && categoryNames.indexOf(n) !== i);
     if (duplicateName) {
-      return alert(`Duplicate room category name "${duplicateName}". Each category must be unique.`);
+      return showToast(`Duplicate room category name "${duplicateName}". Each category must be unique.`, "warning");
     }
 
     const categoryPrefixes = roomCategories.map((c) => (c.roomPrefix || "").trim().toUpperCase());
     const duplicatePrefix = categoryPrefixes.find((p, i) => p && categoryPrefixes.indexOf(p) !== i);
     if (duplicatePrefix) {
-      return alert(`Duplicate room prefix "${duplicatePrefix}". Each category must have a unique prefix.`);
+      return showToast(`Duplicate room prefix "${duplicatePrefix}". Each category must have a unique prefix.`, "warning");
     }
 
  const payload = {
@@ -289,7 +337,7 @@ const getCommissionModelLabel = (value) =>
       }
     } catch (err) {
       console.error("Failed to assign payment accounts", err);
-      alert(err.message || "Resort saved, but failed to update its payment accounts.");
+      showToast(err.message || "Resort saved, but failed to update its payment accounts.", "warning");
     }
 
     setName("");
@@ -308,7 +356,7 @@ const getCommissionModelLabel = (value) =>
     fetchResorts();
     } catch (err) {
       console.error(err);
-      alert(err.message);
+      showToast(err.message, "danger");
     } finally {
       setIsSubmitting(false);
     }
@@ -412,24 +460,41 @@ const getCommissionModelLabel = (value) =>
     );
   });
 
+  const resetForm = () => {
+    setEditId(null);
+    setName("");
+    setLocation("");
+    setGoogleMapLink("");
+    setPropertyContact("");
+    setCommissionModel("");
+    setCommissionPercentage("");
+    setOtherOtaCommissionPercentage("");
+    setRoomCategories([]);
+    setSelectedAccountIds([]);
+    setAdvanceAccountIds([]);
+  };
+
   return (
     <div className="resorts-page-container" style={{ padding: "0px 20px 20px 20px", boxSizing: "border-box" }}>
-      <div className="page-header">
-        <h2 style={{ fontSize: "26px", fontWeight: 700, color: "var(--text-dark)", textAlign: "left", marginTop: "6px", marginBottom: "20px", paddingBottom: "8px", borderBottom: "3px solid var(--primary-teal)" }}>Manage Resorts</h2>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      {ConfirmDialogElement}
+
+      <div className="vt-page-header">
+        <h2>Resorts</h2>
       </div>
 
-      <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+      <div className="resorts-tabs">
         <button
           type="button"
           onClick={() => setActiveTab("RESORTS")}
-          style={{ padding: "8px 20px", cursor: "pointer", border: "none", borderRadius: "4px", fontWeight: "bold", fontSize: "14px", backgroundColor: activeTab === "RESORTS" ? "var(--primary-purple)" : "#e0e0e0", color: activeTab === "RESORTS" ? "white" : "#333" }}
+          className={`resorts-tab-btn ${activeTab === "RESORTS" ? "resorts-tab-btn--active" : ""}`}
         >
           Resorts
         </button>
         <button
           type="button"
           onClick={() => setActiveTab("PAYMENT_ACCOUNTS")}
-          style={{ padding: "8px 20px", cursor: "pointer", border: "none", borderRadius: "4px", fontWeight: "bold", fontSize: "14px", backgroundColor: activeTab === "PAYMENT_ACCOUNTS" ? "var(--primary-purple)" : "#e0e0e0", color: activeTab === "PAYMENT_ACCOUNTS" ? "white" : "#333" }}
+          className={`resorts-tab-btn ${activeTab === "PAYMENT_ACCOUNTS" ? "resorts-tab-btn--active" : ""}`}
         >
           Payment Accounts
         </button>
@@ -444,38 +509,28 @@ const getCommissionModelLabel = (value) =>
           <button
             type="button"
             onClick={() => {
-              setEditId(null);
-              setName("");
-              setLocation("");
-              setGoogleMapLink("");
-              setPropertyContact("");
-              setCommissionModel("");
-              setCommissionPercentage("");
-              setOtherOtaCommissionPercentage("");
-              setRoomCategories([]);
-              setSelectedAccountIds([]);
-              setAdvanceAccountIds([]);
+              resetForm();
               setShowForm(true);
             }}
-            style={{ padding: "10px 20px", cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", fontSize: "14px" }}
+            className="vt-btn vt-btn-primary"
           >
-            + Create Resort
+            + Add Resort
           </button>
         </div>
       )}
 
       {showForm && (
-      <div className="user-management-section" ref={formSectionRef} style={{ border: "1px solid #ccc", padding: "25px", borderRadius: "6px", marginBottom: "30px", background: "#fff", boxSizing: "border-box" }}>
-        <h3 style={{ marginTop: 0, marginBottom: "20px", color: "#333" }}>
-          {editId ? `Modify Resort Properties (ID: #${editId})` : "Create New Resort Listing"}
+      <div className="resort-form-card" ref={formSectionRef}>
+        <h3>
+          {editId ? `Edit Resort #${editId}` : "Add New Resort"}
         </h3>
 
-        <form className="resort-form" onSubmit={handleAddOrEdit}>
-          
+        <form onSubmit={handleAddOrEdit}>
+
           {/* ROW 1 */}
-          <div className="form-row" style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Resort Name *</label>
+          <div className="form-row form-row--2col">
+            <div className="form-field">
+              <label>Resort Name *</label>
               <input
                 type="text"
                 ref={nameInputRef}
@@ -483,53 +538,50 @@ const getCommissionModelLabel = (value) =>
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                style={{ width: "100%", padding: "8px 12px", height: "38px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
               />
             </div>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Google Map Link</label>
-              <input 
-                type="text" 
-                placeholder="Paste maps link location URL" 
-                value={googleMapLink} 
-                onChange={(e) => setGoogleMapLink(e.target.value)} 
-                style={{ width: "100%", padding: "8px 12px", height: "38px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
+            <div className="form-field">
+              <label>Google Map Link</label>
+              <input
+                type="text"
+                placeholder="Paste maps link location URL"
+                value={googleMapLink}
+                onChange={(e) => setGoogleMapLink(e.target.value)}
               />
             </div>
           </div>
 
           {/* ROW 2 */}
-          <div className="form-row" style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Geographic Location *</label>
+          <div className="form-row form-row--2col">
+            <div className="form-field">
+              <label>Location *</label>
               <Select
                 options={locationOptions}
                 value={locationOptions.find(o => o.value === location) || null}
                 onChange={(selected) => setLocation(selected ? selected.value : "")}
-                placeholder="Select Existing Location..."
+                placeholder="Select existing location..."
                 menuPortalTarget={menuPortalTarget}
                 menuPosition={menuPosition}
                 styles={customSelectStyles}
               />
             </div>
 
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Or Create New Location</label>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
+            <div className="form-field">
+              <label>Add a New Location</label>
+              <div className="inline-add-row">
                 <input
                   type="text"
                   placeholder="Type new location name"
                   value={newLocation}
                   onChange={(e) => setNewLocation(e.target.value)}
-                  style={{ flex: 1, padding: "8px 12px", height: "38px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
                 />
                 <button
                   type="button"
                   disabled={isAddingLocation}
-                  style={{ height: "38px", boxSizing: "border-box", padding: "0 18px", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}
+                  className="vt-btn vt-btn-primary"
                   onClick={async () => {
                     if (isAddingLocation) return;
-                    if (!newLocation.trim()) return alert("Enter a location");
+                    if (!newLocation.trim()) return showToast("Enter a location", "warning");
                     setIsAddingLocation(true);
                     try {
                       const res = await fetch(`${config.BASE_URL}/api/locations`, {
@@ -544,7 +596,7 @@ const getCommissionModelLabel = (value) =>
                       setNewLocation("");
                     } catch (err) {
                       console.error(err);
-                      alert(err.message);
+                      showToast(err.message, "danger");
                     } finally {
                       setIsAddingLocation(false);
                     }
@@ -557,9 +609,9 @@ const getCommissionModelLabel = (value) =>
           </div>
 
           {/* ROW 3 */}
-          <div className="form-row" style={{ display: "flex", gap: "20px", marginBottom: "25px" }}>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Property Contact Number</label>
+          <div className="form-row form-row--2col">
+            <div className="form-field">
+              <label>Contact Number</label>
               <input
                 type="text"
                 placeholder="10 digit phone number"
@@ -575,15 +627,14 @@ const getCommissionModelLabel = (value) =>
                     setContactError("");
                   }
                 }}
-                style={{ width: "100%", padding: "8px 12px", height: "38px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
               />
-              {contactError && <span style={{ color: "red", fontSize: "12px", marginTop: "2px" }}>{contactError}</span>}
+              {contactError && <span className="field-error">{contactError}</span>}
             </div>
 
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Payment Accounts</label>
+            <div className="form-field">
+              <label>Linked Payment Accounts</label>
               {paymentAccounts.length === 0 ? (
-                <p style={{ fontSize: "13px", color: "#999", margin: 0 }}>No payment accounts configured yet.</p>
+                <p className="field-hint">No payment accounts configured yet.</p>
               ) : (
                 <Select
                   isMulti
@@ -599,9 +650,9 @@ const getCommissionModelLabel = (value) =>
             </div>
           </div>
 
-          <div className="form-row" style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Advance Collection Account(s)</label>
+          <div className="form-row">
+            <div className="form-field">
+              <label>Advance Collection Account(s)</label>
               <Select
                 isMulti
                 options={paymentAccountOptions.filter((opt) => selectedAccountIds.includes(opt.value))}
@@ -612,170 +663,109 @@ const getCommissionModelLabel = (value) =>
                 menuPosition={menuPosition}
                 styles={multiSelectStyles}
               />
-              <p style={{ fontSize: "12px", color: "#999", margin: 0 }}>
+              <p className="field-hint">
                 Leave blank to keep collecting this resort's advance into the VINTARA account. Only accounts assigned to this resort (above) can be picked.
                 Selecting more than one lets staff choose which account at booking creation; selecting exactly one keeps it fully automatic, same as leaving it blank.
               </p>
             </div>
           </div>
-{/* ROW 4 - Commission */}
-<div
-  className="form-row"
-  style={{
-    display: "flex",
-    gap: "20px",
-    marginBottom: "20px",
-  }}
->
-  <div
-    style={{
-      flex: 1,
-      display: "flex",
-      flexDirection: "column",
-      gap: "6px",
-    }}
-  >
-    <label
-      style={{
-        fontWeight: "600",
-        fontSize: "14px",
-        color: "#555",
-      }}
-    >
-      Commission Model
-    </label>
 
-    <Select
-      options={COMMISSION_MODELS}
-      value={
-        COMMISSION_MODELS.find(
-          (o) => o.value === commissionModel
-        ) || null
-      }
-      onChange={(selected) =>
-        setCommissionModel(selected?.value || "")
-      }
-      placeholder="Select Commission Model"
-      styles={customSelectStyles}
-      menuPortalTarget={menuPortalTarget}
-      menuPosition={menuPosition}
-    />
-  </div>
+          {/* ROW 4 - Commission */}
+          <div className="form-row form-row--3col">
+            <div className="form-field">
+              <label>Commission Model</label>
+              <Select
+                options={COMMISSION_MODELS}
+                value={
+                  COMMISSION_MODELS.find(
+                    (o) => o.value === commissionModel
+                  ) || null
+                }
+                onChange={(selected) =>
+                  setCommissionModel(selected?.value || "")
+                }
+                placeholder="Select commission model"
+                styles={customSelectStyles}
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+              />
+            </div>
 
-  <div
-    style={{
-      flex: 1,
-      display: "flex",
-      flexDirection: "column",
-      gap: "6px",
-    }}
-  >
-    <label
-      style={{
-        fontWeight: "600",
-        fontSize: "14px",
-        color: "#555",
-      }}
-    >
-      Vintara Commission Percentage
-    </label>
+            <div className="form-field">
+              <label>Vintara Commission Percentage</label>
+              <Select
+                options={COMMISSION_PERCENTAGES}
+                value={
+                  COMMISSION_PERCENTAGES.find(
+                    (o) => o.value === commissionPercentage
+                  ) || null
+                }
+                onChange={(selected) =>
+                  setCommissionPercentage(selected?.value || "")
+                }
+                placeholder="Select percentage"
+                styles={customSelectStyles}
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+              />
+            </div>
 
-    <Select
-      options={COMMISSION_PERCENTAGES}
-      value={
-        COMMISSION_PERCENTAGES.find(
-          (o) => o.value === commissionPercentage
-        ) || null
-      }
-      onChange={(selected) =>
-        setCommissionPercentage(selected?.value || "")
-      }
-      placeholder="Select Percentage"
-      styles={customSelectStyles}
-      menuPortalTarget={menuPortalTarget}
-      menuPosition={menuPosition}
-    />
-  </div>
+            <div className="form-field">
+              <label>OTA Handling Charges</label>
+              <Select
+                options={OTHER_OTA_COMMISSION_PERCENTAGES}
+                value={
+                  OTHER_OTA_COMMISSION_PERCENTAGES.find(
+                    (o) => o.value === otherOtaCommissionPercentage
+                  ) || null
+                }
+                onChange={(selected) =>
+                  setOtherOtaCommissionPercentage(selected?.value ?? "")
+                }
+                placeholder="Select percentage"
+                styles={customSelectStyles}
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+              />
+            </div>
+          </div>
 
-  <div
-    style={{
-      flex: 1,
-      display: "flex",
-      flexDirection: "column",
-      gap: "6px",
-    }}
-  >
-    <label
-      style={{
-        fontWeight: "600",
-        fontSize: "14px",
-        color: "#555",
-      }}
-    >
-      OTA Handling Charges
-    </label>
+          {/* Room categories */}
+          <div className="room-categories-section">
+            <h4>Room Categories</h4>
 
-    <Select
-      options={OTHER_OTA_COMMISSION_PERCENTAGES}
-      value={
-        OTHER_OTA_COMMISSION_PERCENTAGES.find(
-          (o) => o.value === otherOtaCommissionPercentage
-        ) || null
-      }
-      onChange={(selected) =>
-        setOtherOtaCommissionPercentage(selected?.value ?? "")
-      }
-      placeholder="Select Percentage"
-      styles={customSelectStyles}
-      menuPortalTarget={menuPortalTarget}
-      menuPosition={menuPosition}
-    />
-  </div>
-</div>
-          {/* FIXED ROOM CATEGORIES SECTION */}
-          <div className="room-categories-section" style={{ background: "#f9f9f9", padding: "20px", borderRadius: "6px", border: "1px solid #e0e0e0", marginBottom: "25px", boxSizing: "border-box", width: "100%" }}>
-            <h4 style={{ margin: "0 0 15px 0", color: "#444", fontSize: "15px" }}>Room Categories Structure Matrix</h4>
-            
+            <div className="room-category-grid">
 {roomCategories.map((cat, idx) => {
   // Check if they are using a custom manual override entry
   const isCustom = cat.isCustom || false;
 
   return (
-    <div key={idx} className="room-category-row" style={{ display: "flex", gap: "12px", marginBottom: "12px", alignItems: "center" }}>
-      
+    <React.Fragment key={idx}>
+
       {/* CATEGORY SELECT DROPDOWN */}
       {!isCustom ? (
-        <select
+        <SimpleSelect
+          options={STANDARD_CATEGORIES}
           value={cat.name}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (val === "CUSTOM") {
+          onChange={(selected) => {
+            if (selected.value === "CUSTOM") {
               handleRoomCategoryChange(idx, "isCustom", true);
               handleRoomCategoryChange(idx, "name", "");
             } else {
-              const matched = STANDARD_CATEGORIES.find(c => c.value === val);
-              handleRoomCategoryChange(idx, "name", val);
-              handleRoomCategoryChange(idx, "roomPrefix", matched ? matched.prefix : "");
+              handleRoomCategoryChange(idx, "name", selected.value);
+              handleRoomCategoryChange(idx, "roomPrefix", selected.prefix || "");
             }
           }}
-          className="room-category-field--wide"
-          style={{ padding: "8px 12px", height: "36px", borderRadius: "4px", border: "1px solid #ccc" }}
-        >
-          <option value="">Select Room Category...</option>
-          {STANDARD_CATEGORIES.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
+          placeholder="Select room category..."
+        />
       ) : (
         /* FALLBACK TEXT BOX FOR CUSTOM ENTRIES */
         <input
           type="text"
-          placeholder="Type Custom Category Name..."
+          placeholder="Type custom category name..."
           value={cat.name}
           onChange={(e) => handleRoomCategoryChange(idx, "name", e.target.value)}
           required
-          className="room-category-field--wide"
-          style={{ padding: "8px 12px", height: "36px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
         />
       )}
 
@@ -786,8 +776,6 @@ const getCommissionModelLabel = (value) =>
         value={cat.roomPrefix}
         onChange={(e) => handleRoomCategoryChange(idx, "roomPrefix", e.target.value.toUpperCase())}
         required
-        className="room-category-field--narrow"
-        style={{ padding: "8px 12px", height: "36px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
       />
 
       {/* TOTAL ROOMS */}
@@ -798,46 +786,45 @@ const getCommissionModelLabel = (value) =>
         value={cat.totalRooms || ""}
         onChange={(e) => handleRoomCategoryChange(idx, "totalRooms", parseInt(e.target.value) || 0)}
         required
-        className="room-category-field--narrow"
-        style={{ padding: "8px 12px", height: "36px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
       />
 
-      <button 
-        type="button" 
+      <button
+        type="button"
         onClick={() => removeRoomCategoryRow(idx)}
-        style={{ height: "36px", padding: "0 15px", backgroundColor: "Var(--primary-teal)", border: "1px solid Var(--primary-teal)", color: "white", borderRadius: "4px" }}
+        className="vt-btn vt-btn-danger"
       >
         Remove
       </button>
-    </div>
+    </React.Fragment>
   );
 })}
-            
-            <button 
-              type="button" 
+            </div>
+
+            <button
+              type="button"
               onClick={addRoomCategoryRow}
-              style={{ padding: "8px 15px", cursor: "pointer", backgroundColor: "transparent", color: "var(--primary-purple)", border: "1px dashed var(--primary-purple)", borderRadius: "4px", fontWeight: "bold", marginTop: "5px" }}
+              className="add-room-category-btn"
             >
               + Add Room Category
             </button>
           </div>
 
-          {/* FIXED SUBMIT & CANCEL BUTTON SIZES */}
-          <div className="button-group" style={{ display: "flex", gap: "12px", justifyContent: "flex-start" }}>
+          {/* Submit & cancel */}
+          <div className="button-group">
             <button
               type="submit"
               disabled={isSubmitting}
-              style={{ padding: "0 24px", height: "40px", cursor: isSubmitting ? "not-allowed" : "pointer", backgroundColor: isSubmitting ? "#ccc" : "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", fontSize: "14px", display: "inline-block", width: "auto" }}
+              className="vt-btn vt-btn-primary"
             >
-              {isSubmitting ? "Saving..." : editId ? "Update Resort Entry" : "Save Resort Profile"}
+              {isSubmitting ? "Saving..." : editId ? "Update Resort" : "Save Resort"}
             </button>
             <button
               type="button"
               onClick={() => {
-                setEditId(null); setName(""); setLocation(""); setGoogleMapLink(""); setPropertyContact(""); setCommissionModel("");setCommissionPercentage("");setOtherOtaCommissionPercentage("");setRoomCategories([]);setSelectedAccountIds([]);setAdvanceAccountIds([]);
+                resetForm();
                 setShowForm(false);
               }}
-              style={{ padding: "0 24px", height: "40px", cursor: "pointer", backgroundColor: "var(--primary-teal)", border: "1px solid #ccc", borderRadius: "4px", color: "#ffffff", fontSize: "14px", display: "inline-block", width: "auto" }}
+              className="vt-btn vt-btn-purple"
             >
               Cancel
             </button>
@@ -847,40 +834,40 @@ const getCommissionModelLabel = (value) =>
       )}
 
       {/* Resorts Table */}
-      <h3>Configured Resort Properties Registry ({resorts.length} resort{resorts.length === 1 ? "" : "s"})</h3>
-      <div style={{ marginBottom: "14px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
+      <h3>Resorts ({resorts.length})</h3>
+      <div className="resorts-toolbar">
         <input
           type="text"
           placeholder="Search by name, location, or ID..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ width: "100%", maxWidth: "320px", padding: "8px 12px", height: "38px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
         />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          style={{ padding: "8px 12px", height: "38px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
-        >
-          <option value="ALL">All Statuses</option>
-          <option value="ACTIVE">Active</option>
-          <option value="INACTIVE">Inactive</option>
-          <option value="REMOVED">Removed</option>
-        </select>
+        <Select
+          options={STATUS_FILTER_OPTIONS}
+          value={STATUS_FILTER_OPTIONS.find((o) => o.value === statusFilter)}
+          onChange={(selected) => setStatusFilter(selected.value)}
+          isSearchable={false}
+          classNamePrefix="react-select"
+          className="react-select-container filter-select"
+          menuPortalTarget={menuPortalTarget}
+          menuPosition={menuPosition}
+          styles={themedSelectStyles()}
+        />
       </div>
       {loading ? <p>Loading resorts...</p> : (
-        <div className="table-wrapper" style={{ overflowX: "auto" }}>
-          <table className="resorts-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div className="table-wrapper">
+          <table className="resorts-table">
             <thead>
-              <tr style={{ background: "#f2f2f2", textAlign: "left" }}>
-                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>ID</th>
-                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Name</th>
-                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Location</th>
-                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Property Contact</th>
-                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Google Map</th>
-                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Room Categories</th>
-                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Commission</th>
-                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Status</th>
-                <th style={{ padding: "12px 10px", borderBottom: "2px solid #ddd" }}>Actions</th>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Contact</th>
+                <th>Google Map</th>
+                <th>Room Categories</th>
+                <th>Commission</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -890,12 +877,12 @@ const getCommissionModelLabel = (value) =>
                 filteredResorts.map((resort) => {
                   const totalRooms = resort.roomCategories?.reduce((sum, c) => sum + (c.totalRooms || 0), 0) || 0;
                   return (
-                  <tr key={resort.id} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "10px" }}>{resort.id}</td>
-                    <td style={{ padding: "10px" }}>{resort.name}</td>
-                    <td style={{ padding: "10px" }}>{resort.location}</td>
-                    <td style={{ padding: "10px" }}>{resort.propertyContact || "-"}</td>
-                    <td style={{ padding: "10px", maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <tr key={resort.id}>
+                    <td>{resort.id}</td>
+                    <td>{resort.name}</td>
+                    <td>{resort.location}</td>
+                    <td>{resort.propertyContact || "-"}</td>
+                    <td style={{ maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {resort.googleMapLink ? (
                         <a
                           href={/^https?:\/\//i.test(resort.googleMapLink) ? resort.googleMapLink : `https://${resort.googleMapLink}`}
@@ -908,7 +895,7 @@ const getCommissionModelLabel = (value) =>
                         </a>
                       ) : "-"}
                     </td>
-                    <td style={{ padding: "10px", fontSize: "13px", maxWidth: "220px" }}>
+                    <td style={{ fontSize: "13px", maxWidth: "220px" }}>
                       {resort.roomCategories?.length > 0 ? (
                         <details>
                           <summary style={{ cursor: "pointer", color: "var(--primary-purple)", fontWeight: "bold" }}>
@@ -920,7 +907,7 @@ const getCommissionModelLabel = (value) =>
                         </details>
                       ) : "-"}
                     </td>
-                    <td style={{ padding: "10px" }}>
+                    <td>
                       {resort.commissionModel
                         ? `${getCommissionModelLabel(resort.commissionModel)}${resort.commissionPercentage ? ` (${resort.commissionPercentage}%)` : ""}`
                         : "-"}
@@ -931,19 +918,26 @@ const getCommissionModelLabel = (value) =>
                         Advance to: {resort.advanceAccountNames?.length ? resort.advanceAccountNames.join(", ") : "VINTARA (default)"}
                       </div>
                     </td>
-                    <td style={{ padding: "10px" }}>
-                      <select
-                        value={resort.status}
-                        className={`status-dropdown ${
-                          resort.status === "ACTIVE" ? "active-status" :
-                          resort.status === "REMOVED" ? "removed-status" : "inactive-status"
-                        }`}
-                        onChange={async (e) => {
-                          const newStatus = e.target.value;
+                    <td>
+                      <Select
+                        options={ROW_STATUS_OPTIONS}
+                        value={ROW_STATUS_OPTIONS.find((o) => o.value === resort.status)}
+                        isOptionDisabled={(option) => option.value === "REMOVED" && !isSuperAdmin}
+                        isSearchable={false}
+                        classNamePrefix="react-select"
+                        className="react-select-container status-select"
+                        menuPortalTarget={menuPortalTarget}
+                        menuPosition={menuPosition}
+                        styles={statusSelectStyles(resort.status)}
+                        onChange={async (selected) => {
+                          const newStatus = selected.value;
                           if (newStatus === "REMOVED") {
-                            const ok = window.confirm(
-                              `Delete "${resort.name}"? It will no longer appear in booking or expense dropdowns.`
-                            );
+                            const ok = await confirm({
+                              title: "Delete resort?",
+                              message: `Delete "${resort.name}"? It will no longer appear in booking or expense dropdowns.`,
+                              confirmLabel: "Delete",
+                              danger: true,
+                            });
                             if (!ok) return;
                           }
                           try {
@@ -963,28 +957,16 @@ const getCommissionModelLabel = (value) =>
                             );
                           } catch (err) {
                             console.error(err);
-                            alert("Failed to update status");
+                            showToast("Failed to update status", "danger");
                           }
                         }}
-                        style={{ padding: "4px", borderRadius: "4px" }}
-                      >
-                        <option value="ACTIVE">Active</option>
-                        <option value="INACTIVE">Inactive</option>
-                        <option
-                          value="REMOVED"
-                          disabled={!isSuperAdmin}
-                          title={!isSuperAdmin ? "Only Super Admin can delete a resort" : undefined}
-                        >
-                          Delete
-                        </option>
-                      </select>
+                      />
                     </td>
 
-                    <td className="actions" style={{ padding: "10px", whiteSpace: "nowrap" }}>
+                    <td className="actions" style={{ whiteSpace: "nowrap" }}>
                       <button
                         className="edit-btn"
                         onClick={() => handleEdit(resort)}
-                        style={{ marginRight: "8px", padding: "6px 14px", cursor: "pointer", backgroundColor: "var(--primary-purple)", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold" }}
                       >
                         Edit
                       </button>

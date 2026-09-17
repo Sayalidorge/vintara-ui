@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import config from "../config";
+import ToastContainer, { useToast } from "./common/Toast";
 
 const ResetPassword = () => {
+  const { toasts, showToast, dismissToast } = useToast();
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,15 +27,18 @@ try {
     throw new Error(message || "Invalid or expired token");
   }
 
-  alert("Password reset successful. Please login.");
-  navigate("/");
+  showToast("Password reset successful. Please login.", "success");
+  // Delayed slightly so the toast is actually visible before the page
+  // unmounts, rather than navigating away the instant it appears.
+  setTimeout(() => navigate("/"), 1200);
 } catch (err) {
-  alert(err.message || "Invalid or expired token");
+  showToast(err.message || "Invalid or expired token", "danger");
 }
   };
 
   return (
     <div className="login-container">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="login-box">
         <h2 style={{ fontSize: "24px", fontWeight: 700, color: "var(--primary-teal)", textAlign: "center", marginTop: 0, marginBottom: "24px" }}>Reset Password</h2>
 

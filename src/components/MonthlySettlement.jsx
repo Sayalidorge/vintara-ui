@@ -3,11 +3,15 @@ import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import config from "../config";
+import "../css/theme.css";
+import "../css/components.css";
 import "./MonthlySettlement.css";
 import { downloadBlob } from "../utils/csv";
 import { isSuperAdmin } from "../utils/auth";
 import { toLocalDateStr, formatDateDMY } from "../utils/date";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+import ToastContainer, { useToast } from "./common/Toast";
+import { useConfirm } from "./common/useConfirm";
 
 // Same human labels as the dropdown on Manage Resorts (ManageResorts.jsx),
 // duplicated here rather than shared since it's a tiny fixed lookup tied to
@@ -27,6 +31,8 @@ const isPositive = (n) => n !== null && n !== undefined && Number(n) >= 0;
 const plOrLossColor = (n) => (isPositive(n) ? "var(--profit)" : "var(--loss)");
 
 const MonthlySettlement = () => {
+    const { toasts, showToast, dismissToast } = useToast();
+    const { confirm, ConfirmDialogElement } = useConfirm();
 
     const [resorts, setResorts] = useState([]);
     const [selectedResort, setSelectedResort] = useState(null);
@@ -81,18 +87,18 @@ const MonthlySettlement = () => {
         if (loading) return;
 
         if (!selectedResort) {
-            alert("Please select a resort.");
+            showToast("Please select a resort.", "warning");
             return;
         }
 
         let url;
         if (periodMode === "range") {
             if (!rangeFrom || !rangeTo) {
-                alert("Please pick both a From and To date.");
+                showToast("Please pick both a From and To date.", "warning");
                 return;
             }
             if (rangeFrom > rangeTo) {
-                alert("From date must be before To date.");
+                showToast("From date must be before To date.", "warning");
                 return;
             }
             url = `${config.BASE_URL}/api/settlement/preview?resortId=${selectedResort.value}&startDate=${toLocalDateStr(rangeFrom)}&endDate=${toLocalDateStr(rangeTo)}`;
@@ -119,7 +125,7 @@ const MonthlySettlement = () => {
 
         }
         catch (e) {
-            alert(e.message);
+            showToast(e.message, "danger");
         }
 
         setLoading(false);
@@ -128,7 +134,12 @@ const MonthlySettlement = () => {
 
     const handleFinalize = async () => {
         if (!settlement) return;
-        if (!window.confirm("Finalize this settlement? This marks it as approved.")) return;
+        const ok = await confirm({
+            title: "Finalize settlement?",
+            message: "Finalize this settlement? This marks it as approved.",
+            confirmLabel: "Finalize",
+        });
+        if (!ok) return;
 
         setFinalizing(true);
         try {
@@ -143,7 +154,7 @@ const MonthlySettlement = () => {
             const data = await response.json();
             setSettlement(data);
         } catch (e) {
-            alert(e.message);
+            showToast(e.message, "danger");
         }
         setFinalizing(false);
     };
@@ -304,15 +315,19 @@ const MonthlySettlement = () => {
             const blob = await response.blob();
             downloadBlob(blob, `${settlementFilenameBase()}.pdf`);
         } catch (e) {
-            alert(e.message);
+            showToast(e.message, "danger");
         }
     };
 
     return (
 
         <div className="monthly-settlement-page">
+            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+            {ConfirmDialogElement}
 
-            <h2 className="page-title">Monthly Settlement</h2>
+            <div className="vt-page-header">
+                <h2>Monthly Settlement</h2>
+            </div>
 
             <div className="settlement-filters">
 
@@ -355,6 +370,7 @@ const MonthlySettlement = () => {
                         <div className="filter-item">
                             <label>Month</label>
                             <Select
+                                classNamePrefix="react-select"
                                 options={monthOptions}
                                 value={monthOptions.find(m => m.value === selectedMonth)}
                                 onChange={(obj) => setSelectedMonth(obj.value)}
@@ -381,7 +397,7 @@ const MonthlySettlement = () => {
                             <DatePicker
                                 selected={rangeFrom}
                                 onChange={setRangeFrom}
-                                dateFormat="dd-MM-yyyy"
+                                dateFormat="dd/MM/yyyy"
                                 className="date-picker"
                                 portalId="datepicker-portal"
                             />
@@ -392,7 +408,7 @@ const MonthlySettlement = () => {
                             <DatePicker
                                 selected={rangeTo}
                                 onChange={setRangeTo}
-                                dateFormat="dd-MM-yyyy"
+                                dateFormat="dd/MM/yyyy"
                                 className="date-picker"
                                 portalId="datepicker-portal"
                             />

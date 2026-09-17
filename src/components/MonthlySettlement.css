@@ -11,15 +11,10 @@
     --purple-tint-strong: rgba(128, 0, 128, 0.12);
     --border: #e4e2e6;
     --muted: #767077;
-    --profit: #1f8a4c;
-    --loss: #b3402f;
-}
-
-.monthly-settlement-page .page-title {
-    font-size: 23px;
-    font-weight: 700;
-    color: var(--text-dark);
-    margin: 20px 0 15px 0;
+    /* Brand-only (teal/purple), not literal green/red - reuses the same
+       tokens theme.css's .vt-badge-success/.vt-btn-danger are bound to. */
+    --profit: var(--color-success-text);
+    --loss: var(--color-danger-text);
 }
 
 /* ==============================
@@ -64,10 +59,12 @@
     box-sizing: border-box;
 }
 
+/* Border-color only, no glow - matches every react-select control
+   (themedSelectStyles() sets boxShadow: "none" unconditionally), and
+   purple not teal to match the focus color used everywhere else. */
 .monthly-settlement-page .year-input:focus {
-    border-color: var(--primary-teal);
+    border-color: var(--primary-purple);
     outline: none;
-    box-shadow: 0 0 0 1px var(--primary-teal);
 }
 
 .monthly-settlement-page .settlement-filters .date-picker {
@@ -80,9 +77,8 @@
 }
 
 .monthly-settlement-page .settlement-filters .date-picker:focus {
-    border-color: var(--primary-teal);
+    border-color: var(--primary-purple);
     outline: none;
-    box-shadow: 0 0 0 1px var(--primary-teal);
 }
 
 .monthly-settlement-page .period-mode-toggle {
@@ -185,19 +181,20 @@
     color: #fff;
 }
 
+/* Brand-only (teal/purple/gray) - previously amber/green/indigo. */
 .monthly-settlement-page .pill-draft {
-    background: #fff3cd;
-    color: #856404;
+    background: var(--color-warning-bg);
+    color: var(--color-warning-text);
 }
 
 .monthly-settlement-page .pill-finalized {
-    background: #d4edda;
-    color: #155724;
+    background: var(--color-success-bg);
+    color: var(--color-success-text);
 }
 
 .monthly-settlement-page .pill-preview {
-    background: #e2e3ff;
-    color: #3730a3;
+    background: var(--purple-tint-strong);
+    color: var(--primary-purple);
 }
 
 .monthly-settlement-page .result-actions {

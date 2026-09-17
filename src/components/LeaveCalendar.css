@@ -233,6 +233,13 @@
   font-weight: 600;
 }
 
+.leave-calendar-container .react-calendar__tile.attendance-holiday {
+  background-color: var(--gray-300, #cccccc) !important;
+  color: #555555 !important;
+  border-radius: 50% !important;
+  font-weight: 600;
+}
+
 .leave-calendar-container .legend-box.attendance-office {
   background-color: #28a745 !important;
 }
@@ -248,6 +255,10 @@
 .leave-calendar-container .legend-box.attendance-pending {
   background-color: #ffffff !important;
   border: 2px dashed #999999 !important;
+}
+
+.leave-calendar-container .legend-box.attendance-holiday {
+  background-color: var(--gray-300, #cccccc) !important;
 }
 
 .leave-calendar-container .attendance-hint {

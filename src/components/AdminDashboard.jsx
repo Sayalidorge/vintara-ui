@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import Select from "react-select";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 import {
   BarChart,
   Bar,
@@ -12,6 +14,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import "../css/theme.css";
+import "../css/components.css";
 import "./AdminDashboard.css";
 import {
   FaHotel,
@@ -47,6 +51,12 @@ const BookingTrendTooltip = ({ active, payload, label }) => {
     </div>
   );
 };
+
+const VIEW_OPTIONS = [
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+];
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -311,6 +321,8 @@ useEffect(() => {
     );
   };
 
+  const resortOptions = resorts.map((r) => ({ value: r.id.toString(), label: r.name }));
+
   // KPI tiles above the Booking Trend chart - summed across whatever period
   // (daily/weekly/monthly) is currently selected, so they always match what
   // the chart below is showing rather than a fixed all-time total.
@@ -341,12 +353,16 @@ useEffect(() => {
   return (
       <div className="admin-dashboard-content">
 
+        <div className="vt-page-header">
+          <h2>Dashboard Overview</h2>
+        </div>
+
         {/* SUMMARY */}
         <div className="summary-cards">
   {loadingSummary ? (
     <p>Loading summary...</p>
   ) : errorSummary ? (
-    <p style={{ color: "red" }}>{errorSummary}</p>
+    <p style={{ color: "var(--color-danger-text)" }}>{errorSummary}</p>
   ) : (
     <>
       <div className="card">
@@ -391,7 +407,7 @@ useEffect(() => {
   {loadingDaily ? (
     <p>Loading...</p>
   ) : errorDaily ? (
-    <p style={{ color: "red" }}>{errorDaily}</p>
+    <p style={{ color: "var(--color-danger-text)" }}>{errorDaily}</p>
   ) : dailyOccupancy.length === 0 ? (
     <p>No resorts to show for this date.</p>
   ) : (
@@ -427,14 +443,17 @@ useEffect(() => {
           <div className="chart-header">
             <h3>Booking Trend</h3>
             <div className="chart-header-controls">
-              <select
-                value={trendView}
-                onChange={(e) => setTrendView(e.target.value)}
-              >
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
+              <Select
+                options={VIEW_OPTIONS}
+                value={VIEW_OPTIONS.find((o) => o.value === trendView)}
+                onChange={(opt) => setTrendView(opt.value)}
+                isSearchable={false}
+                classNamePrefix="react-select"
+                className="react-select-container chart-header-select"
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+                styles={themedSelectStyles()}
+              />
               {isSuperAdmin() && (
                 <button type="button" className="export-csv-btn" onClick={exportBookingTrend}>
                   Export CSV
@@ -446,7 +465,7 @@ useEffect(() => {
           {loadingTrend ? (
             <p>Loading...</p>
           ) : errorTrend ? (
-            <p style={{ color: "red" }}>{errorTrend}</p>
+            <p style={{ color: "var(--color-danger-text)" }}>{errorTrend}</p>
           ) : (
             <>
               <div className="trend-kpi-row">
@@ -476,9 +495,9 @@ useEffect(() => {
                       <stop offset="100%" stopColor="var(--primary-teal)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="none" vertical={false} stroke="#e4e2dd" />
-                  <XAxis dataKey="label" tick={{ fill: "#8b938e", fontSize: 12 }} axisLine={{ stroke: "#d3d0c9" }} tickLine={false} />
-                  <YAxis tick={{ fill: "#8b938e", fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="none" vertical={false} stroke="var(--chart-grid)" />
+                  <XAxis dataKey="label" tick={{ fill: "var(--chart-axis)", fontSize: 12 }} axisLine={{ stroke: "var(--chart-axis-line)" }} tickLine={false} />
+                  <YAxis tick={{ fill: "var(--chart-axis)", fontSize: 12 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<BookingTrendTooltip />} />
                   <Legend />
                   <Area
@@ -512,29 +531,32 @@ useEffect(() => {
             <h3>Resort Occupancy Trend</h3>
 
             <div className="chart-header-controls">
-              <select
-                value={selectedResort}
-                onChange={(e) => setSelectedResort(e.target.value)}
-              >
-                {loadingResorts ? (
-                  <option>Loading...</option>
-                ) : (
-                  resorts.map((resort) => (
-                    <option key={resort.id} value={resort.id}>
-                      {resort.name}
-                    </option>
-                  ))
-                )}
-              </select>
+              <Select
+                options={resortOptions}
+                value={resortOptions.find((o) => o.value === selectedResort) || null}
+                onChange={(opt) => setSelectedResort(opt ? opt.value : "")}
+                isLoading={loadingResorts}
+                isDisabled={loadingResorts || resortOptions.length === 0}
+                isSearchable={false}
+                placeholder="Select resort..."
+                classNamePrefix="react-select"
+                className="react-select-container chart-header-select chart-header-select--resort"
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+                styles={themedSelectStyles()}
+              />
 
-              <select
-                value={occupancyView}
-                onChange={(e) => setOccupancyView(e.target.value)}
-              >
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
+              <Select
+                options={VIEW_OPTIONS}
+                value={VIEW_OPTIONS.find((o) => o.value === occupancyView)}
+                onChange={(opt) => setOccupancyView(opt.value)}
+                isSearchable={false}
+                classNamePrefix="react-select"
+                className="react-select-container chart-header-select"
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+                styles={themedSelectStyles()}
+              />
 
               {isSuperAdmin() && (
                 <button type="button" className="export-csv-btn" onClick={exportOccupancyTrend}>
@@ -547,7 +569,7 @@ useEffect(() => {
  {loadingOccupancy ? (
   <p>Loading...</p>
 ) : errorOccupancy ? (
-  <p style={{ color: "red" }}>{errorOccupancy}</p>
+  <p style={{ color: "var(--color-danger-text)" }}>{errorOccupancy}</p>
 ) : (
   <>
   <div className="trend-kpi-row">
@@ -570,9 +592,9 @@ useEffect(() => {
   </div>
   <ResponsiveContainer width="100%" height={300}>
     <BarChart data={occupancyData}>
-      <CartesianGrid strokeDasharray="3 3" />
-      <XAxis dataKey="label" />
-      <YAxis />
+      <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+      <XAxis dataKey="label" tick={{ fill: "var(--chart-axis)", fontSize: 12 }} axisLine={{ stroke: "var(--chart-axis-line)" }} tickLine={false} />
+      <YAxis tick={{ fill: "var(--chart-axis)", fontSize: 12 }} axisLine={false} tickLine={false} />
 
       <Tooltip
         content={({ active, payload }) => {
@@ -588,10 +610,10 @@ useEffect(() => {
               <div
                 style={{
                   background: "white",
-                  border: "1px solid #ddd",
+                  border: "1px solid var(--gray-300)",
                   padding: "12px",
-                  borderRadius: "8px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  borderRadius: "var(--radius-md)",
+                  boxShadow: "var(--shadow-md)",
                   minWidth: "180px",
                 }}
               >

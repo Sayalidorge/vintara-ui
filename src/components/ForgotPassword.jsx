@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import config from "../config";
+import ToastContainer, { useToast } from "./common/Toast";
 
 const ForgotPassword = () => {
+  const { toasts, showToast, dismissToast } = useToast();
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
 
@@ -19,20 +21,23 @@ const ForgotPassword = () => {
   // registered. Only a genuine server-side failure (e.g. mail send error)
   // gets a distinct message, since retrying silently wouldn't help there.
   if (res.ok || res.status === 404) {
-    alert("If the email exists, reset link has been sent.");
-    navigate("/");
+    showToast("If the email exists, reset link has been sent.", "success");
+    // Delayed slightly so the toast is actually visible before the page
+    // unmounts, rather than navigating away the instant it appears.
+    setTimeout(() => navigate("/"), 1200);
     return;
   }
 
   const message = await res.text().catch(() => null);
-  alert(message || "Something went wrong. Please try again later.");
+  showToast(message || "Something went wrong. Please try again later.", "danger");
 } catch (err) {
-  alert("Something went wrong. Please try again later.");
+  showToast("Something went wrong. Please try again later.", "danger");
 }
   };
 
   return (
     <div className="login-container">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="login-box">
         <h2 style={{ fontSize: "22px", fontWeight: 600, color: "var(--primary-purple)", textAlign: "center", letterSpacing: "0.3px", marginTop: 0, marginBottom: "18px" }}>Forgot Password</h2>
 

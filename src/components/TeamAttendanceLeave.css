@@ -1,32 +1,53 @@
-.team-attendance-leave .attendance-roster-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 20px 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+/* .btn-approve/.btn-reject/.leave-action-hint/.loading-overlay used to have
+   NO definitions in this file at all - they only ever worked because
+   AdminLeaveDashboard.css's same-named rules happened to bleed in (that
+   component is always rendered as a child of this one - see the bottom of
+   this page's JSX). Now fully self-contained. */
+
+.team-attendance-leave {
+  padding: 0 20px 20px 20px;
+  box-sizing: border-box;
   position: relative;
 }
 
-.attendance-roster-header {
+.team-attendance-leave .attendance-roster-card {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.team-attendance-leave .attendance-roster-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
-.section-title {
+.team-attendance-leave .section-title {
   margin: 0;
   color: var(--primary-purple);
-  font-size: 20px;
-  font-weight: 600;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
 }
 
-.attendance-roster-header input[type="date"] {
+.team-attendance-leave .attendance-roster-header input[type="date"] {
   padding: 6px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  border: 1px solid var(--gray-400);
+  border-radius: var(--radius-sm);
+}
+
+.team-attendance-leave .attendance-roster-header input[type="date"]:focus {
+  outline: none;
+  border-color: var(--primary-purple);
+}
+
+.team-attendance-leave .filter-select {
+  width: 220px;
 }
 
 .team-attendance-leave table {
@@ -37,37 +58,114 @@
 .team-attendance-leave th,
 .team-attendance-leave td {
   text-align: left;
-  padding: 8px 10px;
-  border-bottom: 1px solid #eee;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--gray-200);
 }
 
-.location-badge {
+.team-attendance-leave thead th {
+  background: var(--primary-teal);
+  color: #fff;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+}
+
+.team-attendance-leave .loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  z-index: 100;
+}
+
+.team-attendance-leave .btn-approve {
+  background-color: var(--primary-teal);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  margin-right: var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.team-attendance-leave .btn-approve:hover:not(:disabled) {
+  background-color: #006666;
+}
+
+.team-attendance-leave .btn-reject {
+  background-color: var(--primary-purple);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.team-attendance-leave .btn-reject:hover:not(:disabled) {
+  background-color: #5e005e;
+}
+
+.team-attendance-leave .btn-approve:disabled,
+.team-attendance-leave .btn-reject:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.team-attendance-leave .leave-action-hint {
+  font-size: var(--font-size-xs);
+  color: var(--gray-600);
+  font-style: italic;
+}
+
+/* Location badges - brand-only (teal/purple/gray), previously green/orange.
+   Scoped under .team-attendance-leave: MyAttendanceLeave.css defines its
+   own bare (unscoped) .location-badge/.badge-* for a different page - not
+   touching that file in this pass, so these must not collide with it. */
+.team-attendance-leave .location-badge {
   display: inline-block;
   padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
-  margin-left: 6px;
+  margin-left: var(--space-2);
 }
 
-.badge-office {
-  background: #e6f7ed;
-  color: #1e7e34;
+.team-attendance-leave .badge-office {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
-.badge-remote {
-  background: #fff4e0;
-  color: #b45309;
+.team-attendance-leave .badge-remote {
+  background: rgba(128, 0, 128, 0.08);
+  color: var(--primary-purple);
 }
 
-.badge-unknown {
-  background: #eee;
-  color: #666;
+.team-attendance-leave .badge-unknown {
+  background: var(--gray-200);
+  color: var(--gray-700);
 }
 
 .team-attendance-leave small {
   display: block;
-  margin-top: 10px;
-  color: #888;
+  margin-top: var(--space-3);
+  color: var(--gray-600);
+}
+
+@media (max-width: 768px) {
+  .team-attendance-leave {
+    padding: var(--space-3);
+  }
+
+  .team-attendance-leave .filter-select {
+    width: 100%;
+  }
 }

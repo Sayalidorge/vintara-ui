@@ -1,11 +1,14 @@
-
 import React, { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import Select from "react-select";
 import { useNavigate } from "react-router-dom";
 import config from "../config";
+import "../css/theme.css";
+import "../css/components.css";
 import "./ViewBookingEnquiry.css";
 import { toLocalDateStr } from "../utils/date";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 
 const ViewBookingEnquiry = () => {
   const navigate = useNavigate();
@@ -18,7 +21,7 @@ const ViewBookingEnquiry = () => {
   const [userFilter, setUserFilter] = useState(""); // admin can enter user id
   const [bookingStatuses, setBookingStatuses] = useState({});
   const [userOptions, setUserOptions] = useState([]);
-  
+
   // DD/MM/YYYY, hh:mm AM/PM - built manually (not via toLocaleString) so the
   // format is identical across browsers regardless of locale defaults.
   const formatDateTime = (dateString) => {
@@ -81,7 +84,6 @@ const ViewBookingEnquiry = () => {
 
         const data = await res.json();
 
-         console.log("Backend returned data:", data);
         const sorted = data.sort((a, b) => new Date(b.date) - new Date(a.date));
         setEntries(sorted);
       } catch (err) {
@@ -100,14 +102,21 @@ const ViewBookingEnquiry = () => {
     setUserFilter("");
   };
 
-  
-  return (
-    <>
-      {/* Header */}
+  const statusOptions = [
+    { value: "ALL", label: "All Statuses" },
+    ...Object.entries(bookingStatuses).map(([key, value]) => ({ value: key, label: value })),
+  ];
+  const userFilterOptions = [
+    { value: "", label: "All Users" },
+    ...userOptions.map((u) => ({ value: u.userId, label: u.name })),
+  ];
 
-      <div className="page-header">
-  <h2 style={{ fontSize: "24px", fontWeight: 700, color: "var(--primary-teal)", textAlign: "left", marginTop: "6px", marginBottom: "20px" }}>Booking Enquiries</h2>
-</div>
+  return (
+    <div className="booking-enquiry-page">
+      {/* Header */}
+      <div className="vt-page-header">
+        <h2>Booking Enquiries</h2>
+      </div>
 
       {/* Filters */}
       <div className="dashboard-filters">
@@ -116,8 +125,9 @@ const ViewBookingEnquiry = () => {
           <DatePicker
             selected={fromDate}
             onChange={(date) => setFromDate(date)}
-            dateFormat="yyyy-MM-dd"
+            dateFormat="dd/MM/yyyy"
             className="date-picker"
+            portalId="booking-enquiry-datepicker-portal"
           />
         </div>
 
@@ -126,40 +136,45 @@ const ViewBookingEnquiry = () => {
           <DatePicker
             selected={toDate}
             onChange={(date) => setToDate(date)}
-            dateFormat="yyyy-MM-dd"
+            dateFormat="dd/MM/yyyy"
             className="date-picker"
+            portalId="booking-enquiry-datepicker-portal"
           />
         </div>
 
         <div className="filter-item">
           <label>Status</label>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="ALL">All Statuses</option>
-            {Object.entries(bookingStatuses).map(([key, value]) => (
-              <option key={key} value={key}>{value}</option>
-            ))}
-          </select>
+          <Select
+            options={statusOptions}
+            value={statusOptions.find((o) => o.value === statusFilter)}
+            onChange={(selected) => setStatusFilter(selected.value)}
+            isSearchable={false}
+            classNamePrefix="react-select"
+            className="react-select-container filter-select"
+            menuPortalTarget={menuPortalTarget}
+            menuPosition={menuPosition}
+            styles={themedSelectStyles()}
+          />
         </div>
 
         {/* User Dropdown: all User + Super User accounts, not just ones with entries in view */}
         <div className="filter-item">
           <label>User</label>
-          <select value={userFilter} onChange={(e) => setUserFilter(e.target.value)}>
-            <option value="">All Users</option>
-            {userOptions.map((u) => (
-              <option key={u.userId} value={u.userId}>
-                {u.name}
-              </option>
-            ))}
-          </select>
+          <Select
+            options={userFilterOptions}
+            value={userFilterOptions.find((o) => o.value === userFilter)}
+            onChange={(selected) => setUserFilter(selected ? selected.value : "")}
+            isSearchable={false}
+            classNamePrefix="react-select"
+            className="react-select-container filter-select"
+            menuPortalTarget={menuPortalTarget}
+            menuPosition={menuPosition}
+            styles={themedSelectStyles()}
+          />
         </div>
 
         <div className="filter-item">
-          <label style={{ visibility: "hidden" }}>Reset</label>
-          <button className="reset-filters-btn" onClick={resetFilters}>
+          <button className="vt-btn vt-btn-purple" onClick={resetFilters}>
             Reset Filters
           </button>
         </div>
@@ -167,7 +182,7 @@ const ViewBookingEnquiry = () => {
 
       {/* Entries Table */}
       <div className="table-wrapper">
-        <table className="daily-entries-table">
+        <table className="enquiries-table">
           <thead>
             <tr>
               <th>Date</th>
@@ -202,13 +217,13 @@ const ViewBookingEnquiry = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="11">No entries found</td>
+                <td colSpan="11" style={{ textAlign: "center", padding: "20px" }}>No entries found</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 };
 

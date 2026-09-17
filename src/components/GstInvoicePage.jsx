@@ -2,13 +2,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import config from "../config";
+import "../css/theme.css";
+import "../css/components.css";
+import "./GstInvoicePage.css";
 import { downloadBlob, downloadCsv } from "../utils/csv";
 import { isSuperAdmin } from "../utils/auth";
+import ToastContainer, { useToast } from "./common/Toast";
 
 const invoiceFileName = (invoiceNumber) =>
   `${(invoiceNumber || "gst-bill").replace(/\//g, "-")}.pdf`;
 
 const GstInvoicePage = () => {
+  const { toasts, showToast, dismissToast } = useToast();
   const [searchParams] = useSearchParams();
   const [bookingIdInput, setBookingIdInput] = useState(searchParams.get("bookingId") || "");
   const [booking, setBooking] = useState(null);
@@ -109,7 +114,7 @@ const GstInvoicePage = () => {
   const handleSearch = async (idToSearch) => {
     const id = (idToSearch ?? bookingIdInput).trim();
     if (!id) {
-      alert("Enter a booking ID");
+      showToast("Enter a booking ID", "warning");
       return;
     }
 
@@ -183,7 +188,7 @@ const GstInvoicePage = () => {
       setPreview(await res.blob());
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to build preview");
+      showToast(err.message || "Failed to build preview", "danger");
     } finally {
       setPreviewing(false);
     }
@@ -216,7 +221,7 @@ const GstInvoicePage = () => {
       fetchAllInvoices(invoiceMonth);
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to generate GST bill");
+      showToast(err.message || "Failed to generate GST bill", "danger");
     } finally {
       setGenerating(false);
     }
@@ -267,7 +272,7 @@ const GstInvoicePage = () => {
       fetchAllInvoices(invoiceMonth);
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to regenerate GST bill");
+      showToast(err.message || "Failed to regenerate GST bill", "danger");
     } finally {
       setRegenerating(false);
     }
@@ -285,11 +290,11 @@ const GstInvoicePage = () => {
       if (res.status === 400) throw new Error("No email address to send to — enter one first.");
       if (res.status === 500) throw new Error("Failed to send the email. Please try again.");
       if (!res.ok) throw new Error("Failed to email GST bill");
-      alert(`Invoice emailed to ${emailAddress.trim()}`);
+      showToast(`Invoice emailed to ${emailAddress.trim()}`, "success");
       setShowEmailForm(false);
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to email GST bill");
+      showToast(err.message || "Failed to email GST bill", "danger");
     } finally {
       setEmailing(false);
     }
@@ -307,7 +312,7 @@ const GstInvoicePage = () => {
       downloadBlob(blob, invoiceFileName(invoice?.invoiceNumber));
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to download GST bill");
+      showToast(err.message || "Failed to download GST bill", "danger");
     } finally {
       setDownloading(false);
     }
@@ -323,7 +328,7 @@ const GstInvoicePage = () => {
       downloadBlob(blob, invoiceFileName(invoiceNumber));
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to download GST bill");
+      showToast(err.message || "Failed to download GST bill", "danger");
     }
   };
 
@@ -340,7 +345,7 @@ const GstInvoicePage = () => {
       setListPreviewInvoiceNumber(invoiceNumber);
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to load GST bill");
+      showToast(err.message || "Failed to load GST bill", "danger");
     } finally {
       setLoadingListPreview(false);
     }
@@ -353,41 +358,25 @@ const GstInvoicePage = () => {
   };
 
   return (
-    <div className="resorts-page-container" style={{ padding: "0px 20px 20px 20px", boxSizing: "border-box" }}>
-      <div className="page-header">
-        <h2 style={{ fontSize: "24px", fontWeight: 700, color: "var(--primary-purple)", textAlign: "left", marginTop: "6px", marginBottom: "20px" }}>GST Invoice</h2>
+    <div className="gst-invoice-page resorts-page-container" style={{ padding: "0px 20px 20px 20px", boxSizing: "border-box" }}>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      <div className="vt-page-header">
+        <h2>GST Invoice</h2>
       </div>
 
-      <div style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "2px solid #eee" }}>
+      <div className="gst-tabs">
         <button
           type="button"
           onClick={() => setActiveTab("generate")}
-          style={{
-            padding: "10px 20px",
-            background: "none",
-            border: "none",
-            borderBottom: activeTab === "generate" ? "3px solid var(--primary-purple)" : "3px solid transparent",
-            fontWeight: "bold",
-            fontSize: "14px",
-            color: activeTab === "generate" ? "var(--primary-purple)" : "#666",
-            cursor: "pointer",
-          }}
+          className={`gst-tab-btn ${activeTab === "generate" ? "gst-tab-btn--active" : ""}`}
         >
           Generate GST Bill
         </button>
         <button
           type="button"
           onClick={() => setActiveTab("invoices")}
-          style={{
-            padding: "10px 20px",
-            background: "none",
-            border: "none",
-            borderBottom: activeTab === "invoices" ? "3px solid var(--primary-purple)" : "3px solid transparent",
-            fontWeight: "bold",
-            fontSize: "14px",
-            color: activeTab === "invoices" ? "var(--primary-purple)" : "#666",
-            cursor: "pointer",
-          }}
+          className={`gst-tab-btn ${activeTab === "invoices" ? "gst-tab-btn--active" : ""}`}
         >
           All Invoices
         </button>
@@ -395,57 +384,57 @@ const GstInvoicePage = () => {
 
       {activeTab === "generate" && (
       <>
-      <div className="user-management-section" style={{ border: "1px solid #ccc", padding: "25px", borderRadius: "6px", marginBottom: "30px", background: "#fff", boxSizing: "border-box" }}>
-        <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Booking ID</label>
+      <div className="gst-card">
+        <div className="gst-search-row">
+          <div className="gst-field">
+            <label>Booking ID</label>
             <input
               type="text"
               value={bookingIdInput}
               onChange={(e) => setBookingIdInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
               placeholder="Enter booking ID"
-              style={{ padding: "8px 12px", height: "38px", borderRadius: "4px", border: "1px solid #ccc", width: "220px", boxSizing: "border-box" }}
+              style={{ width: "220px" }}
             />
           </div>
           <button
             type="button"
             onClick={() => handleSearch()}
             disabled={loading}
-            style={{ height: "38px", padding: "0 20px", background: "var(--primary-purple)", color: "#fff", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
+            className="vt-btn vt-btn-primary"
           >
             {loading ? "Searching…" : "Search"}
           </button>
         </div>
 
-        {error && <p style={{ color: "red", marginTop: "15px" }}>{error}</p>}
+        {error && <p className="gst-error-text">{error}</p>}
 
         {booking && (
-          <div style={{ marginTop: "20px", background: "#f9f9f9", padding: "15px 20px", borderRadius: "6px" }}>
-            <p style={{ margin: "0 0 15px 0", fontSize: "13px", color: "#555" }}>
+          <div className="gst-booking-summary">
+            <p className="gst-booking-summary-label">
               Booking #{booking.id} — {booking.customerName}
             </p>
 
             {invoice && !editingInvoice ? (
-              <div>
-                <p style={{ margin: 0 }}><strong>Invoice Number:</strong> {invoice.invoiceNumber}</p>
-                <p style={{ margin: "4px 0 0 0" }}><strong>Generated:</strong> {invoice.generatedAt ? new Date(invoice.generatedAt).toLocaleString() : "-"}</p>
+              <div className="gst-invoice-details">
+                <p><strong>Invoice Number:</strong> {invoice.invoiceNumber}</p>
+                <p><strong>Generated:</strong> {invoice.generatedAt ? new Date(invoice.generatedAt).toLocaleString() : "-"}</p>
                 {invoice.customerCompanyName && (
-                  <p style={{ margin: "4px 0 0 0" }}><strong>Bill To:</strong> {invoice.customerCompanyName} (GSTIN: {invoice.customerGstin || "-"})</p>
+                  <p><strong>Bill To:</strong> {invoice.customerCompanyName} (GSTIN: {invoice.customerGstin || "-"})</p>
                 )}
                 {invoice.customerAddress && (
-                  <p style={{ margin: "4px 0 0 0" }}><strong>Billing Address:</strong> {invoice.customerAddress}</p>
+                  <p><strong>Billing Address:</strong> {invoice.customerAddress}</p>
                 )}
-                <p style={{ margin: "4px 0 0 0" }}><strong>Place of Supply:</strong> {invoice.placeOfSupply || "-"}</p>
+                <p><strong>Place of Supply:</strong> {invoice.placeOfSupply || "-"}</p>
                 {invoice.bookingChangedSinceInvoice && (
-                  <p style={{ margin: "8px 0 0 0", color: "#856404" }}>Note: booking details have changed since this bill was generated.</p>
+                  <p className="gst-warning-text">Note: booking details have changed since this bill was generated.</p>
                 )}
-                <div style={{ display: "flex", gap: "10px", marginTop: "12px", alignItems: "center" }}>
+                <div className="gst-action-row">
                   <button
                     type="button"
                     onClick={handleDownload}
                     disabled={downloading}
-                    style={{ padding: "8px 20px", background: "var(--primary-teal)", color: "#fff", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
+                    className="vt-btn vt-btn-primary"
                   >
                     {downloading ? "Downloading…" : "Download PDF"}
                   </button>
@@ -453,12 +442,12 @@ const GstInvoicePage = () => {
                     <button
                       type="button"
                       onClick={startEditInvoice}
-                      style={{ padding: "8px 20px", background: "#fff", color: "var(--primary-purple)", border: "1px solid var(--primary-purple)", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
+                      className="vt-btn vt-btn-primary"
                     >
                       Edit / Regenerate
                     </button>
                   ) : (
-                    <p style={{ margin: 0, fontSize: "12px", color: "#999" }}>
+                    <p className="gst-muted-text">
                       Regeneration window closed — this invoice's data has already been sent for accounting.
                     </p>
                   )}
@@ -466,7 +455,7 @@ const GstInvoicePage = () => {
                     <button
                       type="button"
                       onClick={() => setShowEmailForm(true)}
-                      style={{ padding: "8px 20px", background: "#fff", color: "var(--primary-teal)", border: "1px solid var(--primary-teal)", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
+                      className="vt-btn vt-btn-secondary"
                     >
                       Email to Customer
                     </button>
@@ -474,19 +463,18 @@ const GstInvoicePage = () => {
                 </div>
 
                 {showEmailForm && (
-                  <div style={{ display: "flex", gap: "10px", alignItems: "center", marginTop: "12px", flexWrap: "wrap" }}>
+                  <div className="gst-email-row">
                     <input
                       type="email"
                       value={emailAddress}
                       onChange={(e) => setEmailAddress(e.target.value)}
                       placeholder="customer@example.com"
-                      style={{ padding: "8px 12px", height: "38px", borderRadius: "4px", border: "1px solid #ccc", width: "260px", boxSizing: "border-box" }}
                     />
                     <button
                       type="button"
                       onClick={handleEmailInvoice}
                       disabled={emailing || !emailAddress.trim()}
-                      style={{ padding: "8px 20px", background: "var(--primary-teal)", color: "#fff", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
+                      className="vt-btn vt-btn-primary"
                     >
                       {emailing ? "Sending…" : "Send"}
                     </button>
@@ -494,7 +482,7 @@ const GstInvoicePage = () => {
                       type="button"
                       onClick={() => setShowEmailForm(false)}
                       disabled={emailing}
-                      style={{ padding: "8px 20px", background: "#fff", color: "#555", border: "1px solid #ccc", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
+                      className="vt-btn vt-btn-purple"
                     >
                       Cancel
                     </button>
@@ -505,63 +493,60 @@ const GstInvoicePage = () => {
                   <iframe
                     title="GST bill"
                     src={existingInvoicePreviewUrl}
-                    style={{ width: "100%", height: "85vh", border: "1px solid #ddd", borderRadius: "4px", marginTop: "16px" }}
+                    className="gst-preview-iframe"
                   />
                 )}
               </div>
             ) : (
               <div>
-                <p style={{ fontSize: "13px", color: "#666", marginBottom: "10px" }}>
+                <p className="gst-muted-text" style={{ marginBottom: "10px" }}>
                   {editingInvoice
                     ? `Editing invoice ${invoice.invoiceNumber} — the invoice number stays the same; billing details and amounts will be refreshed from the booking. Regenerable until the night of the 1st of next month.`
                     : "Preview the bill first — once generated, the invoice number is locked and cannot be changed."}
                 </p>
-                <div style={{ display: "flex", gap: "15px", flexWrap: "wrap" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Bill To Company Name (optional)</label>
+                <div className="gst-form-grid">
+                  <div className="gst-field">
+                    <label>Bill To Company Name (optional)</label>
                     <input
                       type="text"
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
-                      style={{ padding: "8px 12px", height: "38px", borderRadius: "4px", border: "1px solid #ccc", width: "240px", boxSizing: "border-box" }}
                     />
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>GSTIN (optional)</label>
+                  <div className="gst-field">
+                    <label>GSTIN (optional)</label>
                     <input
                       type="text"
                       value={customerGstin}
                       onChange={(e) => setCustomerGstin(e.target.value.toUpperCase())}
-                      style={{ padding: "8px 12px", height: "38px", borderRadius: "4px", border: "1px solid #ccc", width: "200px", boxSizing: "border-box", textTransform: "uppercase" }}
+                      style={{ textTransform: "uppercase" }}
                     />
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Place of Supply</label>
+                  <div className="gst-field">
+                    <label>Place of Supply</label>
                     <input
                       type="text"
                       value={placeOfSupply}
                       onChange={(e) => setPlaceOfSupply(e.target.value)}
-                      style={{ padding: "8px 12px", height: "38px", borderRadius: "4px", border: "1px solid #ccc", width: "200px", boxSizing: "border-box" }}
                     />
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: "260px" }}>
-                    <label style={{ fontWeight: "600", fontSize: "14px", color: "#555" }}>Billing Address (optional)</label>
+                  <div className="gst-field gst-field--wide">
+                    <label>Billing Address (optional)</label>
                     <textarea
                       value={customerAddress}
                       onChange={(e) => setCustomerAddress(e.target.value)}
                       rows={2}
-                      style={{ padding: "8px 12px", borderRadius: "4px", border: "1px solid #ccc", boxSizing: "border-box", fontFamily: "inherit", fontSize: "14px", resize: "vertical" }}
                     />
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
+                <div className="gst-action-row">
                   {editingInvoice ? (
                     <>
                       <button
                         type="button"
                         onClick={handleRegenerate}
                         disabled={regenerating}
-                        style={{ padding: "8px 24px", background: "var(--primary-teal)", color: "#fff", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
+                        className="vt-btn vt-btn-primary"
                       >
                         {regenerating ? "Saving…" : "Save Changes"}
                       </button>
@@ -569,7 +554,7 @@ const GstInvoicePage = () => {
                         type="button"
                         onClick={cancelEditInvoice}
                         disabled={regenerating}
-                        style={{ padding: "8px 24px", background: "#fff", color: "#555", border: "1px solid #ccc", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
+                        className="vt-btn vt-btn-purple"
                       >
                         Cancel
                       </button>
@@ -580,7 +565,7 @@ const GstInvoicePage = () => {
                         type="button"
                         onClick={handlePreview}
                         disabled={previewing}
-                        style={{ padding: "8px 24px", background: "var(--primary-purple)", color: "#fff", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
+                        className="vt-btn vt-btn-purple"
                       >
                         {previewing ? "Building Preview…" : "Preview Bill"}
                       </button>
@@ -589,7 +574,7 @@ const GstInvoicePage = () => {
                           type="button"
                           onClick={handleConfirmGenerate}
                           disabled={generating}
-                          style={{ padding: "8px 24px", background: "var(--primary-teal)", color: "#fff", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
+                          className="vt-btn vt-btn-primary"
                         >
                           {generating ? "Generating…" : "Looks Good — Generate"}
                         </button>
@@ -606,30 +591,29 @@ const GstInvoicePage = () => {
 
       {previewModalOpen && previewUrl && (
         <div
-          style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.75)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 10000 }}
+          className="gst-modal-overlay"
           onClick={() => setPreviewModalOpen(false)}
         >
           <div
-            style={{ background: "#fff", width: "80%", maxWidth: "850px", height: "85vh", borderRadius: "8px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 5px 20px rgba(0,0,0,0.3)" }}
+            className="gst-modal-content"
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 20px", background: "#f8f9fa", borderBottom: "1px solid #dee2e6" }}>
-              <h3 style={{ margin: 0, fontSize: "1.1rem", color: "#333" }}>
+            <div className="gst-modal-header">
+              <h3>
                 {invoice ? `GST Bill: ${invoice.invoiceNumber}` : "GST Bill Preview"}
               </h3>
               <button
                 type="button"
                 onClick={() => setPreviewModalOpen(false)}
-                style={{ background: "none", border: "none", fontSize: "1.25rem", cursor: "pointer", color: "#6c757d" }}
+                className="gst-modal-close"
               >
                 ✕
               </button>
             </div>
-            <div style={{ flex: 1, padding: "20px", display: "flex", justifyContent: "center", alignItems: "center", background: "#e9ecef", overflow: "auto" }}>
+            <div className="gst-modal-body">
               <iframe
                 title="GST bill preview"
                 src={previewUrl}
-                style={{ width: "100%", height: "100%", border: "none", background: "#fff" }}
               />
             </div>
           </div>
@@ -639,23 +623,23 @@ const GstInvoicePage = () => {
       )}
 
       {activeTab === "invoices" && (
-      <div className="user-management-section" style={{ border: "1px solid #ccc", padding: "25px", borderRadius: "6px", marginBottom: "30px", background: "#fff", boxSizing: "border-box" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", flexWrap: "wrap", gap: "12px" }}>
-          <h3 style={{ margin: 0, color: "#333" }}>All Generated Invoices</h3>
+      <div className="gst-card">
+        <div className="gst-invoices-toolbar">
+          <h3 style={{ margin: 0 }}>All Generated Invoices</h3>
           {!listPreviewUrl && (
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            <label style={{ fontWeight: "600", fontSize: "13px", color: "#555" }}>Month:</label>
+          <div className="gst-invoices-filters">
+            <label>Month:</label>
             <input
               type="month"
+              className="gst-month-input"
               value={invoiceMonth}
               onChange={(e) => setInvoiceMonth(e.target.value)}
-              style={{ padding: "6px 10px", height: "34px", borderRadius: "4px", border: "1px solid #ccc", boxSizing: "border-box" }}
             />
             {invoiceMonth && (
               <button
                 type="button"
                 onClick={() => setInvoiceMonth("")}
-                style={{ padding: "6px 16px", background: "var(--primary-teal)", color: "#fff", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
+                className="vt-btn vt-btn-purple"
               >
                 Show All
               </button>
@@ -664,13 +648,14 @@ const GstInvoicePage = () => {
               type="button"
               onClick={() => fetchAllInvoices(invoiceMonth)}
               disabled={loadingList}
-              style={{ padding: "6px 16px", background: "var(--primary-purple)", color: "#fff", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
+              className="vt-btn vt-btn-secondary"
             >
               {loadingList ? "Refreshing…" : "Refresh"}
             </button>
             {isSuperAdmin() && (
               <button
                 type="button"
+                className="export-csv-btn"
                 onClick={() => downloadCsv(
                   `gst-invoices${invoiceMonth ? `-${invoiceMonth}` : ""}.csv`,
                   allInvoices,
@@ -694,7 +679,6 @@ const GstInvoicePage = () => {
                     { key: "placeOfSupply", header: "Place of Supply" },
                   ]
                 )}
-                style={{ padding: "6px 16px", background: "var(--primary-teal)", color: "#fff", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
               >
                 Export CSV
               </button>
@@ -705,12 +689,12 @@ const GstInvoicePage = () => {
 
         {listPreviewUrl ? (
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
-              <h4 style={{ margin: 0, color: "#333" }}>GST Bill: {listPreviewInvoiceNumber}</h4>
+            <div className="gst-list-header">
+              <h4>GST Bill: {listPreviewInvoiceNumber}</h4>
               <button
                 type="button"
                 onClick={handleBackToTable}
-                style={{ padding: "6px 16px", background: "var(--primary-purple)", color: "#fff", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
+                className="vt-btn vt-btn-purple"
               >
                 ← Back to Table
               </button>
@@ -718,11 +702,12 @@ const GstInvoicePage = () => {
             <iframe
               title="GST bill preview"
               src={listPreviewUrl}
-              style={{ width: "100%", height: "85vh", border: "1px solid #ddd", borderRadius: "4px" }}
+              className="gst-preview-iframe"
+              style={{ marginTop: 0 }}
             />
           </div>
         ) : (
-        <div className="table-wrapper" style={{ overflowX: "auto" }}>
+        <div className="table-wrapper">
           <table className="resorts-table">
             <thead>
               <tr>
@@ -737,7 +722,7 @@ const GstInvoicePage = () => {
             </thead>
             <tbody>
               {allInvoices.length === 0 ? (
-                <tr><td colSpan="7">No GST bills generated yet</td></tr>
+                <tr><td colSpan="7" style={{ textAlign: "center", padding: "20px" }}>No GST bills generated yet</td></tr>
               ) : (
                 allInvoices.map((inv) => (
                   <tr key={inv.invoiceNumber}>
@@ -748,22 +733,23 @@ const GstInvoicePage = () => {
                     <td>₹{inv.totalAmount}</td>
                     <td>{inv.generatedAt ? new Date(inv.generatedAt).toLocaleDateString("en-IN") : "-"}</td>
                     <td>
-                      <button
-                        type="button"
-                        className="checkin-btn"
-                        onClick={() => handlePreviewFromList(inv.bookingId, inv.invoiceNumber)}
-                        disabled={loadingListPreview}
-                        style={{ marginRight: "8px" }}
-                      >
-                        Preview
-                      </button>
-                      <button
-                        type="button"
-                        className="checkin-btn"
-                        onClick={() => handleDownloadFromList(inv.bookingId, inv.invoiceNumber)}
-                      >
-                        Download
-                      </button>
+                      <div className="row-actions">
+                        <button
+                          type="button"
+                          className="vt-btn vt-btn-primary"
+                          onClick={() => handlePreviewFromList(inv.bookingId, inv.invoiceNumber)}
+                          disabled={loadingListPreview}
+                        >
+                          Preview
+                        </button>
+                        <button
+                          type="button"
+                          className="vt-btn vt-btn-secondary"
+                          onClick={() => handleDownloadFromList(inv.bookingId, inv.invoiceNumber)}
+                        >
+                          Download
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

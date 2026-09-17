@@ -1,81 +1,117 @@
-.dashboard-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  align-items: center;
-  margin-bottom: 20px;
+/* Previously every selector here (.dashboard-filters/.filter-item/
+   .page-header/.react-datepicker-wrapper/.react-datepicker__input-container)
+   was bare and unscoped - this file had no root wrapper div at all (JSX
+   rendered a bare Fragment). .react-datepicker-wrapper/.react-datepicker__
+   input-container are react-datepicker's own library classes, so being
+   unscoped meant this page's rules could silently apply to every DatePicker
+   in the entire app depending on bundle order. .daily-entries-table also
+   collided with DailyEntryDashboard.css's own bare version of the same
+   name (unrelated page/feature). Now scoped under .booking-enquiry-page,
+   and the table itself uses the shared .vt-data-table primitive instead of
+   a bespoke class, avoiding that collision entirely. */
 
-  background: #f8f9fa;
-  padding: 15px 20px;
-  border-radius: 8px;
-}
-
-.filter-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.filter-item label {
-  font-weight: 500;
-  margin-bottom: 6px;
-  text-align: center;
-}
-
-/* Make ALL inputs and selects same height */
-.dashboard-filters input,
-.dashboard-filters select {
-  height: 36px;   /* slightly smaller */
-  padding: 5px 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 14px;
+.booking-enquiry-page {
+  padding: 0 20px 20px 20px;
   box-sizing: border-box;
 }
 
-/* Fix DatePicker wrapper */
-.react-datepicker-wrapper {
+.booking-enquiry-page .dashboard-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: flex-end;
+  margin-bottom: var(--space-5);
+  background: var(--gray-50);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-md);
+}
+
+.booking-enquiry-page .filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.booking-enquiry-page .filter-item label {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--gray-800);
+}
+
+.booking-enquiry-page .date-picker {
+  height: 38px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
+  font-size: var(--font-size-base);
+  box-sizing: border-box;
+}
+
+.booking-enquiry-page .date-picker:focus {
+  outline: none;
+  border-color: var(--primary-purple);
+}
+
+.booking-enquiry-page .filter-select {
+  width: 180px;
+}
+
+.booking-enquiry-page .react-datepicker-wrapper {
   width: auto;
 }
 
-.react-datepicker__input-container {
-  display: block;
+.booking-enquiry-page .table-wrapper {
+  width: 100%;
+  overflow-x: auto;
 }
 
-.page-header {
-  margin: 0 0 15px 0;
-  padding: 0;
-  border-bottom: none;
+/* Solid teal header, matching every other admin table (ManageResorts,
+   ManageUsers, AdminExpensesDashboard/PaymentAccounts) - the generic
+   .vt-data-table primitive's neutral gray header looked washed-out and
+   inconsistent next to those. */
+.booking-enquiry-page .enquiries-table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.page-header h2 {
-  margin: 0;
+.booking-enquiry-page .enquiries-table th,
+.booking-enquiry-page .enquiries-table td {
+  padding: var(--space-3);
+  border: 1px solid var(--gray-300);
+  text-align: left;
 }
-.daily-entry-dashboard-container {
-  padding: 16px 24px;
+
+.booking-enquiry-page .enquiries-table th {
+  background: var(--primary-teal);
+  color: white;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+}
+
+.booking-enquiry-page .enquiries-table td {
+  color: var(--gray-900);
 }
 
 @media screen and (max-width: 768px) {
-  .dashboard-filters {
+  .booking-enquiry-page .dashboard-filters {
     flex-direction: column;
     align-items: stretch;
-    padding: 15px;
   }
 
-  .filter-item label {
+  .booking-enquiry-page .filter-item label {
     text-align: left;
   }
 }
 
 @media screen and (max-width: 480px) {
-  .dashboard-filters input,
-  .dashboard-filters select,
-  .date-picker,
-  .reset-filters-btn {
+  .booking-enquiry-page .filter-select,
+  .booking-enquiry-page .date-picker,
+  .booking-enquiry-page .vt-btn {
     width: 100%;
   }
 
-  .daily-entries-table th,
-  .daily-entries-table td {
+  .booking-enquiry-page .enquiries-table th,
+  .booking-enquiry-page .enquiries-table td {
     padding: 6px 8px;
     font-size: 12px;
   }

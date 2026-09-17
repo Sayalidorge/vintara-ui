@@ -9,6 +9,7 @@ import {
   submitCorrection,
 } from "../services/AttendanceService";
 import { toLocalDateStr } from "../utils/date";
+import ToastContainer, { useToast } from "./common/Toast";
 import "./LeaveCalendar.css";
 
 const LEAVE_TYPE_LABEL = {
@@ -38,6 +39,7 @@ const formatDisplayDate = (isoDate) => {
 // component (plain leave-only usage) is unaffected - only MyAttendanceLeave's
 // self-service view turns this on.
 const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance = false }) => {
+  const { toasts, showToast, dismissToast } = useToast();
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [myCorrections, setMyCorrections] = useState([]);
@@ -178,11 +180,19 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
     return myCorrections.find((c) => c.date === dateStr && c.status === "PENDING") || null;
   };
 
+  // Mirrors the backend's WeeklyHoliday util (Sunday, company-wide, same day
+  // for every USER/SUPER_USER) - the absence scheduler never creates an
+  // AttendanceRecord for this day, so without this check it would otherwise
+  // fall through to the "no record found" gap-fill below and get painted red
+  // as if someone forgot to check in.
+  const isWeeklyHoliday = (tileDate) => tileDate.getDay() === 0;
+
   // Attendance is the ground-truth layer, so it takes precedence over the
   // leave-type coloring when both exist for the same day (shouldn't normally
   // diverge, since ON_LEAVE records are themselves derived from an approved
   // leave, but attendance winning is the safer default if they ever do).
   const getAttendanceClassName = (tileDate) => {
+    if (isWeeklyHoliday(tileDate)) return "attendance-holiday";
     if (getPendingCorrectionForDate(tileDate)) return "attendance-pending";
 
     const record = getAttendanceForDate(tileDate);
@@ -227,8 +237,13 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
     today.setHours(0, 0, 0, 0);
     if (clickedDate >= today) return; // backfill is for past dates only - today uses real check-in
 
+    if (isWeeklyHoliday(clickedDate)) {
+      showToast("Sunday is a weekly holiday - no correction needed.", "warning");
+      return;
+    }
+
     if (getPendingCorrectionForDate(clickedDate)) {
-      alert("A correction request for this date is already pending approval.");
+      showToast("A correction request for this date is already pending approval.", "warning");
       return;
     }
 
@@ -238,17 +253,17 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
 
   const handleSubmitCorrection = async () => {
     if (!correctionForm.reason.trim()) {
-      alert("Please enter a reason.");
+      showToast("Please enter a reason.", "warning");
       return;
     }
     setSubmitting(true);
     try {
       await submitCorrection(toLocalDateStr(selectedDate), correctionForm.status, correctionForm.reason);
-      alert("Correction request submitted for approval.");
+      showToast("Correction request submitted for approval.", "success");
       setSelectedDate(null);
       await refreshAttendance();
     } catch (err) {
-      alert(err.message || "Failed to submit correction request.");
+      showToast(err.message || "Failed to submit correction request.", "danger");
     } finally {
       setSubmitting(false);
     }
@@ -256,6 +271,7 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
 
   return (
     <div className="leave-calendar-container">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <h2 className="page-title">
         {adminView
           ? (showAttendance ? "Attendance & Leave Calendar" : "Leave Calendar (Admin)")
@@ -314,6 +330,10 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
                 <div className="legend-item">
                   <span className="legend-box attendance-pending"></span>
                   <span>Correction Pending</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-box attendance-holiday"></span>
+                  <span>Holiday (Sunday)</span>
                 </div>
               </>
             )}

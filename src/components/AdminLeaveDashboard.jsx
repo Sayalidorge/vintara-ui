@@ -1,9 +1,22 @@
 // src/components/AdminLeaveDashboard.jsx
 import React, { useEffect, useState } from "react";
+import Select from "react-select";
 import { getAttendanceEligibleUsers, getAllLeaveRequests, approveLeave, rejectLeave } from "../services/LeaveService";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+import ToastContainer, { useToast } from "./common/Toast";
+import "../css/theme.css";
+import "../css/components.css";
 import "./AdminLeaveDashboard.css";
 
+const STATUS_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "PENDING", label: "Pending" },
+  { value: "APPROVED", label: "Approved" },
+  { value: "REJECTED", label: "Rejected" },
+];
+
 const AdminLeaveDashboard = () => {
+  const { toasts, showToast, dismissToast } = useToast();
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
   // Mirrors the backend hierarchy rule in LeaveService.assertCanActOnLeave:
@@ -68,7 +81,7 @@ useEffect(() => {
       await approveLeave(id);
       fetchLeaves();
     } catch (err) {
-      alert(err.message || "Failed to approve.");
+      showToast(err.message || "Failed to approve.", "danger");
     } finally {
       setActingOnIds((prev) => {
         const next = new Set(prev);
@@ -85,7 +98,7 @@ useEffect(() => {
       await rejectLeave(id);
       fetchLeaves();
     } catch (err) {
-      alert(err.message || "Failed to reject.");
+      showToast(err.message || "Failed to reject.", "danger");
     } finally {
       setActingOnIds((prev) => {
         const next = new Set(prev);
@@ -100,8 +113,15 @@ useEffect(() => {
     setUserIdFilter("");
   };
 
+  const userOptions = [
+    { value: "", label: "All Users" },
+    ...users.map((user) => ({ value: user.userId, label: `${user.name} (${user.userId})` })),
+  ];
+
   return (
-    <div className="page-container admin-leave-dashboard">
+    <div className="admin-leave-dashboard">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
       {loading && <div className="loading-overlay">Loading...</div>}
 
       <div className="attendance-roster-header">
@@ -111,30 +131,32 @@ useEffect(() => {
       {/* Filters */}
       <div className="filters-section">
         <label>Status:</label>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="">All</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
-        </select>
+        <Select
+          options={STATUS_OPTIONS}
+          value={STATUS_OPTIONS.find((o) => o.value === statusFilter)}
+          onChange={(selected) => setStatusFilter(selected.value)}
+          isSearchable={false}
+          classNamePrefix="react-select"
+          className="react-select-container filter-select"
+          menuPortalTarget={menuPortalTarget}
+          menuPosition={menuPosition}
+          styles={themedSelectStyles()}
+        />
 
         <label>User:</label>
-<select
-  value={userIdFilter}
-  onChange={(e) => setUserIdFilter(e.target.value)}
->
-  <option value="">All Users</option>
-  {users.map((user) => (
-    <option key={user.userId} value={user.userId}>
-      {user.name} ({user.userId})
-    </option>
-  ))}
-</select>
+        <Select
+          options={userOptions}
+          value={userOptions.find((o) => o.value === userIdFilter)}
+          onChange={(selected) => setUserIdFilter(selected ? selected.value : "")}
+          isSearchable={false}
+          classNamePrefix="react-select"
+          className="react-select-container filter-select"
+          menuPortalTarget={menuPortalTarget}
+          menuPosition={menuPosition}
+          styles={themedSelectStyles()}
+        />
 
-        <button className="btn-reset" onClick={handleResetFilters}>
+        <button className="vt-btn vt-btn-purple" onClick={handleResetFilters}>
           Reset
         </button>
       </div>

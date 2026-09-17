@@ -11,13 +11,14 @@ import ManageCheckInDrawer from "./checkin/ManageCheckInDrawer";
 import { toLocalDateStr, formatDateDMY } from "../utils/date";
 import { QRCodeSVG } from "qrcode.react";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+import ToastContainer, { useToast } from "./common/Toast";
 
 // Display-only relabeling of BookingSource values - the stored/compared
 // value stays CALL/CALLS_GST everywhere else, only what staff see changes
 // (mirrors BookingSource.java's getDisplayName(), which the dynamic
 // booking-source dropdown already reads - these raw-value renders don't).
 const sourceLabel = (source) =>
-  ({ CALL: "Vintara", CALLS_GST: "Vintara + GST Bill" }[source]) || source;
+  ({ CALL: "VINTARA", CALLS_GST: "VINTARA + GST BILL" }[source]) || source;
 
 // The guest self check-in page a booking's link/QR points to (see
 // GuestCheckInPage.jsx, route /checkin/:token).
@@ -31,6 +32,7 @@ const getCheckInUrl = (booking) =>
 const resortSelectStyles = themedSelectStyles();
 
 const UserInventory = () => {
+  const { toasts, showToast, dismissToast } = useToast();
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("user")) || null;
@@ -515,11 +517,11 @@ const UserInventory = () => {
     if (!selectedBooking || isSubmittingLateCheckout) return;
     const amount = parseFloat(lateCheckoutAmount) || 0;
     if (amount <= 0) {
-      alert("Enter the late checkout charge amount.");
+      showToast("Enter the late checkout charge amount.", "warning");
       return;
     }
     if (!lateCheckoutAccount) {
-      alert("Select which account collected the late checkout charge.");
+      showToast("Select which account collected the late checkout charge.", "warning");
       return;
     }
 
@@ -555,7 +557,7 @@ const UserInventory = () => {
       setSelectedBooking(null);
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to add late checkout charge. Please try again.");
+      showToast(err.message || "Failed to add late checkout charge. Please try again.", "danger");
     } finally {
       setIsSubmittingLateCheckout(false);
     }
@@ -573,11 +575,11 @@ const UserInventory = () => {
     if (!selectedBooking || isSubmittingExtraCharge) return;
     const amount = parseFloat(extraChargeAmount) || 0;
     if (amount <= 0) {
-      alert("Enter the extra charge amount.");
+      showToast("Enter the extra charge amount.", "warning");
       return;
     }
     if (!extraChargeAccount) {
-      alert("Select which account collected the extra charge.");
+      showToast("Select which account collected the extra charge.", "warning");
       return;
     }
 
@@ -613,7 +615,7 @@ const UserInventory = () => {
       setSelectedBooking(null);
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to add extra charge. Please try again.");
+      showToast(err.message || "Failed to add extra charge. Please try again.", "danger");
     } finally {
       setIsSubmittingExtraCharge(false);
     }
@@ -622,16 +624,16 @@ const UserInventory = () => {
   const handleExtendStaySubmit = async () => {
     if (!selectedBooking || isSubmittingExtendStay) return;
     if (!extendNewCheckOutDate || extendNewCheckOutDate <= selectedBooking.checkOutDate) {
-      alert("Select a checkout date after the current one.");
+      showToast("Select a checkout date after the current one.", "warning");
       return;
     }
     if (!extendCategory || !extendRoom) {
-      alert("Please select a category and room.");
+      showToast("Please select a category and room.", "warning");
       return;
     }
     const totalAmount = parseFloat(extendTotalAmount) || 0;
     if (totalAmount <= 0) {
-      alert("Enter the total amount for the extension.");
+      showToast("Enter the total amount for the extension.", "warning");
       return;
     }
 
@@ -662,7 +664,7 @@ const UserInventory = () => {
       fetchBookings();
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to create extension booking. Please try again.");
+      showToast(err.message || "Failed to create extension booking. Please try again.", "danger");
     } finally {
       setIsSubmittingExtendStay(false);
     }
@@ -671,12 +673,12 @@ const UserInventory = () => {
   const handleCollectBalanceSubmit = async () => {
     if (!selectedBooking || isSubmittingCollectBalance) return;
     if (splitRows.some((r) => !r.paymentAccount || !r.amount || parseFloat(r.amount) <= 0)) {
-      alert("Please select an account and enter an amount for every split row.");
+      showToast("Please select an account and enter an amount for every split row.", "warning");
       return;
     }
     const pendingDue = selectedBooking.pendingBalanceAmount ?? selectedBooking.balanceAmount ?? 0;
     if (Math.round(splitTotal * 100) !== Math.round(pendingDue * 100)) {
-      alert(`Split amounts (₹${splitTotal}) must add up to the balance due (₹${pendingDue}).`);
+      showToast(`Split amounts (₹${splitTotal}) must add up to the balance due (₹${pendingDue}).`, "warning");
       return;
     }
 
@@ -711,7 +713,7 @@ const UserInventory = () => {
       setSelectedBooking(null);
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to collect balance. Please try again.");
+      showToast(err.message || "Failed to collect balance. Please try again.", "danger");
     } finally {
       setIsSubmittingCollectBalance(false);
     }
@@ -731,22 +733,22 @@ const UserInventory = () => {
     const discountValue = parseFloat(checkInDiscount) || 0;
     const balanceDueForDiscount = selectedBooking.pendingBalanceAmount ?? selectedBooking.balanceAmount ?? 0;
     if (discountValue < 0 || discountValue > balanceDueForDiscount) {
-      alert(`Discount must be between ₹0 and the balance due (₹${balanceDueForDiscount}).`);
+      showToast(`Discount must be between ₹0 and the balance due (₹${balanceDueForDiscount}).`, "warning");
       return;
     }
     if (discountValue > 0 && !checkInDiscountReason.trim()) {
-      alert("Please enter a reason for the discount.");
+      showToast("Please enter a reason for the discount.", "warning");
       return;
     }
 
     let splitsPayload = [];
     if (effectiveBalanceDue > 0) {
       if (splitRows.some((r) => !r.paymentAccount || !r.amount || parseFloat(r.amount) <= 0)) {
-        alert("Please select an account and enter an amount for every split row.");
+        showToast("Please select an account and enter an amount for every split row.", "warning");
         return;
       }
       if (Math.round(splitTotal * 100) !== Math.round(effectiveBalanceDue * 100)) {
-        alert(`Split amounts (₹${splitTotal}) must add up to the balance due (₹${effectiveBalanceDue}).`);
+        showToast(`Split amounts (₹${splitTotal}) must add up to the balance due (₹${effectiveBalanceDue}).`, "warning");
         return;
       }
       splitsPayload = splitRows.map((r) => ({ paymentAccountId: r.paymentAccount.value, amount: parseFloat(r.amount) }));
@@ -798,7 +800,7 @@ const UserInventory = () => {
       setSelectedBooking(null);
     } catch (err) {
       console.error(err);
-      alert(err.message || "Check-in failed. Please try again.");
+      showToast(err.message || "Check-in failed. Please try again.", "danger");
     } finally {
       setIsSubmittingCheckIn(false);
     }
@@ -806,12 +808,12 @@ const UserInventory = () => {
 
   const handleEarlyCheckoutSubmit = async () => {
     if (isSubmittingEarlyCheckout) return;
-    if (!checkoutReason.trim()) return alert("Please enter a reason");
-    if (refundAmount === "" || isNaN(parseFloat(refundAmount))) return alert("Please enter a valid numeric refund amount");
+    if (!checkoutReason.trim()) return showToast("Please enter a reason", "warning");
+    if (refundAmount === "" || isNaN(parseFloat(refundAmount))) return showToast("Please enter a valid numeric refund amount", "warning");
 
     const refundValue = parseFloat(refundAmount);
     if (refundValue > 0 && !refundAccount) {
-      alert("Please select which account the refund is being paid out from.");
+      showToast("Please select which account the refund is being paid out from.", "warning");
       return;
     }
 
@@ -850,7 +852,7 @@ const UserInventory = () => {
       setSelectedBooking(null);
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to process booking exit. Please try again.");
+      showToast(err.message || "Failed to process booking exit. Please try again.", "danger");
     } finally {
       setIsSubmittingEarlyCheckout(false);
     }
@@ -860,6 +862,8 @@ const UserInventory = () => {
 
   return (
     <div className="user-inventory-wrapper">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
       <h2 className="page-title" style={{ fontSize: "24px", fontWeight: 600, color: "var(--primary-purple)", textAlign: "left", letterSpacing: "0.4px" }}>Inventory Dashboard</h2>
 
       {/* Control Filters Block */}

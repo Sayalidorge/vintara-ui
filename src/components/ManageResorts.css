@@ -1,351 +1,328 @@
-  /* Neutralizes ViewBookingEnquiry.css's bare ".page-header" (border-bottom +
-     padding) leaking in here, and the browser's default <h2> margin - both were
-     the real source of the large gap above/below the title. Also covers
-     PaymentAccounts.jsx, which reuses the same .resorts-page-container/.page-header
-     classes. */
-  .resorts-page-container .page-header {
-    margin: 0 0 15px 0;
-    padding: 0;
-    border-bottom: none;
-  }
+/* Every rule below is scoped under .resorts-page-container - the root
+   wrapper both ManageResorts.jsx and PaymentAccounts.jsx render into (they
+   deliberately share .page-header/.table-wrapper/.resorts-table/
+   .status-dropdown/.edit-btn - see PaymentAccounts.jsx). Previously several
+   of these (.table-wrapper, .status-dropdown, .edit-btn) were bare global
+   selectors that collided with same-named rules in DailyEntryDashboard.css,
+   AdminExpensesDashboard.css, ManageUsers.css, ResortDailyFinance.css (CRA
+   bundles all CSS globally, no scoping). Scoping fixes that without
+   affecting the deliberate ManageResorts/PaymentAccounts sharing. */
 
-  .resorts-page-container .page-header h2 {
-    margin: 0;
-  }
-
-  /* Firefox adds an invisible focus-ring border+padding inside <button> that
-     isn't part of the declared box model, inflating buttons past their set
-     height (e.g. the "Add" button next to the new-location input). Reset it. */
-  .resort-form button::-moz-focus-inner {
-    border: 0;
-    padding: 0;
-  }
-
-  /* Outer container: gives spacing from top of page */
-  .manage-resorts-container {
-    padding-top: 60px; /* top space */
-    padding-bottom: 40px;
-    padding-left: 20px;
-    padding-right: 20px;
-    display: flex;
-    justify-content: center;
-  }
-
-  /* Card wrapper inside container */
-.manage-resorts-container .form-wrapper {
-  width: 1800px; /* increase for more table space */
-  max-width: 95%; /* keep responsive on smaller screens */
-  margin: 0 auto;
-  padding: 20px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+.resorts-page-container .page-header {
+  margin: 0 0 var(--space-4) 0;
+  padding: 0;
+  border-bottom: none;
 }
 
-  /* Header: back button + title in same line */
-  .header-section {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 30px;
-  }
+.resorts-page-container .page-header h2 {
+  margin: 0;
+}
 
-  .header-section .page-title {
-    flex: 1;
-    text-align: center;
-    margin: 0;
-  }
+/* Firefox adds an invisible focus-ring border+padding inside <button> that
+   isn't part of the declared box model, inflating buttons past their set
+   height. Reset it. */
+.resorts-page-container button::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
 
-  .back-btn {
-    flex-shrink: 0;
-    background: var(--primary-purple);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 15px;
-    cursor: pointer;
-    transition: background 0.3s;
-  }
-
-  .back-btn:hover {
-    background: var(--primary-teal);
-  }
-
-  /* Form styling */
-  .resort-form {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start; /* 👈 centers inputs + button */
-  }
-
-  .resort-form .form-row {
+/* Tabs (Resorts / Payment Accounts) */
+.resorts-page-container .resorts-tabs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 15px; /* spacing between inputs */
-  width: 100%; /* ensures children don’t shrink weirdly */
-  justify-content: flex-start; /* left align children */
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
 }
-  /* Inputs */
-  .resort-form input {
-    width: 250px;
-    margin-bottom: 15px; /* increased vertical spacing */
-    padding: 8px 12px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    font-size: 1rem;
-  }
 
-  /* Submit button */
-  .resort-form button {
-    width: 140px;
-    margin-top: 10px;
-    background: var(--primary-teal);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 10px 18px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.3s;
-  }
+.resorts-page-container .resorts-tab-btn {
+  padding: 8px 20px;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-base);
+  background: var(--gray-200);
+  color: var(--gray-900);
+}
 
-  .resort-form button:hover {
-    background: var(--primary-purple);
-  }
+.resorts-page-container .resorts-tab-btn--active {
+  background: var(--primary-purple);
+  color: #fff;
+}
 
-  /* Table styling */
-  .table-wrapper {
+/* Form card */
+.resorts-page-container .resort-form-card {
+  border: 1px solid var(--gray-300);
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-8);
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.resorts-page-container .resort-form-card h3 {
+  margin: 0 0 var(--space-5) 0;
+  color: var(--gray-900);
+  font-size: var(--font-size-lg);
+}
+
+/* Shared with PaymentAccounts.jsx's own form (same tab-embedded page). */
+.resorts-page-container .button-group {
+  display: flex;
+  gap: var(--space-3);
+}
+
+/* Form rows - CSS Grid instead of the old manual flex-basis math, so every
+   row's columns line up exactly regardless of label/content length. */
+.resorts-page-container .form-row {
+  display: grid;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
   width: 100%;
-  overflow-x: visible;
 }
 
-.resorts-table {
-    width: 100%;
-  table-layout: auto; /* columns expand naturally */
-  min-width: unset;   /* remove previous 800px */
-   border-collapse: collapse;
+.resorts-page-container .form-row--2col {
+  grid-template-columns: 1fr 1fr;
 }
 
-/* Data cells */
-.resorts-table td {
-  padding: 12px;
-  border: 1px solid #ddd;   /* full grid */
+.resorts-page-container .form-row--3col {
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
-.resorts-table th {
-  padding: 12px;
+.resorts-page-container .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0; /* lets a grid column shrink below its content's natural width instead of overflowing */
+}
+
+.resorts-page-container .form-field label {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--gray-800);
+}
+
+.resorts-page-container .form-field input[type="text"],
+.resorts-page-container .form-field input[type="number"] {
+  width: 100%;
+  padding: 8px 12px;
+  height: 38px;
+  box-sizing: border-box;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
+  font-size: var(--font-size-base);
+}
+
+/* Every plain text input on this page had no themed focus state at all -
+   just the browser's default blue outline, inconsistent with every
+   react-select control (purple border on focus, no glow). Applies to every
+   text input across the page (form fields, room category row, search box),
+   not just one spot. */
+.resorts-page-container input[type="text"]:focus,
+.resorts-page-container input[type="number"]:focus {
+  outline: none;
+  border-color: var(--primary-purple);
+}
+
+.resorts-page-container .form-field .field-hint {
+  font-size: var(--font-size-xs);
+  color: var(--gray-600);
+  margin: 0;
+}
+
+.resorts-page-container .form-field .field-error {
+  color: var(--color-danger-text);
+  font-size: var(--font-size-xs);
+  margin-top: 2px;
+}
+
+.resorts-page-container .inline-add-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.resorts-page-container .inline-add-row input {
+  flex: 1;
+}
+
+/* .vt-btn has no fixed height (it sizes from padding), so next to the 38px
+   input beside it here it doesn't line up - pin it to match. */
+.resorts-page-container .inline-add-row .vt-btn {
+  height: 38px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* Room Categories section */
+.resorts-page-container .room-categories-section {
+  width: 100%;
+  background: var(--gray-50);
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gray-300);
+  margin-bottom: var(--space-6);
+  box-sizing: border-box;
+}
+
+.resorts-page-container .room-categories-section h4 {
+  margin: 0 0 var(--space-4) 0;
+  color: var(--gray-800);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* One shared grid for every row (not a separate grid per row) - each row's
+   4 fields are direct children (via a React.Fragment, no wrapping div per
+   row) so every row's columns are pinned to the exact same track widths,
+   instead of each row sizing its own columns independently. */
+.resorts-page-container .room-category-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: var(--space-3);
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.resorts-page-container .room-category-grid input {
+  width: 100%;
+  padding: 8px 12px;
+  height: 36px;
+  box-sizing: border-box;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
+  font-size: var(--font-size-base);
+}
+
+/* Same fixed-height fix as .inline-add-row's Add button - .vt-btn has no
+   own height, so it doesn't match its 36px row-mates without this. */
+.resorts-page-container .room-category-grid .vt-btn {
+  height: 36px;
+  box-sizing: border-box;
+}
+
+.resorts-page-container .add-room-category-btn {
+  padding: 8px 16px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--primary-purple);
+  border: 1px dashed var(--primary-purple);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-bold);
+  margin-top: var(--space-1);
+}
+
+.resorts-page-container .add-room-category-btn:hover {
+  background: rgba(128, 0, 128, 0.06);
+}
+
+/* Table toolbar (search + status filter) */
+.resorts-page-container .resorts-toolbar {
+  margin-bottom: var(--space-4);
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.resorts-page-container .resorts-toolbar input[type="text"] {
+  width: 100%;
+  max-width: 320px;
+  padding: 8px 12px;
+  height: 38px;
+  box-sizing: border-box;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
+  font-size: var(--font-size-base);
+}
+
+.resorts-page-container .resorts-toolbar .filter-select {
+  width: 160px;
+}
+
+.resorts-page-container .status-select {
+  width: 120px;
+}
+
+/* Table styling */
+.resorts-page-container .table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.resorts-page-container .resorts-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.resorts-page-container .resorts-table td {
+  padding: var(--space-3);
+  border: 1px solid var(--gray-300);
+}
+
+.resorts-page-container .resorts-table th {
+  padding: var(--space-3);
   text-align: left;
   background: var(--primary-teal);
   color: white;
-   border: 1px solid #ddd;   /* full grid */
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  border: 1px solid var(--gray-300);
 }
 
-  .resorts-table th {
-    background: var(--primary-teal);
-    color: white;
-  }
-
-  .resorts-table td button {
-    padding: 5px 10px;
-    margin-right: 5px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    color: white;
-  }
-
-  .resorts-table .edit-btn {
-    background: var(--primary-purple);
-  }
-
-  .resorts-table .edit-btn:hover {
-    background: var(--primary-teal);
-  }
-
-  .resorts-table .delete-btn {
-    background: #ff4d4d;
-  }
-
-  .resorts-table .delete-btn:hover {
-    background: #cc0000;
-  }
-
-  /* Responsive: stack back button above title, and stack the two-column
-     form rows to a single column. The rows themselves get their display/gap
-     from an inline style (see ManageResorts.jsx), so this only needs to set
-     flex-direction, which the inline style never sets. */
-  @media (max-width: 768px) {
-    .header-section {
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .header-section .page-title {
-      margin-top: 10px; /* space between button and title */
-      text-align: center;
-    }
-
-    .back-btn {
-      width: 100%;       /* full width for button on mobile */
-      max-width: 300px;  /* optional max width */
-      margin-bottom: 0;  /* spacing handled by margin-top on title */
-    }
-
-    .resort-form {
-      flex-wrap: wrap;
-    }
-
-    .resort-form input[type="text"],
-    .resort-form button {
-      width: 100%;
-    }
-
-    .form-row {
-      flex-direction: column;
-    }
-
-    .form-row > div {
-      width: 100%;
-    }
-
-    .room-category-row {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .room-category-row select.room-category-field--wide,
-    .room-category-row input.room-category-field--wide,
-    .room-category-row input.room-category-field--narrow {
-      flex: 1 1 100%;
-      width: 100%;
-    }
-  }
-
-  /* Room Categories Section */
-  .room-categories-section {
-    width: 100%;
-    margin-top: 20px;
-    padding: 10px 0;
-    border-top: 1px solid #ddd;
-  }
-
-  .room-categories-section h4 {
-    margin-bottom: 12px; /* slightly more spacing */
-  }
-
-  /* Each room category row */
-  .room-category-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 10px;
-    align-items: center;
-  }
-
-  .room-category-row input[type="text"],
-  .room-category-row input[type="number"] {
-    flex: 1 1 150px; /* grow but minimum width 150px */
-    padding: 6px 10px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    font-size: 0.9rem;
-  }
-
-  /* Matched on element+class to outrank the input[type=...] rule above,
-     which has the same specificity weight and would otherwise win by being
-     declared first. */
-  .room-category-row select.room-category-field--wide,
-  .room-category-row input.room-category-field--wide {
-    flex: 2 1 40%;
-  }
-
-  .room-category-row input.room-category-field--narrow {
-    flex: 1 1 20%;
-  }
-
-  /* Remove button for category row */
-  .room-category-row .remove-btn {
-    flex-shrink: 0;
-    background: #ff4d4d;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 12px;
-    cursor: pointer;
-    font-size: 0.9rem;
-  }
-
-  .room-category-row .remove-btn:hover {
-    background: #cc0000;
-  }
-
-  /* Add Room Category Button */
-  .add-btn {
-    background: var(--primary-teal);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 14px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    margin-bottom: 20px;
-    width: 250px; /* same as inputs */
-    text-align: center;
-  }
-
-  .add-btn:hover {
-    background: var(--primary-purple);
-  }
-  .status-dropdown {
-    padding: 4px 6px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    font-size: 13px;
-    cursor: pointer;
-    min-width: 70px;
-  }
-  /* Reduce width of the location select dropdown */
-.resort-form .form-row select {
-  flex: 0 0 180px; /* fixed width for dropdown */
-  max-width: 180px;
-  min-width: 150px; /* prevent it from shrinking too small */
-}
-
-/* New location input next to dropdown */
-.new-location input {
-  flex: 1 1 auto; /* grows to take remaining space */
-  margin-left: 10px; /* small spacing */
-}
-
-/* Add button next to input */
-.new-location .add-location-btn {
-  flex-shrink: 0; /* button keeps its size */
-  margin-left: 8px; /* spacing from input */
-  padding: 6px 12px; 
-  font-size: 0.9rem;
-}
-/* Space below Edit button */
-.resorts-table td.actions .edit-btn {
-  margin-bottom: 6px; /* adjust value as needed */
-}
-.sidebar-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 15px;
-  margin-bottom: 10px;
-  border-radius: 6px;
+.resorts-page-container .resorts-table .edit-btn {
+  margin-right: var(--space-2);
+  padding: 6px 14px;
   cursor: pointer;
-  text-decoration: none;
+  background: var(--primary-purple);
   color: white;
-  transition: background 0.3s;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-bold);
 }
 
-.sidebar-link:hover {
-  background: var(--primary-purple);
+.resorts-page-container .resorts-table .edit-btn:hover {
+  background: var(--primary-teal);
 }
 
-.sidebar-link.active {
-  background: var(--primary-purple);
+/* Status dropdown - previously .active-status/.inactive-status/.removed-
+   status had zero CSS anywhere in the app despite being applied on every
+   row, so the dropdown showed no color differentiation at all. Shared with
+   PaymentAccounts.jsx (.active-status/.inactive-status only, no "removed"
+   state there). Brand colors only (teal/purple/gray) - not the generic
+   green/red status-color system, which isn't part of this app's palette. */
+.resorts-page-container .status-dropdown {
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  min-width: 90px;
 }
 
+.resorts-page-container .active-status {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.resorts-page-container .inactive-status {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.resorts-page-container .removed-status {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+@media (max-width: 900px) {
+  .resorts-page-container .form-row--2col,
+  .resorts-page-container .form-row--3col {
+    grid-template-columns: 1fr;
+  }
+
+  .resorts-page-container .room-category-grid {
+    grid-template-columns: 1fr;
+  }
+}

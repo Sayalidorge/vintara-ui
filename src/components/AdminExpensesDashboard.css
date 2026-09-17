@@ -1,30 +1,45 @@
-/* AdminExpensesDashboard.css */
+/* AdminExpensesDashboard.css
+   Previously ~370 lines, most of it dead: .admin-dashboard-container,
+   .dashboard-card, .dashboard-header, .logout-btn, .dashboard-actions,
+   .create-booking-btn, .dashboard-filters, .bookings-table (a bare,
+   unscoped duplicate of AdminBookingsDashboard.css's own scoped table),
+   .form-group, .back-dashboard-btn - none of it matched anything in this
+   file's actual JSX (checked - this page renders expense-form-card/
+   expense-form-row/expense-field/table-wrapper/resorts-table). Also had a
+   bare, unscoped .react-select__option--is-focused rule that could have
+   silently fought theme.css's own app-wide hover-color rule depending on
+   bundle order. This page shares .resorts-page-container/.page-header/
+   .table-wrapper/.resorts-table with ManageResorts.jsx/PaymentAccounts.jsx
+   (deliberately, like PaymentAccounts.jsx - see ManageResorts.css), so
+   that page's teal table header etc. already apply here for free; nothing
+   needs to be redefined for them here. */
 
 /* Expense form card */
 .expense-form-card {
-  border: 1px solid #ccc;
+  border: 1px solid var(--gray-300);
   background: #fff;
-  padding: 25px;
-  border-radius: 6px;
-  margin-bottom: 30px;
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-8);
   box-sizing: border-box;
 }
 
 .expense-form-card__title {
-  margin: 0 0 20px 0;
-  color: #333;
+  margin: 0 0 var(--space-5) 0;
+  color: var(--gray-900);
+  font-size: var(--font-size-lg);
 }
 
 .expense-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--space-5);
 }
 
 .expense-form-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: var(--space-5);
 }
 
 .expense-field {
@@ -32,25 +47,28 @@
   min-width: 180px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .expense-field label {
-  font-weight: 600;
-  font-size: 14px;
-  color: #555;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--gray-800);
 }
 
-.expense-field input,
-.expense-field select {
+.expense-field input {
   width: 100%;
-  height: 42px;
+  height: 38px;
   padding: 8px 12px;
-  margin-top: 0;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
+  font-size: var(--font-size-base);
   box-sizing: border-box;
+}
+
+.expense-field input:focus {
+  outline: none;
+  border-color: var(--primary-purple);
 }
 
 .expense-field .react-select-container {
@@ -58,12 +76,21 @@
   flex: 1;
 }
 
+/* The Date field's DatePicker had no themed focus state at all (just the
+   browser's default blue outline), unlike the Paid By/Resort selects right
+   next to it (themedSelectStyles() turns their border purple on focus) -
+   match that, border-color only, no glow. */
+.expense-field .date-picker:focus {
+  border-color: var(--primary-purple);
+  outline: none;
+}
+
 /* react-select renders a real (normally near-invisible) <input> inside its
    value-container for keyboard search. It's nested inside .expense-field,
-   so the generic ".expense-field input" rule above (height:42px, its own
-   padding+border) was bleeding onto it too, inflating the control past the
-   value-container's height and pushing the placeholder text down. Reset it
-   back to react-select's own sizing. */
+   so the generic ".expense-field input" rule above was bleeding onto it
+   too, inflating the control past the value-container's height and
+   pushing the placeholder text down. Reset it back to react-select's own
+   sizing. */
 .expense-field .react-select-container input {
   height: auto;
   width: auto;
@@ -75,46 +102,18 @@
 
 .expense-form-actions {
   display: flex;
-  gap: 12px;
-}
-
-.expense-form-actions button {
-  padding: 0 24px;
-  height: 40px;
-  cursor: pointer;
-  border: none;
-  border-radius: 4px;
-  font-weight: bold;
-  font-size: 14px;
-  color: #fff;
-  transition: background-color 0.3s;
-}
-
-.expense-form-actions button[type="submit"] {
-  background-color: var(--primary-purple);
-}
-
-.expense-form-actions button[type="submit"]:hover {
-  background-color: var(--primary-teal);
-}
-
-.expense-form-actions .cancel-btn {
-  background-color: var(--primary-teal);
-}
-
-.expense-form-actions .cancel-btn:hover {
-  background-color: var(--primary-purple);
+  gap: var(--space-3);
 }
 
 /* Responsive: stack form fields and actions on small screens */
 @media (max-width: 768px) {
   .expense-form-card {
-    padding: 18px;
+    padding: var(--space-4);
   }
 
   .expense-form-row {
     flex-direction: column;
-    gap: 15px;
+    gap: var(--space-3);
   }
 
   .expense-field {
@@ -125,396 +124,97 @@
     flex-direction: column;
   }
 
-  .expense-form-actions button {
+  .expense-form-actions .vt-btn {
     width: 100%;
   }
 }
 
-/* Page container */
-.admin-dashboard-container {
-  padding-bottom: 120px;
-  min-height: 100vh;
-  padding: 40px 20px;
-  background: var(--bg-light);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-}
-
-/* Card */
-.dashboard-card {
-  width: 95%;
-  max-width: 1800px;   /* allow it to expand on wide screens */
- 
-  min-height: 85vh;   /* ensures card is visually large */
-  background-color: #fff;
-  border-radius: 12px;
-  padding: 50px 60px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-  overflow-x: visible !important;
-}
-
-/* Header */
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.dashboard-header h2 {
-  color: var(--text-dark);
-}
-
-.dashboard-header .logout-btn {
-  background-color: var(--primary-purple);
-  color: #fff;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s, transform 0.1s;
-}
-
-.dashboard-header .logout-btn:hover {
-  background-color: var(--primary-teal);
-}
-
-/* Action buttons */
-.dashboard-actions {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.create-booking-btn {
-  background-color: var(--primary-teal);
-  color: #fff;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s, transform 0.1s;
-}
-
-.create-booking-btn:hover {
-  background-color: var(--primary-purple);
-}
-
-/* Filters */
-.dashboard-filters {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.dashboard-filters label {
-  font-weight: 600;
-  color: var(--text-dark);
-}
-
-.dashboard-filters input {
-  padding: 6px 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-}
-
-/* Table wrapper */
-.table-wrapper {
- /* flex-grow: 1;           /* table fills remaining vertical space */
-  width: 100%;
-  overflow-x: auto;
-  /*overflow-y: auto;       /* vertical scroll if table is tall */
-}
-
-/* Table */
-.bookings-table {
-  width: 100%;
-  border-collapse: collapse;
- 
-}
-
-.bookings-table th,
-.bookings-table td {
-  border: 1px solid #ccc;
-  padding: 10px 12px;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.bookings-table th {
-  background-color: var(--primary-teal);
-  color: #fff;
-  font-weight: 600;
-  position: sticky;
-  top: 0;
-  z-index: 2;
-}
-
-/* Table buttons */
-.edit-booking-btn,
-.delete-booking-btn {
-  padding: 6px 12px;
-  border-radius: 5px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  margin-right: 5px;
-  transition: background-color 0.3s, transform 0.1s;
-}
-
-.edit-booking-btn {
-  background-color: var(--primary-purple);
-  color: #fff;
-}
-
-.edit-booking-btn:hover {
-  background-color: var(--primary-teal);
-}
-
-.delete-booking-btn {
-  background-color: #d9534f;
-  color: #fff;
-}
-
-.delete-booking-btn:hover {
-  background-color: #c9302c;
-}
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 20px;
-}
-
-/* Scoped to this page's own form - a bare "input, select" here leaked into
-   every <input>/<select> in the app (CRA bundles all component CSS
-   globally), most visibly as an unwanted 6px top margin misaligning plain
-   inputs next to same-row react-select controls elsewhere (e.g. the split
-   payment rows in UserInventory's check-in modal). */
-.expense-form input,
-.expense-form select {
-  padding: 10px 12px;
-  margin-top: 6px;
-}
-
-/* ============================= */
-/* React Select / Dropdown Fixes */
-/* ============================= */
-/* Mirrors the resort dropdown on /admin/food-collection-expenses
-   (ResortDailyFinance.css): a single min-height on the control is enough
-   once nothing else fights it - no separate value-container/indicators
-   height override needed. That page's control never had this page's old
-   duplicate-block/fixed-250px-width/forced-child-height buildup, which is
-   what kept making this one look bigger despite each individual fix. */
-
-/* In the Add Expense form, .react-select-container sits inside
-   .expense-field (line 56 above already sets it to width: 100%), which
-   already sizes each field's column (flex: 1, min-width: 180px) - so it
-   just fills that slot, matching the Description/Amount/Date fields
-   next to it. */
-
-/* In the Month & Resort filter row, .react-select-container is a direct
-   flex child of the row itself (no per-field wrapper like .expense-field),
-   so width: 100% would stretch it to fill all remaining row width instead
-   - give it the same fixed width the other filter controls implicitly get
-   from their own natural size. */
-.form-row.month-picker .react-select-container {
-  width: 250px;
-  flex: none;
-}
-
-.resorts-page-container .react-select__control {
-  min-height: 38px;
-  border-radius: 6px;
-  border: 1px solid var(--primary-teal);
-  font-size: 14px;
-}
-
-.resorts-page-container .react-select__placeholder {
-  color: #999;
-  font-size: 14px;
-}
-
-/* Keep the original colors, just make sure text is visible */
-.resorts-table .actions button.edit-btn {
-  color: #fff !important;       /* force text white */
-  background-color: #28a745;    /* original green */
-}
-
-.resorts-table .actions button.delete-btn {
-  color: #fff !important;       /* force text white */
-  background-color: #dc3545;    /* original red */
-}
-
-/* Optional: hover effect */
-.resorts-table .actions button:hover {
-  opacity: 0.9;
-}
-
-/* Menu (dropdown list) - no width rule here: the menu is portaled to
-   document.body (menuPortalTarget in the JSX) so it can render above the
-   sticky teal table header instead of being clipped underneath it.
-   react-select calculates the portaled menu's width/position inline to
-   match the control automatically - forcing "width: 100%" here would
-   instead stretch it to the full body width, since body is its new
-   containing block once portaled. Same as ManageResorts.jsx/
-   RecordDailyEntryForm.jsx, which also portal and don't need a width
-   override either. */
-.react-select__menu {
-  box-sizing: border-box;
-  z-index: 9999;
-}
-
-/* Options */
-.react-select__option {
-  padding: 10px 12px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-/* Hover / selected */
-.react-select__option--is-focused {
-  background-color: var(--primary-teal);
-  color: #fff;
-}
-
-.react-select__option--is-selected {
-  background-color: var(--primary-purple);
-  color: #fff;
-}
-/* Align label and month picker input */
+/* Month & Resort filter row */
 .form-row.month-picker {
   display: flex;
-  align-items: center; /* vertically centers label and input */
-  gap: 8px;            /* space between label and input */
-  margin: 12px 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
 }
 
 .form-row.month-picker label {
-  font-weight: 600;
-  color: var(--text-dark);
-  line-height: 1;      /* prevents extra vertical spacing */
+  font-weight: var(--font-weight-semibold);
+  color: var(--gray-800);
+  line-height: 1;
 }
 
-/* Calendar DatePicker that replaced the native month input */
 .form-row.month-picker .react-datepicker-wrapper {
   width: auto;
 }
 
 .form-row.month-picker .date-picker {
-  height: 42px;
+  height: 38px;
   width: 160px;
-  padding: 10px 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--gray-400);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
   box-sizing: border-box;
 }
 
+/* Border-color only on focus, no box-shadow glow - matches the Resort
+   filter select right next to it (themedSelectStyles() sets boxShadow:
+   "none" unconditionally), so focus styling is uniform across this row. */
 .form-row.month-picker .date-picker:focus {
-  border-color: var(--primary-teal);
+  border-color: var(--primary-purple);
   outline: none;
-  box-shadow: 0 0 3px rgba(0, 128, 128, 0.3);
 }
 
-/* react-datepicker isn't portaled here, so the popup renders inside
-   .resorts-page-container and can be scoped normally. !important guards
-   against react-datepicker's own default blue (#216ba5) winning the
-   cascade tie, same as the other pages that theme this popup teal. */
-.resorts-page-container .react-datepicker__day--today {
+/* .react-select-container is a direct flex child of the filter row (no
+   per-field wrapper), so it needs an explicit width instead of stretching
+   to fill the row. */
+.form-row.month-picker .react-select-container {
+  width: 250px;
+  flex: none;
+}
+
+/* Both DatePickers on this page portal their calendar to
+   #expenses-datepicker-portal on <body> (portalId prop, avoids the popup
+   reflowing sibling filters when it opens - it used to render inline and
+   push the Resort filter to the right). Scope the day-highlight colors to
+   that portal instead of .resorts-page-container, which the popup is no
+   longer a descendant of. !important guards against react-datepicker's own
+   default blue (#216ba5) winning the cascade tie. */
+#expenses-datepicker-portal .react-datepicker__day--today {
   font-weight: 700;
   background-color: var(--primary-teal) !important;
   color: #fff !important;
   border-radius: 0.3rem;
 }
 
-.resorts-page-container .react-datepicker__day--selected,
-.resorts-page-container .react-datepicker__day--keyboard-selected {
+#expenses-datepicker-portal .react-datepicker__day--selected,
+#expenses-datepicker-portal .react-datepicker__day--keyboard-selected {
   background-color: var(--primary-teal) !important;
   color: #fff !important;
 }
 
-.resorts-page-container .react-datepicker__day--today:hover,
-.resorts-page-container .react-datepicker__day--selected:hover,
-.resorts-page-container .react-datepicker__day--keyboard-selected:hover {
+#expenses-datepicker-portal .react-datepicker__day--today:hover,
+#expenses-datepicker-portal .react-datepicker__day--selected:hover,
+#expenses-datepicker-portal .react-datepicker__day--keyboard-selected:hover {
   background-color: var(--primary-purple) !important;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .react-select-container {
-    width: 100%;           /* shrink on small screens */
-    min-width: 0;
-  }
-}
-/* Responsive: shrink dropdown on small screens if needed */
-@media (max-width: 768px) {
-  .react-select-container {
-    width: 100%; 
-    min-width: 0;
-  }
-}
-/* Responsive */
-@media (max-width: 1400px) {
-  .dashboard-card {
-   
-    padding: 40px 50px;
-  }
+.resorts-page-container .row-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
 }
 
-@media (max-width: 1200px) {
-  .dashboard-card {
-   
-    padding: 35px 40px;
-  }
+.expenses-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
 }
 
-@media (max-width: 900px) {
-  .dashboard-card {
-   
-    padding: 25px 30px;
-  }
-
-  .dashboard-actions {
-    flex-direction: column;
-    gap: 15px;
-  }
-
-  .dashboard-filters {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .bookings-table {
-    min-width: 100%;
-  }
+.expenses-pagination-info {
+  font-size: var(--font-size-sm);
+  color: var(--gray-700);
 }
-/* Back to Dashboard Button */
-.back-dashboard-btn {
-  background-color: var(--primary-purple);
-  color: #fff;
-  padding: 6px 12px;       /* Reduced padding */
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 14px;          /* Smaller font size */
-  cursor: pointer;
-  transition: 0.3s;
-  margin-bottom: 20px;
-  width: auto;              /* Auto width based on content */
-  max-width: 180px;         /* Limit max width */
-  text-align: center;       /* Center text inside button */
-  display: inline-block;    /* Keep it inline so it stays on left */
-}
-
-.back-dashboard-btn:hover {
-  background-color: var(--primary-teal);
-}
-
-
-

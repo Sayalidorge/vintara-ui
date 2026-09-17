@@ -5,11 +5,13 @@ import { FaChevronDown } from "react-icons/fa";
 import "./ManageCheckInDrawer.css";
 import config from "../../config";
 import Select from "react-select";
+import ToastContainer, { useToast } from "../common/Toast";
 
 const ManageCheckInDrawer = ({
     booking,
     onClose
 }) => {
+    const { toasts, showToast, dismissToast } = useToast();
 
     const [loading, setLoading] = useState(true);
 
@@ -79,7 +81,7 @@ const ManageCheckInDrawer = ({
 
             console.error(e);
 
-            alert("Unable to load guest details.");
+            showToast("Unable to load guest details.", "danger");
 
         } finally {
 
@@ -129,7 +131,7 @@ const ManageCheckInDrawer = ({
 
             console.error(e);
 
-            alert("Verification failed.");
+            showToast("Verification failed.", "danger");
 
         }
 
@@ -140,12 +142,12 @@ const ManageCheckInDrawer = ({
         const guest = guests.find(g => g.guestId === guestId);
 
         if (!guest?.primaryDocumentUrl && !primaryFiles[guestId]) {
-            alert("Please select primary document.");
+            showToast("Please select primary document.", "warning");
             return;
         }
 
         if (!primaryFiles[guestId] && !secondaryFiles[guestId]) {
-            alert("Please select at least one document to upload.");
+            showToast("Please select at least one document to upload.", "warning");
             return;
         }
 
@@ -209,14 +211,14 @@ const ManageCheckInDrawer = ({
             setReplacingPrimary(prev => ({ ...prev, [guestId]: false }));
             setReplacingSecondary(prev => ({ ...prev, [guestId]: false }));
 
-            alert("Documents uploaded successfully.");
+            showToast("Documents uploaded successfully.", "success");
 
         }
         catch (e) {
 
             console.error(e);
 
-            alert("Failed to upload documents.");
+            showToast("Failed to upload documents.", "danger");
 
         }
         finally {
@@ -275,6 +277,7 @@ const ManageCheckInDrawer = ({
 
     return (
         <div className="checkin-drawer-overlay">
+            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
             <div className="checkin-drawer">
 
@@ -857,8 +860,9 @@ const ManageCheckInDrawer = ({
                                                                     rejectionReason.trim() === ""
                                                                 ) {
 
-                                                                    alert(
-                                                                        "Please enter rejection reason."
+                                                                    showToast(
+                                                                        "Please enter rejection reason.",
+                                                                        "warning"
                                                                     );
 
                                                                     return;

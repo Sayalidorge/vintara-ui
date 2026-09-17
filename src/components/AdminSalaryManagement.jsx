@@ -1,9 +1,14 @@
 // src/components/AdminSalaryManagement.jsx
 import React, { useEffect, useState } from "react";
+import Select from "react-select";
 import { getAllCurrentSalaries, setSalary, getPayslip, getSalaryHistory, finalizePayslip } from "../services/SalaryService";
 import { toLocalDateStr } from "../utils/date";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 import "../css/theme.css";
+import "../css/components.css";
 import "./AdminSalaryManagement.css";
+import ToastContainer, { useToast } from "./common/Toast";
+import { useConfirm } from "./common/useConfirm";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -16,6 +21,8 @@ function formatAmount(value) {
 }
 
 const AdminSalaryManagement = () => {
+  const { toasts, showToast, dismissToast } = useToast();
+  const { confirm, ConfirmDialogElement } = useConfirm();
   const [salaries, setSalaries] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -61,7 +68,7 @@ const AdminSalaryManagement = () => {
 
   const handleSetSalary = async () => {
     if (!form.userId || !form.monthlySalary) {
-      alert("Select an employee and enter a monthly salary.");
+      showToast("Select an employee and enter a monthly salary.", "warning");
       return;
     }
     setSaving(true);
@@ -74,7 +81,7 @@ const AdminSalaryManagement = () => {
         form.permanentWfh,
         form.effectiveFrom
       );
-      alert("Salary saved.");
+      showToast("Salary saved.", "success");
       setForm({
         userId: "",
         monthlySalary: "",
@@ -85,7 +92,7 @@ const AdminSalaryManagement = () => {
       });
       await loadSalaries();
     } catch (err) {
-      alert(err.message || "Failed to save salary.");
+      showToast(err.message || "Failed to save salary.", "danger");
     } finally {
       setSaving(false);
     }
@@ -117,13 +124,18 @@ const AdminSalaryManagement = () => {
 
   const handleFinalize = async () => {
     if (!payslipTarget) return;
-    if (!window.confirm("Finalize this payslip? This freezes it permanently - later attendance corrections won't change it.")) return;
+    const ok = await confirm({
+      title: "Finalize payslip?",
+      message: "Finalize this payslip? This freezes it permanently - later attendance corrections won't change it.",
+      confirmLabel: "Finalize",
+    });
+    if (!ok) return;
     setFinalizing(true);
     try {
       const data = await finalizePayslip(payslipTarget, payslipYear, payslipMonth);
       setPayslip(data);
     } catch (err) {
-      alert(err.message || "Failed to finalize payslip.");
+      showToast(err.message || "Failed to finalize payslip.", "danger");
     } finally {
       setFinalizing(false);
     }
@@ -151,18 +163,36 @@ const AdminSalaryManagement = () => {
     load();
   }, [historyTarget]);
 
+  const employeeOptions = salaries.map((s) => ({ value: s.userId, label: `${s.userName} (${s.userId})` }));
+  const payslipMonthOptions = MONTH_NAMES.map((m, idx) => ({ value: idx + 1, label: m }));
+  const payslipYearOptions = [today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1]
+    .map((y) => ({ value: y, label: String(y) }));
+
   return (
-    <div className="page-container admin-salary-management">
+    <div className="admin-salary-management">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      {ConfirmDialogElement}
+
+      <div className="vt-page-header">
+        <h2>Salary Management</h2>
+      </div>
+
       <div className="salary-admin-card">
         <h2>Set / Update Salary</h2>
         <div className="salary-form">
           <label>Employee</label>
-          <select value={form.userId} onChange={(e) => setForm({ ...form, userId: e.target.value })}>
-            <option value="">Select employee</option>
-            {salaries.map((s) => (
-              <option key={s.userId} value={s.userId}>{s.userName} ({s.userId})</option>
-            ))}
-          </select>
+          <Select
+            options={employeeOptions}
+            value={employeeOptions.find((o) => o.value === form.userId) || null}
+            onChange={(selected) => setForm({ ...form, userId: selected ? selected.value : "" })}
+            placeholder="Select employee"
+            isClearable
+            classNamePrefix="react-select"
+            className="react-select-container"
+            menuPortalTarget={menuPortalTarget}
+            menuPosition={menuPosition}
+            styles={themedSelectStyles()}
+          />
 
           <label>Monthly Salary</label>
           <input
@@ -204,7 +234,7 @@ const AdminSalaryManagement = () => {
             Permanent WFH (exempt from the 4-day WFH cap)
           </label>
 
-          <button className="btn-save-salary" onClick={handleSetSalary} disabled={saving}>
+          <button className="vt-btn vt-btn-primary" onClick={handleSetSalary} disabled={saving}>
             {saving ? "Saving..." : "Save Salary"}
           </button>
         </div>
@@ -236,10 +266,10 @@ const AdminSalaryManagement = () => {
                   <td>{s.permanentWfh ? "Yes" : "No"}</td>
                   <td>{s.effectiveFrom || "Not set"}</td>
                   <td>
-                    <button className="btn-view-payslip" onClick={() => openPayslip(s.userId)}>
+                    <button className="vt-btn vt-btn-primary" onClick={() => openPayslip(s.userId)}>
                       View Payslip
                     </button>{" "}
-                    <button className="btn-view-payslip" onClick={() => openHistory(s.userId)}>
+                    <button className="vt-btn vt-btn-primary" onClick={() => openHistory(s.userId)}>
                       View History
                     </button>
                   </td>
@@ -266,17 +296,29 @@ const AdminSalaryManagement = () => {
               )}
             </h2>
             <div className="month-picker">
-              <select value={payslipMonth} onChange={(e) => setPayslipMonth(Number(e.target.value))}>
-                {MONTH_NAMES.map((m, idx) => (
-                  <option key={m} value={idx + 1}>{m}</option>
-                ))}
-              </select>
-              <select value={payslipYear} onChange={(e) => setPayslipYear(Number(e.target.value))}>
-                {[today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1].map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-              <button className="secondary-btn" onClick={() => setPayslipTarget(null)}>Close</button>
+              <Select
+                options={payslipMonthOptions}
+                value={payslipMonthOptions.find((o) => o.value === payslipMonth)}
+                onChange={(selected) => setPayslipMonth(selected.value)}
+                isSearchable={false}
+                classNamePrefix="react-select"
+                className="react-select-container filter-select"
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+                styles={themedSelectStyles()}
+              />
+              <Select
+                options={payslipYearOptions}
+                value={payslipYearOptions.find((o) => o.value === payslipYear)}
+                onChange={(selected) => setPayslipYear(selected.value)}
+                isSearchable={false}
+                classNamePrefix="react-select"
+                className="react-select-container filter-select"
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+                styles={themedSelectStyles()}
+              />
+              <button className="vt-btn vt-btn-secondary" onClick={() => setPayslipTarget(null)}>Close</button>
             </div>
           </div>
 
@@ -304,7 +346,7 @@ const AdminSalaryManagement = () => {
                 </tbody>
               </table>
               {!payslip.finalized && (
-                <button className="btn-save-salary" onClick={handleFinalize} disabled={finalizing}>
+                <button className="vt-btn vt-btn-primary" onClick={handleFinalize} disabled={finalizing}>
                   {finalizing ? "Finalizing..." : "Finalize"}
                 </button>
               )}
@@ -317,7 +359,7 @@ const AdminSalaryManagement = () => {
         <div className="salary-admin-card">
           <div className="salary-header">
             <h2>Salary History - {historyTarget}</h2>
-            <button className="secondary-btn" onClick={() => setHistoryTarget(null)}>Close</button>
+            <button className="vt-btn vt-btn-secondary" onClick={() => setHistoryTarget(null)}>Close</button>
           </div>
 
           {historyLoading && <p>Loading...</p>}

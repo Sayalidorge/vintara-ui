@@ -6,6 +6,7 @@ import { getLeaveBalance, getLeaveRequests, applyLeaveRequest } from "../service
 import "./EmployeeLeavePortal.css";
 import { toLocalDateStr } from "../utils/date";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+import ToastContainer, { useToast } from "./common/Toast";
 
 // Native <select> option-list hover/highlight colors are drawn by the OS and
 // can't be styled with CSS (same limitation as the daily-entries Status
@@ -45,6 +46,7 @@ const leaveTypeSelectStyles = themedSelectStyles({
 });
 
 const EmployeeLeavePortal = () => {
+  const { toasts, showToast, dismissToast } = useToast();
   const currentUser = JSON.parse(localStorage.getItem("user"));
   const userId = currentUser?.userId;
 
@@ -100,14 +102,14 @@ const EmployeeLeavePortal = () => {
 
       } catch (err) {
         console.error("Failed to fetch leave data:", err);
-        alert("Failed to fetch leave data");
+        showToast("Failed to fetch leave data", "danger");
       } finally {
         setLoading(false);
       }
     }
 
     if (userId) fetchData();
-  }, [userId]);
+  }, [userId, showToast]);
 
   // Calculate requested days
   const requestedDays =
@@ -127,19 +129,19 @@ const EmployeeLeavePortal = () => {
 
   // Apply leave
   const handleApply = async () => {
-    if (!form.startDate || !form.endDate) return alert("Select start and end dates");
+    if (!form.startDate || !form.endDate) return showToast("Select start and end dates", "warning");
 
     // 🛡️ Balance Check Validation: Protects against exceeding paid/privilege/casual/sick balance allocations
     const currentTypeClean = (form.type || "").trim().toUpperCase();
     const isPaidType = currentTypeClean === "PAID" || currentTypeClean === "PRIVILEGE_LEAVE" || currentTypeClean === "PRIVILAGE_LEAVE";
     if (isPaidType && requestedDays > paidLeavesLeft) {
-      return alert(`Cannot submit request! You are trying to apply for ${requestedDays} days, but you only have ${paidLeavesLeft} paid leave day(s) remaining.`);
+      return showToast(`Cannot submit request! You are trying to apply for ${requestedDays} days, but you only have ${paidLeavesLeft} paid leave day(s) remaining.`, "warning");
     }
     if (currentTypeClean === "CASUAL" && requestedDays > casualLeavesLeft) {
-      return alert(`Cannot submit request! You are trying to apply for ${requestedDays} days, but you only have ${casualLeavesLeft} casual leave day(s) remaining.`);
+      return showToast(`Cannot submit request! You are trying to apply for ${requestedDays} days, but you only have ${casualLeavesLeft} casual leave day(s) remaining.`, "warning");
     }
     if (currentTypeClean === "SICK" && requestedDays > sickLeavesLeft) {
-      return alert(`Cannot submit request! You are trying to apply for ${requestedDays} days, but you only have ${sickLeavesLeft} sick leave day(s) remaining.`);
+      return showToast(`Cannot submit request! You are trying to apply for ${requestedDays} days, but you only have ${sickLeavesLeft} sick leave day(s) remaining.`, "warning");
     }
 
     try {
@@ -163,10 +165,10 @@ const EmployeeLeavePortal = () => {
 
       setForm({ type: "PAID", startDate: "", endDate: "", reason: "" });
 
-      alert("Leave request submitted successfully");
+      showToast("Leave request submitted successfully", "success");
     } catch (err) {
       console.error("Error during handleApply:", err);
-      alert("Failed to submit leave request");
+      showToast("Failed to submit leave request", "danger");
     } finally {
       setLoading(false);
     }
@@ -176,7 +178,8 @@ const EmployeeLeavePortal = () => {
 
   return (
     <div className="page-container leave-portal">
-    
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
       {loading && <div className="loading-overlay">Loading...</div>}
 
       {/* Leave Balance */}

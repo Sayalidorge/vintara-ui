@@ -12,16 +12,6 @@
   box-sizing: border-box;
 }
 
-.admin-bookings-dashboard .page-header {
-  margin: 0 0 15px 0;
-  padding: 0;
-  border-bottom: none;
-}
-
-.admin-bookings-dashboard .page-header h2 {
-  margin: 0;
-}
-
 /* ==============================
    Filters
    ============================== */
@@ -49,9 +39,9 @@
 }
 
 .admin-bookings-dashboard .dashboard-filters .filter-item label {
-  font-size: 14px;
+  font-size: var(--font-size-base);
   font-weight: 500;
-  color: #333;
+  color: var(--gray-900);
   text-align: left;
 }
 
@@ -84,8 +74,8 @@
 .admin-bookings-dashboard .dashboard-filters select {
   width: 100%;
   padding: 0 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
 }
 
 .admin-bookings-dashboard .dashboard-filters select:focus {
@@ -97,8 +87,8 @@
 .admin-bookings-dashboard .dashboard-filters .date-picker {
   width: 100%;
   padding: 0 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
   box-sizing: border-box;
 }
 
@@ -167,11 +157,18 @@
 
 .admin-bookings-dashboard .bookings-table th,
 .admin-bookings-dashboard .bookings-table td {
-  border: 1px solid #ccc;
-  padding: 8px;
-  font-size: 13px;
+  border: 1px solid var(--gray-400);
+  padding: var(--space-2);
+  font-size: var(--font-size-sm);
   text-align: center;
   white-space: nowrap;
+}
+
+.admin-bookings-dashboard .bookings-table .empty-row-cell {
+  white-space: normal;
+  text-align: center;
+  color: var(--gray-600);
+  padding: var(--space-5);
 }
 
 .admin-bookings-dashboard .bookings-table th {
@@ -269,7 +266,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #767077;
+  color: var(--gray-700);
   margin: 0 0 10px 2px;
 }
 
@@ -321,7 +318,7 @@
 
 .admin-bookings-dashboard .account-card .collected-label {
   font-size: 11px;
-  color: #767077;
+  color: var(--gray-700);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   margin-bottom: 2px;

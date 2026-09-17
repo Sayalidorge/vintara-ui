@@ -1,5 +1,6 @@
 // src/components/TeamAttendanceLeave.jsx
 import React, { useEffect, useState } from "react";
+import Select from "react-select";
 import {
   getTeamAttendance,
   getCorrections,
@@ -10,7 +11,10 @@ import { getAttendanceEligibleUsers } from "../services/LeaveService";
 import AdminLeaveDashboard from "./AdminLeaveDashboard";
 import LeaveCalendar from "./LeaveCalendar";
 import { toLocalDateStr } from "../utils/date";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+import ToastContainer, { useToast } from "./common/Toast";
 import "../css/theme.css";
+import "../css/components.css";
 import "./TeamAttendanceLeave.css";
 
 const LOCATION_BADGE = {
@@ -39,6 +43,7 @@ function formatTime(value) {
 }
 
 const TeamAttendanceLeave = () => {
+  const { toasts, showToast, dismissToast } = useToast();
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
   // Mirrors the backend hierarchy rule in AttendanceService.assertCanActOnCorrection:
@@ -60,6 +65,7 @@ const TeamAttendanceLeave = () => {
   // Approve/Reject - a Set of correction-request ids currently being acted on.
   const [actingOnIds, setActingOnIds] = useState(new Set());
   const [selectedCalendarUserId, setSelectedCalendarUserId] = useState("");
+  const [activeTab, setActiveTab] = useState("attendance");
 
   const loadTeamAttendance = async (targetDate) => {
     try {
@@ -119,7 +125,7 @@ const TeamAttendanceLeave = () => {
       await loadPendingCorrections();
       await loadTeamAttendance(date);
     } catch (err) {
-      alert(err.message || "Failed to approve.");
+      showToast(err.message || "Failed to approve.", "danger");
     } finally {
       setActingOnIds((prev) => {
         const next = new Set(prev);
@@ -136,7 +142,7 @@ const TeamAttendanceLeave = () => {
       await rejectCorrection(id);
       await loadPendingCorrections();
     } catch (err) {
-      alert(err.message || "Failed to reject.");
+      showToast(err.message || "Failed to reject.", "danger");
     } finally {
       setActingOnIds((prev) => {
         const next = new Set(prev);
@@ -146,132 +152,163 @@ const TeamAttendanceLeave = () => {
     }
   };
 
+  const calendarUserOptions = attendanceUsers.map((u) => ({ value: u.userId, label: `${u.name} (${u.userId})` }));
+
   return (
-    <div className="page-container team-attendance-leave">
-      <div className="attendance-roster-card">
-        <div className="attendance-roster-header">
-          <h2 className="section-title">Team Attendance</h2>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
+    <div className="team-attendance-leave">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-        {loading && <div className="loading-overlay">Loading...</div>}
-
-        <table>
-          <thead>
-            <tr>
-              <th>Employee</th>
-              <th>Check-In</th>
-              <th>Check-Out</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {records.length > 0 ? (
-              records.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.userName || r.userId}</td>
-                  <td>
-                    {formatTime(r.checkInTime)} <LocationBadge type={r.checkInLocationType} />
-                  </td>
-                  <td>
-                    {formatTime(r.checkOutTime)} <LocationBadge type={r.checkOutLocationType} />
-                  </td>
-                  <td>{STATUS_LABEL[r.status] || r.status || "--"}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="4" style={{ textAlign: "center" }}>
-                  No attendance records for this date yet
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-        <small>
-          Staff who haven't checked in yet (or are on leave, before the nightly sweep runs) won't appear here until they do.
-        </small>
+      <div className="vt-page-header">
+        <h2>Team Attendance &amp; Leave</h2>
       </div>
 
-      {currentUser.role === "SUPER_ADMIN" && (
-        <div className="attendance-roster-card">
-          <div className="attendance-roster-header">
-            <h2 className="section-title">Employee Attendance Calendar</h2>
-            <select
-              value={selectedCalendarUserId}
-              onChange={(e) => setSelectedCalendarUserId(e.target.value)}
-            >
-              <option value="">Select Employee</option>
-              {attendanceUsers.map((u) => (
-                <option key={u.userId} value={u.userId}>
-                  {u.name} ({u.userId})
-                </option>
-              ))}
-            </select>
+      <div className="vt-tabs">
+        <button
+          type="button"
+          className={`vt-tab ${activeTab === "attendance" ? "active" : ""}`}
+          onClick={() => setActiveTab("attendance")}
+        >
+          Attendance
+        </button>
+        <button
+          type="button"
+          className={`vt-tab ${activeTab === "leave" ? "active" : ""}`}
+          onClick={() => setActiveTab("leave")}
+        >
+          Leave
+        </button>
+      </div>
+
+      {activeTab === "attendance" && (
+        <>
+          <div className="attendance-roster-card">
+            <div className="attendance-roster-header">
+              <h2 className="section-title">Team Attendance</h2>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+
+            {loading && <div className="loading-overlay">Loading...</div>}
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Check-In</th>
+                  <th>Check-Out</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {records.length > 0 ? (
+                  records.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.userName || r.userId}</td>
+                      <td>
+                        {formatTime(r.checkInTime)} <LocationBadge type={r.checkInLocationType} />
+                      </td>
+                      <td>
+                        {formatTime(r.checkOutTime)} <LocationBadge type={r.checkOutLocationType} />
+                      </td>
+                      <td>{STATUS_LABEL[r.status] || r.status || "--"}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: "center" }}>
+                      No attendance records for this date yet
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            <small>
+              Staff who haven't checked in yet (or are on leave, before the nightly sweep runs) won't appear here until they do.
+            </small>
           </div>
-          {selectedCalendarUserId && (
-            <LeaveCalendar userId={selectedCalendarUserId} adminView={true} showAttendance={true} />
+
+          {currentUser.role === "SUPER_ADMIN" && (
+            <div className="attendance-roster-card">
+              <div className="attendance-roster-header">
+                <h2 className="section-title">Employee Attendance Calendar</h2>
+                <Select
+                  options={calendarUserOptions}
+                  value={calendarUserOptions.find((o) => o.value === selectedCalendarUserId) || null}
+                  onChange={(selected) => setSelectedCalendarUserId(selected ? selected.value : "")}
+                  placeholder="Select Employee"
+                  isClearable
+                  isSearchable={false}
+                  classNamePrefix="react-select"
+                  className="react-select-container filter-select"
+                  menuPortalTarget={menuPortalTarget}
+                  menuPosition={menuPosition}
+                  styles={themedSelectStyles()}
+                />
+              </div>
+              {selectedCalendarUserId && (
+                <LeaveCalendar userId={selectedCalendarUserId} adminView={true} showAttendance={true} />
+              )}
+            </div>
           )}
-        </div>
+
+          <div className="attendance-roster-card">
+            <div className="attendance-roster-header">
+              <h2 className="section-title">Pending Attendance Corrections</h2>
+            </div>
+            {correctionsLoading && <div className="loading-overlay">Loading...</div>}
+            <table>
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Date</th>
+                  <th>Requested Status</th>
+                  <th>Reason</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingCorrections.length > 0 ? (
+                  pendingCorrections.map((c) => (
+                    <tr key={c.id}>
+                      <td>{c.userName || c.userId}</td>
+                      <td>{c.date}</td>
+                      <td>{STATUS_LABEL[c.requestedStatus] || c.requestedStatus}</td>
+                      <td>{c.reason}</td>
+                      <td>
+                        {canActOn(c) ? (
+                          <>
+                            <button className="btn-approve" onClick={() => handleApproveCorrection(c.id)} disabled={actingOnIds.has(c.id)}>
+                              {actingOnIds.has(c.id) ? "..." : "Approve"}
+                            </button>
+                            <button className="btn-reject" onClick={() => handleRejectCorrection(c.id)} disabled={actingOnIds.has(c.id)}>
+                              {actingOnIds.has(c.id) ? "..." : "Reject"}
+                            </button>
+                          </>
+                        ) : (
+                          <span className="leave-action-hint">
+                            {c.userRole === "SUPER_USER" ? "Requires Super Admin" : "Not actionable"}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" style={{ textAlign: "center" }}>
+                      No pending correction requests
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
-      <div className="attendance-roster-card">
-        <div className="attendance-roster-header">
-          <h2 className="section-title">Pending Attendance Corrections</h2>
-        </div>
-        {correctionsLoading && <div className="loading-overlay">Loading...</div>}
-        <table>
-          <thead>
-            <tr>
-              <th>Employee</th>
-              <th>Date</th>
-              <th>Requested Status</th>
-              <th>Reason</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pendingCorrections.length > 0 ? (
-              pendingCorrections.map((c) => (
-                <tr key={c.id}>
-                  <td>{c.userName || c.userId}</td>
-                  <td>{c.date}</td>
-                  <td>{STATUS_LABEL[c.requestedStatus] || c.requestedStatus}</td>
-                  <td>{c.reason}</td>
-                  <td>
-                    {canActOn(c) ? (
-                      <>
-                        <button className="btn-approve" onClick={() => handleApproveCorrection(c.id)} disabled={actingOnIds.has(c.id)}>
-                          {actingOnIds.has(c.id) ? "..." : "Approve"}
-                        </button>
-                        <button className="btn-reject" onClick={() => handleRejectCorrection(c.id)} disabled={actingOnIds.has(c.id)}>
-                          {actingOnIds.has(c.id) ? "..." : "Reject"}
-                        </button>
-                      </>
-                    ) : (
-                      <span className="leave-action-hint">
-                        {c.userRole === "SUPER_USER" ? "Requires Super Admin" : "Not actionable"}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="5" style={{ textAlign: "center" }}>
-                  No pending correction requests
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <AdminLeaveDashboard />
+      {activeTab === "leave" && <AdminLeaveDashboard />}
     </div>
   );
 };

@@ -23,8 +23,10 @@ import config from "../../config";
 import logo from "../../assets/logo-icon.png";
 import "../../css/theme.css";
 import "./GuestCheckInPage.css";
+import ToastContainer, { useToast } from "../common/Toast";
 
 const GuestCheckInPage = () => {
+    const { toasts, showToast, dismissToast } = useToast();
     const { token } = useParams();
     const [loading, setLoading] = useState(true);
     const [booking, setBooking] = useState(null);
@@ -117,7 +119,7 @@ const GuestCheckInPage = () => {
 
         } catch (e) {
             console.error(e);
-            alert("Invalid or expired check-in link.");
+            showToast("Invalid or expired check-in link.", "danger");
         } finally {
             setLoading(false);
         }
@@ -147,6 +149,7 @@ const GuestCheckInPage = () => {
     if (!booking) {
         return (
             <div className="guest-page">
+                <ToastContainer toasts={toasts} onDismiss={dismissToast} />
                 {brandHeader}
                 <div className="state-card">
                     <FaExclamationTriangle className="state-icon" />
@@ -251,7 +254,7 @@ const GuestCheckInPage = () => {
         if (!file) return;
 
         if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
-            alert("That file is too large (max 20MB). Please choose a smaller photo, or reduce the camera's photo quality/resolution.");
+            showToast("That file is too large (max 20MB). Please choose a smaller photo, or reduce the camera's photo quality/resolution.", "warning");
             return;
         }
 
@@ -260,7 +263,7 @@ const GuestCheckInPage = () => {
         setCompressingField(null);
 
         if (processedFile.size > SAFE_UPLOAD_SIZE_BYTES) {
-            alert("This photo is still quite large and may fail to upload. Please choose a smaller photo, or reduce the camera's photo quality/resolution.");
+            showToast("This photo is still quite large and may fail to upload. Please choose a smaller photo, or reduce the camera's photo quality/resolution.", "warning");
         }
 
         const updated = [...guestForms];
@@ -367,12 +370,12 @@ const GuestCheckInPage = () => {
                 throw new Error(message || "Unable to save guest details.");
             }
 
-            alert(`Guest ${index + 1} details saved successfully.`);
+            showToast(`Guest ${index + 1} details saved successfully.`, "success");
             await loadBooking();
 
         } catch (e) {
             console.error(e);
-            alert(e.message || "Failed to save guest.");
+            showToast(e.message || "Failed to save guest.", "danger");
         } finally {
             setSavingIndex(null);
         }
@@ -392,6 +395,7 @@ const GuestCheckInPage = () => {
 
     return (
         <div className="guest-page">
+            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <div className="booking-card">
                 <div className="booking-card__title-row">
                     <img src={logo} alt="Vintara Stays" className="guest-brand-logo" />

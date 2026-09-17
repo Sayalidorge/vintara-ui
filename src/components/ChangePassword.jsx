@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import config from "../config";
 import "../css/theme.css";
 import "./ChangePassword.css";
+import ToastContainer, { useToast } from "./common/Toast";
 
 const ChangePassword = () => {
+  const { toasts, showToast, dismissToast } = useToast();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -26,14 +28,15 @@ const ChangePassword = () => {
     e.preventDefault();
 
     if (!validatePassword(newPassword)) {
-      alert(
-        "Password must be at least 8 characters and include uppercase, lowercase, number, and special character."
+      showToast(
+        "Password must be at least 8 characters and include uppercase, lowercase, number, and special character.",
+        "warning"
       );
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      alert("New passwords do not match");
+      showToast("New passwords do not match", "warning");
       return;
     }
 
@@ -49,19 +52,24 @@ const ChangePassword = () => {
 
       if (!res.ok) throw new Error();
 
-      alert("Password changed successfully. Please login again.");
+      showToast("Password changed successfully. Please login again.", "success");
 
-      // 🔥 Force logout after password change
-      localStorage.clear();
-      navigate("/");
+      // 🔥 Force logout after password change - delayed slightly so the
+      // toast above is actually visible before the page unmounts, rather
+      // than navigating away the instant it appears.
+      setTimeout(() => {
+        localStorage.clear();
+        navigate("/");
+      }, 1200);
 
     } catch (err) {
-      alert("Error changing password. Please check current password.");
+      showToast("Error changing password. Please check current password.", "danger");
     }
   };
 
   return (
     <div className="change-password-container">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="form-wrapper">
 
         <button className="back-btn" onClick={() => navigate(-1)}>

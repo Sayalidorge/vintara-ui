@@ -7,8 +7,10 @@ import config from "../config";
 import { toLocalDateStr } from "../utils/date";
 import { downloadCsv } from "../utils/csv";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+import ToastContainer, { useToast } from "./common/Toast";
 
 const ResortDailyFinance = () => {
+  const { toasts, showToast, dismissToast } = useToast();
 
   const user = useMemo(() => {
     try {
@@ -212,7 +214,7 @@ const handleSave = async () => {
   if (saving) return;
 
   if (!selectedResort) {
-    alert("Please select a resort.");
+    showToast("Please select a resort.", "warning");
     return;
   }
 
@@ -220,12 +222,12 @@ const handleSave = async () => {
     foodBillCollection === "" &&
     expenseAmount === ""
 ) {
-    alert("Please enter Food Collection or Expense.");
+    showToast("Please enter Food Collection or Expense.", "warning");
     return;
 }
 
   if (expenseAmount === "" || Number(expenseAmount) < 0) {
-    alert("Please enter a valid expense amount.");
+    showToast("Please enter a valid expense amount.", "warning");
     return;
   }
 
@@ -261,7 +263,7 @@ console.log(payload);
 
     console.error(e);
 
-    alert("Unable to save daily finance.");
+    showToast("Unable to save daily finance.", "danger");
 
   } finally {
     setSaving(false);
@@ -315,6 +317,7 @@ const totalProfit = totalFoodCollection - totalExpense;
 
     return (
     <div className="finance-wrapper">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       <h2 className="page-title" style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-dark)", textAlign: "left", margin: "12px 0 18px", paddingLeft: "10px", borderLeft: "4px solid var(--primary-teal)" }}>
   {isAdminView

@@ -1,9 +1,11 @@
 .performance-dashboard {
     padding: 24px;
-}
-
-.performance-dashboard .page-title {
-    margin: 0 0 20px;
+    /* Chart-only tokens, derived from the teal brand color - previously the
+       charts here used an unrelated earthy palette (#8b938e/#d3d0c9/#e4e2dd),
+       same issue already fixed on AdminDashboard.css. */
+    --chart-grid: #dceeee;
+    --chart-axis: #6f9a9a;
+    --chart-axis-line: #cfe4e4;
 }
 
 .performance-dashboard .filters {
@@ -37,6 +39,11 @@
     border: 1px solid #ccc;
     border-radius: 6px;
     box-sizing: border-box;
+}
+
+.performance-dashboard .filter-item input[type="number"]:focus {
+    outline: none;
+    border-color: var(--primary-purple);
 }
 
 .performance-dashboard .chart-card {
@@ -123,7 +130,8 @@
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    color: #8b938e;
+    background: var(--primary-teal);
+    color: #fff;
 }
 
 .performance-dashboard .top-performers td.numeric {

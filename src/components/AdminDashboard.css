@@ -1,6 +1,13 @@
 :root {
   --primary-purple: #800080;
   --primary-teal: #008080;
+
+  /* Chart-only tokens, derived from the teal brand color, replacing the
+     earthy #8b938e/#d3d0c9/#e4e2dd palette this page used to have on its
+     own so its charts visually belong to the rest of the app. */
+  --chart-grid: #dceeee;
+  --chart-axis: #6f9a9a;
+  --chart-axis-line: #cfe4e4;
 }
 
 /* Content wrapper for this page only. The real app shell (.admin-layout,
@@ -24,32 +31,32 @@
 
 .card {
   background: white;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   border-top: 5px solid var(--primary-purple);
 }
 
 .card h4 {
   margin: 0;
-  font-size: 14px;
-  color: #666;
+  font-size: var(--font-size-base);
+  color: var(--gray-700);
 }
 
 .card p {
   margin: 10px 0 0;
-  font-size: 22px;
-  font-weight: bold;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
   color: var(--primary-purple);
 }
 
 /* Charts */
 .chart-container {
   background: white;
-  padding: 20px;
-  border-radius: 10px;
-  margin-bottom: 30px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-8);
+  box-shadow: var(--shadow-md);
 }
 
 /* Booking Trend KPI tiles - lighter-weight than .summary-cards .card (no
@@ -64,8 +71,8 @@
 }
 
 .trend-kpi {
-  background: #f3f2ef;
-  border-radius: 8px;
+  background: var(--gray-100);
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   display: flex;
   flex-direction: column;
@@ -73,15 +80,15 @@
 }
 
 .trend-kpi-label {
-  font-size: 12px;
-  color: #666;
+  font-size: var(--font-size-xs);
+  color: var(--gray-700);
   font-weight: 500;
 }
 
 .trend-kpi-value {
-  font-size: 19px;
-  font-weight: 700;
-  color: #222;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--gray-900);
 }
 
 .trend-kpi--accent .trend-kpi-value {
@@ -113,13 +120,13 @@
 }
 
 .occ-meter-name {
-  color: #222;
+  color: var(--gray-900);
   font-weight: 600;
 }
 
 .occ-meter-frac {
-  color: #888;
-  font-size: 12px;
+  color: var(--gray-600);
+  font-size: var(--font-size-xs);
 }
 
 .occ-meter-inner {
@@ -131,21 +138,21 @@
 .occ-meter-track {
   flex: 1;
   height: 10px;
-  background: #eeece7;
-  border-radius: 6px;
+  background: var(--gray-200);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
 .occ-meter-fill {
   height: 100%;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--primary-purple);
 }
 
 .occ-meter-pct {
-  font-weight: 700;
-  font-size: 13px;
-  color: #222;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  color: var(--gray-900);
   min-width: 36px;
   text-align: right;
 }
@@ -153,17 +160,17 @@
 /* Booking Trend tooltip - replaces recharts' bare default tooltip box */
 .trend-tooltip {
   background: #fff;
-  border: 1px solid #d3d0c9;
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
   padding: 10px 13px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   min-width: 140px;
 }
 
 .trend-tooltip-title {
-  font-weight: 700;
-  color: #222;
+  font-weight: var(--font-weight-bold);
+  color: var(--gray-900);
   margin-bottom: 6px;
 }
 
@@ -179,7 +186,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #555;
+  color: var(--gray-800);
 }
 
 .trend-tooltip-swatch {
@@ -191,8 +198,8 @@
 }
 
 .trend-tooltip-val {
-  font-weight: 700;
-  color: #222;
+  font-weight: var(--font-weight-bold);
+  color: var(--gray-900);
 }
 
 .chart-header {
@@ -202,11 +209,18 @@
   margin-bottom: 15px;
 }
 
-.chart-header select {
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  margin-left: 10px;
+/* react-select filter dropdowns (Daily/Weekly/Monthly view + resort picker)
+   are direct flex children of .chart-header-controls with no per-field
+   wrapper column, so (like AdminExpensesDashboard's month-picker) they need
+   an explicit width instead of react-select's default 100%, which would
+   otherwise stretch to fill the row. */
+.chart-header-select {
+  width: 140px;
+  flex: none;
+}
+
+.chart-header-select--resort {
+  width: 200px;
 }
 
 /* Groups a chart's filter control(s) with its Export CSV button — JSX
@@ -223,24 +237,29 @@
   margin-left: 0;
 }
 
-h3 {
+.admin-dashboard-content h3 {
   margin: 0;
   color: var(--primary-purple);
 }
 /* Style date picker to match other selects */
 .chart-header input[type="date"] {
   padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-300);
   margin-left: 10px;
   background: white;
-  color: #333;
+  color: var(--gray-900);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--font-size-base);
   height: 36px;
 }
 
 /* Optional: remove default calendar icon in some browsers */
+.chart-header input[type="date"]:focus {
+  outline: none;
+  border-color: var(--primary-purple);
+}
+
 .chart-header input[type="date"]::-webkit-inner-spin-button,
 .chart-header input[type="date"]::-webkit-clear-button {
   display: none;
@@ -273,5 +292,15 @@ h3 {
   .chart-header {
     flex-wrap: wrap;
     gap: 8px;
+  }
+
+  .chart-header-controls {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .chart-header-select,
+  .chart-header-select--resort {
+    width: 100%;
   }
 }

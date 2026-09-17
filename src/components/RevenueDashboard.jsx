@@ -11,11 +11,38 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import Select from "react-select";
 import { getYearlyRevenue, getDailyRevenue, getResortYearlyRevenue, getResortDailyRevenue } from "../services/RevenueService";
 import config from "../config";
+import "../css/theme.css";
+import "../css/components.css";
 import "./RevenueDashboard.css";
 import { downloadCsv } from "../utils/csv";
 import { isSuperAdmin } from "../utils/auth";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+
+// One consistent tooltip for every chart on this page (Yearly/Daily x
+// overall/resort-wise) - previously copy-pasted identically 4 times.
+const RevenueTooltip = ({ active, payload }) => {
+  if (!active || !payload || !payload.length) return null;
+  const data = payload[0].payload;
+  return (
+    <div
+      style={{
+        background: "#fff",
+        border: "1px solid var(--gray-300)",
+        padding: "10px",
+        borderRadius: "var(--radius-md)",
+        boxShadow: "var(--shadow-md)",
+      }}
+    >
+      <div><strong>{data.label}</strong></div>
+      <div style={{ color: "var(--primary-teal)" }}>Direct: ₹ {data.directRevenue}</div>
+      <div style={{ color: "var(--primary-purple)" }}>OTA: ₹ {data.otaRevenue}</div>
+      <div>Total: ₹ {data.directRevenue + data.otaRevenue}</div>
+    </div>
+  );
+};
 
 const RevenueDashboard = () => {
   const currentYear = new Date().getFullYear();
@@ -128,22 +155,36 @@ const RevenueDashboard = () => {
   const selectedResortName =
     resorts.find((r) => r.id.toString() === selectedResort)?.name || "resort";
 
+  const yearOptions = Array.from({ length: 5 }).map((_, i) => {
+    const yr = currentYear - i;
+    return { value: yr, label: String(yr) };
+  });
+  const monthOptions = monthLabels.map((m, idx) => ({ value: idx + 1, label: m }));
+  const resortOptions = resorts.map((r) => ({ value: r.id.toString(), label: r.name }));
+
   // ================= RENDER =================
   return (
     <div className="page-container revenue-dashboard">
-      <h2 className="page-title" style={{ fontSize: "28px", fontWeight: 700, color: "var(--primary-teal)", textAlign: "left", marginTop: "8px", marginBottom: "24px" }}>Revenue Dashboard</h2>
+      <div className="vt-page-header">
+        <h2>Revenue Dashboard</h2>
+      </div>
 
       {/* Yearly Revenue */}
       <section className="revenue-section">
         <div className="section-header">
           <h3>Yearly Revenue</h3>
           <div className="filters">
-            <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
-              {Array.from({ length: 5 }).map((_, i) => {
-                const yr = currentYear - i;
-                return <option key={yr} value={yr}>{yr}</option>;
-              })}
-            </select>
+            <Select
+              options={yearOptions}
+              value={yearOptions.find((o) => o.value === Number(selectedYear))}
+              onChange={(opt) => setSelectedYear(opt.value)}
+              isSearchable={false}
+              classNamePrefix="react-select"
+              className="react-select-container filter-select"
+              menuPortalTarget={menuPortalTarget}
+              menuPosition={menuPosition}
+              styles={themedSelectStyles()}
+            />
             {isSuperAdmin() && (
               <button
                 type="button"
@@ -169,27 +210,7 @@ const RevenueDashboard = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="label" />
               <YAxis />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const data = payload[0].payload;
-                    return (
-                      <div style={{
-                        background: "#fff",
-                        border: "1px solid #ccc",
-                        padding: "10px",
-                        borderRadius: "6px",
-                      }}>
-                        <div><strong>{data.label}</strong></div>
-                        <div style={{ color: "var(--primary-teal)" }}>Direct: ₹ {data.directRevenue}</div>
-                        <div style={{ color: "var(--primary-purple)" }}>OTA: ₹ {data.otaRevenue}</div>
-                        <div>Total: ₹ {data.directRevenue + data.otaRevenue}</div>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
+              <Tooltip content={<RevenueTooltip />} />
               <Legend />
               <Bar dataKey="directRevenue" stackId="revenue" fill="var(--primary-teal)" />
               <Bar dataKey="otaRevenue" stackId="revenue" fill="var(--primary-purple)" />
@@ -204,11 +225,17 @@ const RevenueDashboard = () => {
   <div className="section-header">
     <h3>Overall Daily Revenue</h3>
     <div className="filters">
-      <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
-        {monthLabels.map((m, idx) => (
-          <option key={idx + 1} value={idx + 1}>{m}</option>
-        ))}
-      </select>
+      <Select
+        options={monthOptions}
+        value={monthOptions.find((o) => o.value === Number(selectedMonth))}
+        onChange={(opt) => setSelectedMonth(opt.value)}
+        isSearchable={false}
+        classNamePrefix="react-select"
+        className="react-select-container filter-select"
+        menuPortalTarget={menuPortalTarget}
+        menuPosition={menuPosition}
+        styles={themedSelectStyles()}
+      />
       {isSuperAdmin() && (
         <button
           type="button"
@@ -230,31 +257,11 @@ const RevenueDashboard = () => {
 
   <div className="chart-wrapper">
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={dailyRevenueData}> {/* Ensure dailyRevenueData is set correctly */}
+      <LineChart data={dailyRevenueData}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="label" /> {/* 'label' will map to day */}
+        <XAxis dataKey="label" />
         <YAxis />
-        <Tooltip
-          content={({ active, payload }) => {
-            if (active && payload && payload.length) {
-              const data = payload[0].payload;
-              return (
-                <div style={{
-                  background: "#fff",
-                  border: "1px solid #ccc",
-                  padding: "10px",
-                  borderRadius: "6px",
-                }}>
-                  <div><strong>{data.label}</strong></div>
-                  <div style={{ color: "var(--primary-teal)" }}>Direct: ₹ {data.directRevenue}</div>
-                  <div style={{ color: "var(--primary-purple)" }}>OTA: ₹ {data.otaRevenue}</div>
-                  <div>Total: ₹ {data.directRevenue + data.otaRevenue}</div>
-                </div>
-              );
-            }
-            return null;
-          }}
-        />
+        <Tooltip content={<RevenueTooltip />} />
         <Legend />
         <Line type="monotone" dataKey="directRevenue" stroke="var(--primary-teal)" strokeWidth={3} />
         <Line type="monotone" dataKey="otaRevenue" stroke="var(--primary-purple)" strokeWidth={3} />
@@ -268,17 +275,29 @@ const RevenueDashboard = () => {
         <div className="section-header">
           <h3>Resort-wise Yearly Revenue</h3>
           <div className="filters">
-            <select value={selectedResort} onChange={(e) => setSelectedResort(e.target.value)}>
-              {resorts.map((r) => (
-                <option key={r.id} value={r.id}>{r.name}</option>
-              ))}
-            </select>
-            <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
-              {Array.from({ length: 5 }).map((_, i) => {
-                const yr = currentYear - i;
-                return <option key={yr} value={yr}>{yr}</option>;
-              })}
-            </select>
+            <Select
+              options={resortOptions}
+              value={resortOptions.find((o) => o.value === selectedResort) || null}
+              onChange={(opt) => setSelectedResort(opt ? opt.value : "")}
+              isSearchable={false}
+              placeholder="Select resort..."
+              classNamePrefix="react-select"
+              className="react-select-container filter-select filter-select--resort"
+              menuPortalTarget={menuPortalTarget}
+              menuPosition={menuPosition}
+              styles={themedSelectStyles()}
+            />
+            <Select
+              options={yearOptions}
+              value={yearOptions.find((o) => o.value === Number(selectedYear))}
+              onChange={(opt) => setSelectedYear(opt.value)}
+              isSearchable={false}
+              classNamePrefix="react-select"
+              className="react-select-container filter-select"
+              menuPortalTarget={menuPortalTarget}
+              menuPosition={menuPosition}
+              styles={themedSelectStyles()}
+            />
             {isSuperAdmin() && (
               <button
                 type="button"
@@ -304,27 +323,7 @@ const RevenueDashboard = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="label" />
               <YAxis />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const data = payload[0].payload;
-                    return (
-                      <div style={{
-                        background: "#fff",
-                        border: "1px solid #ccc",
-                        padding: "10px",
-                        borderRadius: "6px",
-                      }}>
-                        <div><strong>{data.label}</strong></div>
-                        <div style={{ color: "var(--primary-teal)" }}>Direct: ₹ {data.directRevenue}</div>
-                        <div style={{ color: "var(--primary-purple)" }}>OTA: ₹ {data.otaRevenue}</div>
-                        <div>Total: ₹ {data.directRevenue + data.otaRevenue}</div>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
+              <Tooltip content={<RevenueTooltip />} />
               <Legend />
               <Bar dataKey="directRevenue" stackId="revenue" fill="var(--primary-teal)" />
               <Bar dataKey="otaRevenue" stackId="revenue" fill="var(--primary-purple)" />
@@ -338,16 +337,29 @@ const RevenueDashboard = () => {
   <div className="section-header">
     <h3>Resort-wise Daily Revenue</h3>
     <div className="filters">
-      <select value={selectedResort} onChange={(e) => setSelectedResort(e.target.value)}>
-        {resorts.map((r) => (
-          <option key={r.id} value={r.id}>{r.name}</option>
-        ))}
-      </select>
-      <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
-        {monthLabels.map((m, idx) => (
-          <option key={idx + 1} value={idx + 1}>{m}</option>
-        ))}
-      </select>
+      <Select
+        options={resortOptions}
+        value={resortOptions.find((o) => o.value === selectedResort) || null}
+        onChange={(opt) => setSelectedResort(opt ? opt.value : "")}
+        isSearchable={false}
+        placeholder="Select resort..."
+        classNamePrefix="react-select"
+        className="react-select-container filter-select filter-select--resort"
+        menuPortalTarget={menuPortalTarget}
+        menuPosition={menuPosition}
+        styles={themedSelectStyles()}
+      />
+      <Select
+        options={monthOptions}
+        value={monthOptions.find((o) => o.value === Number(selectedMonth))}
+        onChange={(opt) => setSelectedMonth(opt.value)}
+        isSearchable={false}
+        classNamePrefix="react-select"
+        className="react-select-container filter-select"
+        menuPortalTarget={menuPortalTarget}
+        menuPosition={menuPosition}
+        styles={themedSelectStyles()}
+      />
       {isSuperAdmin() && (
         <button
           type="button"
@@ -369,31 +381,11 @@ const RevenueDashboard = () => {
 
   <div className="chart-wrapper">
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={resortDailyData}> {/* Ensure resortDailyData is set correctly */}
+      <LineChart data={resortDailyData}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="label" /> {/* Corrected from 'day' to 'label' */}
+        <XAxis dataKey="label" />
         <YAxis />
-        <Tooltip
-          content={({ active, payload }) => {
-            if (active && payload && payload.length) {
-              const data = payload[0].payload;
-              return (
-                <div style={{
-                  background: "#fff",
-                  border: "1px solid #ccc",
-                  padding: "10px",
-                  borderRadius: "6px",
-                }}>
-                  <div><strong>{data.label}</strong></div>
-                  <div style={{ color: "var(--primary-teal)" }}>Direct: ₹ {data.directRevenue}</div>
-                  <div style={{ color: "var(--primary-purple)" }}>OTA: ₹ {data.otaRevenue}</div>
-                  <div>Total: ₹ {data.directRevenue + data.otaRevenue}</div>
-                </div>
-              );
-            }
-            return null;
-          }}
-        />
+        <Tooltip content={<RevenueTooltip />} />
         <Legend />
         <Line type="monotone" dataKey="directRevenue" stroke="var(--primary-teal)" strokeWidth={3} />
         <Line type="monotone" dataKey="otaRevenue" stroke="var(--primary-purple)" strokeWidth={3} />

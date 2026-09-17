@@ -1,6 +1,8 @@
 // src/components/AdminExpensesDashboard.jsx
 import React, { useState, useEffect } from "react";
 import config from "../config";
+import "../css/theme.css";
+import "../css/components.css";
 import "./AdminExpensesDashboard.css";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
@@ -9,6 +11,8 @@ import { downloadCsv } from "../utils/csv";
 import { toLocalDateStr } from "../utils/date";
 import { isSuperAdmin } from "../utils/auth";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+import ToastContainer, { useToast } from "./common/Toast";
+import { useConfirm } from "./common/useConfirm";
 
 // Mirrors SettlementService.EXPENSE_EDIT_WINDOW_DAYS on the backend - kept in
 // sync manually since there's no shared source of truth between the two apps.
@@ -21,6 +25,8 @@ const isWithinEditableWindow = (dateStr) => {
 };
 
 const AdminExpensesDashboard = () => {
+  const { toasts, showToast, dismissToast } = useToast();
+  const { confirm, ConfirmDialogElement } = useConfirm();
   const [expenses, setExpenses] = useState([]);
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -121,7 +127,7 @@ const AdminExpensesDashboard = () => {
     e.preventDefault();
     if (isSubmitting) return;
     if (!description || !amount || !expenseDate || !paidBy || !selectedResort) {
-      return alert("Please fill all fields");
+      return showToast("Please fill all fields", "warning");
     }
 
     const payload = {
@@ -163,7 +169,7 @@ const AdminExpensesDashboard = () => {
       setSelectedResort(null);
     } catch (err) {
       console.error(err);
-      alert(err.message);
+      showToast(err.message, "danger");
     } finally {
       setIsSubmitting(false);
     }
@@ -206,13 +212,19 @@ const AdminExpensesDashboard = () => {
       );
     } catch (err) {
       console.error(err);
-      alert("Failed to export expenses. Please try again.");
+      showToast("Failed to export expenses. Please try again.", "danger");
     }
   };
 
   const handleDelete = async (exp) => {
     if (!isWithinEditableWindow(exp.expenseDate)) return;
-    if (!window.confirm("Delete this expense?")) return;
+    const ok = await confirm({
+      title: "Delete expense?",
+      message: "Delete this expense?",
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
     try {
       const res = await fetch(`${config.BASE_URL}/api/expenses/${exp.id}`, {
         method: "DELETE",
@@ -226,14 +238,19 @@ const AdminExpensesDashboard = () => {
       fetchTotal();
     } catch (err) {
       console.error(err);
-      alert(err.message);
+      showToast(err.message, "danger");
     }
   };
 
+  const collectorOptions = collectors.map((c) => ({ value: c, label: c }));
+
   return (
     <div className="resorts-page-container" style={{ padding: "0px 20px 20px 20px", boxSizing: "border-box" }}>
-      <div className="page-header">
-        <h2 style={{ fontSize: "23px", fontWeight: 700, color: "var(--text-dark)", textAlign: "left", letterSpacing: "0.2px", marginTop: "4px", marginBottom: "24px", paddingBottom: "6px", borderBottom: "2px dashed var(--primary-teal)" }}>Manage Expenses</h2>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      {ConfirmDialogElement}
+
+      <div className="vt-page-header">
+        <h2>Expenses</h2>
       </div>
 
       {/* Expense Form */}
@@ -273,17 +290,24 @@ const AdminExpensesDashboard = () => {
                 onChange={date => setExpenseDate(date ? toLocalDateStr(date) : "")}
                 dateFormat="dd/MM/yyyy"
                 className="date-picker"
+                portalId="expenses-datepicker-portal"
               />
             </div>
 
             <div className="expense-field">
               <label>Paid By</label>
-              <select value={paidBy} onChange={e => setPaidBy(e.target.value)} required>
-                <option value="">Paid By</option>
-                {collectors.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <Select
+                className="react-select-container"
+                classNamePrefix="react-select"
+                placeholder="Paid by..."
+                options={collectorOptions}
+                value={collectorOptions.find((o) => o.value === paidBy) || null}
+                onChange={(selected) => setPaidBy(selected ? selected.value : "")}
+                isSearchable={false}
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+                styles={themedSelectStyles()}
+              />
             </div>
 
             <div className="expense-field">
@@ -304,8 +328,8 @@ const AdminExpensesDashboard = () => {
           </div>
 
           <div className="expense-form-actions">
-            <button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving..." : editId ? "Update Expense" : "Add Expense"}</button>
-            <button type="button" className="cancel-btn" onClick={() => {
+            <button type="submit" disabled={isSubmitting} className="vt-btn vt-btn-primary">{isSubmitting ? "Saving..." : editId ? "Update Expense" : "Add Expense"}</button>
+            <button type="button" className="vt-btn vt-btn-purple" onClick={() => {
               setEditId(null);
               setDescription("");
               setAmount("");
@@ -318,13 +342,14 @@ const AdminExpensesDashboard = () => {
       </div>
 
       {/* Month & Resort Filters */}
-      <div className="form-row month-picker" style={{ margin: "12px 0" }}>
+      <div className="form-row month-picker">
         <label>Select Month:</label>
         <DatePicker
           selected={selectedDate}
           onChange={(date) => setSelectedDate(date)}
           dateFormat="dd/MM/yyyy"
           className="date-picker"
+          portalId="expenses-datepicker-portal"
         />
 
         <label style={{ marginLeft: "16px" }}>Select Resort:</label>
@@ -379,10 +404,10 @@ const AdminExpensesDashboard = () => {
                       const editable = isWithinEditableWindow(exp.expenseDate);
                       const title = editable ? undefined : `This expense is more than ${EXPENSE_EDIT_WINDOW_DAYS} days old and can no longer be edited or deleted.`;
                       return (
-                        <>
-                          <button className="edit-booking-btn" onClick={() => handleEdit(exp)} disabled={!editable} title={title}>Edit</button>
-                          <button className="delete-booking-btn" onClick={() => handleDelete(exp)} disabled={!editable} title={title}>Delete</button>
-                        </>
+                        <div className="row-actions">
+                          <button className="vt-btn vt-btn-primary" onClick={() => handleEdit(exp)} disabled={!editable} title={title}>Edit</button>
+                          <button className="vt-btn vt-btn-danger" onClick={() => handleDelete(exp)} disabled={!editable} title={title}>Delete</button>
+                        </div>
                       );
                     })()}
                   </td>
@@ -404,17 +429,19 @@ const AdminExpensesDashboard = () => {
       </div>
 
       {totalPages > 1 && (
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", marginTop: "14px" }}>
+        <div className="expenses-pagination">
           <button
             type="button"
+            className="vt-btn vt-btn-secondary"
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
           >
             Previous
           </button>
-          <span>Page {page + 1} of {totalPages}</span>
+          <span className="expenses-pagination-info">Page {page + 1} of {totalPages}</span>
           <button
             type="button"
+            className="vt-btn vt-btn-secondary"
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={page >= totalPages - 1}
           >
