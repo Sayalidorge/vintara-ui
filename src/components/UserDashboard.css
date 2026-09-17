@@ -310,8 +310,14 @@
   cursor: pointer;
 }
 
-.btn-edit:hover {
+.btn-edit:hover:not(:disabled) {
   background: #660066;
+}
+
+.btn-edit:disabled {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
 }
 
 .btn-confirm {

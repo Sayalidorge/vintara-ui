@@ -9,6 +9,8 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "./CreateBookingForm.css";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+import { getUserRole } from "../utils/auth";
+import ToastContainer, { useToast } from "./common/Toast";
 
 // Formats a Date as "yyyy-MM-dd" using local Y/M/D (not toISOString, which
 // converts to UTC and can shift the date across a day boundary depending on
@@ -21,11 +23,17 @@ const toLocalDateString = (date) => {
 };
 
 const CreateBookingForm = () => {
+  const { toasts, showToast, dismissToast } = useToast();
   const navigate = useNavigate();
   const { id: bookingId } = useParams();
   const location = useLocation();
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
+  // Front-desk roles mostly handle walk-in guests rather than phone sales -
+  // default and prioritize Booking Source accordingly (see bookingSource
+  // state and the sources fetch below), unlike USER/SUPER_USER/ADMIN who
+  // stay defaulted to Vintara (phone) bookings.
+  const isFrontDeskRole = getUserRole() === "PROPERTY_MANAGER" || getUserRole() === "RECEPTION";
   const today = toLocalDateString(new Date());
 
   const oneMonthAgo = (() => {
@@ -104,7 +112,7 @@ const CreateBookingForm = () => {
   const [gstAmount, setGstAmount] = useState(0);
   const [transactionId, setTransactionId] = useState("");
 
-  const [bookingSource, setBookingSource] = useState("CALL");
+  const [bookingSource, setBookingSource] = useState(isFrontDeskRole ? "WALKIN" : "CALL");
   const [bookingSourceOptions, setBookingSourceOptions] = useState([]);
 
   // Who gets performance credit for this sale - defaults to whoever's
@@ -197,20 +205,29 @@ const CreateBookingForm = () => {
 
         const data = await res.json();
 
-        setBookingSourceOptions(
-          data.map((src) => ({
-            value: src.value,
-            label: src.label,
-            isOta: src.isOta,
-          }))
-        );
+        let options = data.map((src) => ({
+          value: src.value,
+          label: src.label,
+          isOta: src.isOta,
+        }));
+
+        // Front-desk roles only ever handle these three sources (WALK-IN,
+        // Vintara, Vintara + GST Bill) - OTA sources aren't relevant to them
+        // day-to-day, so dropped entirely rather than just reordered.
+        // Everyone else keeps the backend's full declared list/order.
+        if (isFrontDeskRole) {
+          const priority = ["WALKIN", "CALL", "CALLS_GST"];
+          options = priority.map((v) => options.find((o) => o.value === v)).filter(Boolean);
+        }
+
+        setBookingSourceOptions(options);
       } catch (err) {
         console.error(err);
       }
     };
 
     fetchSources();
-  }, []);
+  }, [isFrontDeskRole]);
 
   // -----------------------------
   // GST & Advance Logic
@@ -584,7 +601,7 @@ if (data.bookingItems?.length > 0) {
     if (isSubmitting) return;
 
     if (!resort) {
-      return alert("Select Resort");
+      return showToast("Select Resort", "warning");
     }
 
     const invalidBookingItems = bookingItems.some(
@@ -592,8 +609,9 @@ if (data.bookingItems?.length > 0) {
     );
 
     if (invalidBookingItems) {
-      return alert(
-        "Select category and at least one room for all sections"
+      return showToast(
+        "Select category and at least one room for all sections",
+        "warning"
       );
     }
 
@@ -603,7 +621,7 @@ if (data.bookingItems?.length > 0) {
       !checkInDate ||
       !checkOutDate
     ) {
-      return alert("Fill all required fields");
+      return showToast("Fill all required fields", "warning");
     }
 
     const bookingDataToSend = {
@@ -681,7 +699,7 @@ console.log(JSON.stringify(bookingDataToSend, null, 2));
       });
     } catch (err) {
       console.error(err);
-      alert(err.message);
+      showToast(err.message, "danger");
     } finally {
       setIsSubmitting(false);
     }
@@ -691,6 +709,7 @@ console.log(JSON.stringify(bookingDataToSend, null, 2));
   // -----------------------------
   return (
     <div className="form-wrapper">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <form onSubmit={handleSubmit} className="booking-form">
 
         {/* CARD 1: Room & Stay Details */}

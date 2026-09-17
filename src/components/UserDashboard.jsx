@@ -8,11 +8,27 @@ import "./UserDashboard.css";
 import config from "../config";
 import { toLocalDateStr } from "../utils/date";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
+import { getUserRole } from "../utils/auth";
+import ToastContainer, { useToast } from "./common/Toast";
 
 // Display-only relabeling of BookingSource values - see the matching
 // constant in UserInventory.jsx for the full rationale.
 const sourceLabel = (source) =>
-  ({ CALL: "Vintara", CALLS_GST: "Vintara + GST Bill" }[source]) || source;
+  ({ CALL: "VINTARA", CALLS_GST: "VINTARA + GST BILL" }[source]) || source;
+
+// PROPERTY_MANAGER/RECEPTION are restricted to a narrower window than every
+// other role: last month's 1st through tomorrow - enforced again on the
+// backend (BookingService.clampFromDateForRole/clampToDateForRole), this is
+// just the UI-side default/min-max reflection of that same rule.
+const firstOfLastMonth = () => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth() - 1, 1);
+};
+const tomorrow = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d;
+};
 
 // Collapses check-in/check-out into one compact range, e.g. "08-09 Aug 2026"
 // when they fall in the same month/year, expanding only as far as needed
@@ -39,9 +55,12 @@ const formatStayDuration = (checkInStr, checkOutStr) => {
 };
 
 const UserDashboard = () => {
+  const { toasts, showToast, dismissToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const isFrontDeskRole = getUserRole() === "PROPERTY_MANAGER" || getUserRole() === "RECEPTION";
 
   const [resorts, setResorts] = useState([]);
   const [selectedResort, setSelectedResortState] = useState(null);
@@ -57,6 +76,9 @@ const UserDashboard = () => {
     }, { replace: true });
   };
   const [bookings, setBookings] = useState([]);
+  // Default is today for every role, same as before - front-desk roles only
+  // differ in how far they're allowed to move away from that (see the
+  // DatePicker minDate/maxDate below), not in the default itself.
   const [fromDate, setFromDate] = useState(new Date());
   const [toDate, setToDate] = useState(null);
   const [page, setPage] = useState(0);
@@ -127,7 +149,7 @@ const UserDashboard = () => {
   const runSearch = async () => {
     const query = searchQuery.trim();
     if (query.length < 2) {
-      alert("Enter at least 2 characters to search");
+      showToast("Enter at least 2 characters to search", "warning");
       return;
     }
     setSearching(true);
@@ -153,7 +175,7 @@ const UserDashboard = () => {
       }
     } catch (err) {
       console.error(err);
-      alert("Search failed. Please try again.");
+      showToast("Search failed. Please try again.", "danger");
     } finally {
       setSearching(false);
     }
@@ -196,11 +218,11 @@ const UserDashboard = () => {
         );
       } else {
         const data = await res.json().catch(() => null);
-        alert(data?.error || "Failed to send confirmation. Please try again.");
+        showToast(data?.error || "Failed to send confirmation. Please try again.", "danger");
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to send confirmation. Please try again.");
+      showToast("Failed to send confirmation. Please try again.", "danger");
     } finally {
       setSendingConfirmation((prev) => {
         const next = new Set(prev);
@@ -218,14 +240,14 @@ const UserDashboard = () => {
   };
 
   const handleCancelSubmit = async () => {
-    if (!cancelReason.trim()) return alert("Please enter a reason for cancellation");
+    if (!cancelReason.trim()) return showToast("Please enter a reason for cancellation", "warning");
     if (cancelRefundAmount === "" || isNaN(parseFloat(cancelRefundAmount))) {
-      return alert("Please enter a valid numeric refund amount");
+      return showToast("Please enter a valid numeric refund amount", "warning");
     }
 
     const refundValue = parseFloat(cancelRefundAmount);
     if (refundValue > 0 && !cancelRefundAccount) {
-      return alert("Please select which account the refund is being paid out from.");
+      return showToast("Please select which account the refund is being paid out from.", "warning");
     }
 
     setCancelling(true);
@@ -261,7 +283,7 @@ const UserDashboard = () => {
       setCancelModalBooking(null);
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to cancel booking");
+      showToast(err.message || "Failed to cancel booking", "danger");
     } finally {
       setCancelling(false);
     }
@@ -354,6 +376,7 @@ const UserDashboard = () => {
 
   return (
     <div className="user-dashboard">
+    <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     <div className="page-header">
   <h2 style={{ fontSize: "25px", fontWeight: 700, color: "var(--primary-purple)", textAlign: "left", letterSpacing: "0.3px", marginTop: "5px", marginBottom: "18px" }}>User Dashboard</h2>
   <button type="button" className="btn-create-booking" onClick={handleCreateBooking}>
@@ -417,6 +440,8 @@ const UserDashboard = () => {
               dateFormat="dd-MM-yyyy"
               className="date-picker"
               portalId="datepicker-portal"
+              minDate={isFrontDeskRole ? firstOfLastMonth() : undefined}
+              maxDate={isFrontDeskRole ? tomorrow() : undefined}
             />
           </div>
           <div className="filter-item">
@@ -428,6 +453,8 @@ const UserDashboard = () => {
               placeholderText="Optional"
               className="date-picker"
               portalId="datepicker-portal"
+              minDate={isFrontDeskRole ? firstOfLastMonth() : undefined}
+              maxDate={isFrontDeskRole ? tomorrow() : undefined}
             />
           </div>
         <div className="filter-item">
