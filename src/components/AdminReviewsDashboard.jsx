@@ -21,7 +21,55 @@ import {
   saveTemplate,
   deactivateTemplate,
   getAverageRatings,
+  getReviewOverview,
 } from "../services/ReviewService";
+
+const OVERVIEW_PERIODS = [
+  { value: "WEEK", label: "This Week" },
+  { value: "MONTH", label: "This Month" },
+  { value: "YEAR", label: "This Year" },
+];
+
+const PREVIOUS_PERIOD_LABEL = { WEEK: "last week", MONTH: "last month", YEAR: "last year" };
+
+// Reviews-received trend vs. the same point in the previous period (see
+// ReviewOverviewDTO.PreviousPeriod - already an apples-to-apples partial-
+// period comparison server-side, not "vs the whole prior period"). Teal for
+// up / purple for down, matching the app's existing high/low-rating palette
+// (Stars component) rather than introducing green/red.
+const ReviewCountTrend = ({ current, previous, period }) => {
+  if (previous == null) return null;
+  const label = PREVIOUS_PERIOD_LABEL[period] || "last period";
+  if (previous === 0) {
+    if (current === 0) return <div className="review-trend review-trend--neutral">No change vs {label}</div>;
+    return <div className="review-trend review-trend--up">New activity vs {label} (had none)</div>;
+  }
+  const pct = ((current - previous) / previous) * 100;
+  const cls = pct > 0 ? "review-trend--up" : pct < 0 ? "review-trend--down" : "review-trend--neutral";
+  const sign = pct > 0 ? "+" : "";
+  return (
+    <div className={`review-trend ${cls}`}>
+      {sign}{pct.toFixed(1)}% vs {label}
+    </div>
+  );
+};
+
+// Average-rating trend vs. the same comparison window - only rendered when
+// both periods actually have at least one review (averageRating is null
+// otherwise), so this never claims a rating moved when there was nothing to
+// average on one side.
+const AverageRatingTrend = ({ current, previous, period }) => {
+  if (current == null || previous == null) return null;
+  const label = PREVIOUS_PERIOD_LABEL[period] || "last period";
+  const delta = current - previous;
+  const cls = delta > 0.001 ? "review-trend--up" : delta < -0.001 ? "review-trend--down" : "review-trend--neutral";
+  const sign = delta > 0 ? "+" : "";
+  return (
+    <div className={`review-trend ${cls}`}>
+      {sign}{delta.toFixed(2)}★ vs {label}
+    </div>
+  );
+};
 
 const PAGE_SIZE = 12;
 
@@ -141,6 +189,12 @@ const AdminReviewsDashboard = () => {
   const [draftText, setDraftText] = useState("");
   const [busyIds, setBusyIds] = useState(new Set());
 
+  // --- Overview tab state ---
+  const [overviewResort, setOverviewResort] = useState(null);
+  const [overviewPeriod, setOverviewPeriod] = useState("MONTH");
+  const [overviewData, setOverviewData] = useState(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+
   // --- Templates tab state ---
   const [templates, setTemplates] = useState([]);
   const [newTemplateText, setNewTemplateText] = useState("");
@@ -211,7 +265,9 @@ const AdminReviewsDashboard = () => {
   }, [activeTab, fetchReviews, fetchPendingCount]);
 
   useEffect(() => {
-    if (activeTab !== "REVIEWS" || !isSuperAdmin) return;
+    // Needed on both tabs now: Reviews tab's Average Rating card, and
+    // Overview tab's all-time "Vintara Avg Rating" box.
+    if ((activeTab !== "REVIEWS" && activeTab !== "OVERVIEW") || !isSuperAdmin) return;
     const fetchRatingSummary = async () => {
       setRatingSummaryLoading(true);
       try {
@@ -225,6 +281,23 @@ const AdminReviewsDashboard = () => {
     fetchRatingSummary();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, isSuperAdmin]);
+
+  const fetchOverview = React.useCallback(async () => {
+    setOverviewLoading(true);
+    try {
+      setOverviewData(await getReviewOverview(overviewResort?.value, overviewPeriod));
+    } catch (err) {
+      console.error(err);
+      showToast(err.message, "danger");
+    } finally {
+      setOverviewLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overviewResort, overviewPeriod]);
+
+  useEffect(() => {
+    if (activeTab === "OVERVIEW") fetchOverview();
+  }, [activeTab, fetchOverview]);
 
   const resetFilters = () => {
     setSelectedResort(null);
@@ -365,6 +438,16 @@ const AdminReviewsDashboard = () => {
     }
   };
 
+  // Average Rating card on the Reviews tab tracks the resort filter - a
+  // specific resort's own average when one is picked, the overall average
+  // otherwise. Same data source (ratingSummary) either way, just picking
+  // which figure out of it, so no extra API call.
+  const selectedResortRatingStat = selectedResort
+    ? ratingSummary?.perResort?.find((r) => r.resortId === selectedResort.value)
+    : null;
+  const avgRatingValue = selectedResort ? selectedResortRatingStat?.averageRating : ratingSummary?.overallAverage;
+  const avgRatingCount = selectedResort ? selectedResortRatingStat?.reviewCount : ratingSummary?.totalReviews;
+
   return (
     <div className="admin-reviews-dashboard" style={{ padding: "0px 20px 20px 20px", boxSizing: "border-box" }}>
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
@@ -382,6 +465,13 @@ const AdminReviewsDashboard = () => {
         >
           Reviews
         </button>
+        <button
+          type="button"
+          className={`review-tab ${activeTab === "OVERVIEW" ? "review-tab--active" : ""}`}
+          onClick={() => setActiveTab("OVERVIEW")}
+        >
+          Overview
+        </button>
         {canManage && (
           <button
             type="button"
@@ -395,29 +485,6 @@ const AdminReviewsDashboard = () => {
 
       {activeTab === "REVIEWS" && (
         <>
-          {isSuperAdmin && ratingSummary && !ratingSummaryLoading && (
-            <div className="rating-summary">
-              <div className="rating-summary__overall">
-                <span className="rating-summary__value">
-                  {ratingSummary.overallAverage != null ? ratingSummary.overallAverage.toFixed(2) : "-"}★
-                </span>
-                <span className="rating-summary__label">
-                  Overall average ({ratingSummary.totalReviews} reviews)
-                </span>
-              </div>
-              <div className="rating-summary__per-resort">
-                {ratingSummary.perResort.map((r) => (
-                  <div key={r.resortId} className="rating-summary__resort">
-                    <span className="rating-summary__resort-name">{r.resortName}</span>
-                    <span className="rating-summary__resort-value">
-                      {r.averageRating.toFixed(2)}★ ({r.reviewCount})
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           <div className="dashboard-filters">
             <div className="filter-item">
               <label>Resort</label>
@@ -503,6 +570,15 @@ const AdminReviewsDashboard = () => {
               <div className="review-stat-label">GBP Review Count</div>
               <div className="review-stat-value">{totalElements}</div>
             </div>
+            {isSuperAdmin && !ratingSummaryLoading && (
+              <div className="review-stat-box">
+                <div className="review-stat-label">Average Rating</div>
+                <div className="review-stat-value">
+                  {avgRatingValue != null ? `${avgRatingValue.toFixed(1)}★` : "-"}
+                </div>
+                {avgRatingCount != null && <div className="review-stat-sublabel">{avgRatingCount} reviews</div>}
+              </div>
+            )}
             <div className="review-stat-box review-stat-box--pending">
               <div className="review-stat-label">Pending Reply</div>
               <div className="review-stat-value">{pendingCount}</div>
@@ -651,6 +727,110 @@ const AdminReviewsDashboard = () => {
             </div>
           )}
         </>
+      )}
+
+      {activeTab === "OVERVIEW" && (
+        <div className="review-overview">
+          <div className="dashboard-filters">
+            <div className="filter-item">
+              <label>Resort</label>
+              <Select
+                className="react-select-container"
+                classNamePrefix="react-select"
+                options={resorts}
+                value={overviewResort}
+                onChange={setOverviewResort}
+                placeholder="All Resorts"
+                isClearable
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+                styles={themedSelectStyles()}
+              />
+            </div>
+            <div className="filter-item">
+              <label style={{ visibility: "hidden" }}>Period</label>
+              <div className="review-period-toggle">
+                {OVERVIEW_PERIODS.map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    className={`review-period-btn ${overviewPeriod === p.value ? "review-period-btn--active" : ""}`}
+                    onClick={() => setOverviewPeriod(p.value)}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {overviewLoading ? (
+            <p>Loading...</p>
+          ) : !overviewData ? (
+            <p>No data</p>
+          ) : (
+            <>
+              <div className="review-stat-row">
+                <div className="review-stat-box">
+                  <div className="review-stat-label">Reviews Received</div>
+                  <div className="review-stat-value">{overviewData.totalReviews}</div>
+                  <ReviewCountTrend
+                    current={overviewData.totalReviews}
+                    previous={overviewData.previous?.totalReviews}
+                    period={overviewPeriod}
+                  />
+                </div>
+                <div className="review-stat-box">
+                  <div className="review-stat-label">Average Rating</div>
+                  <div className="review-stat-value">
+                    {overviewData.averageRating != null ? `${overviewData.averageRating.toFixed(1)}★` : "-"}
+                  </div>
+                  <AverageRatingTrend
+                    current={overviewData.averageRating}
+                    previous={overviewData.previous?.averageRating}
+                    period={overviewPeriod}
+                  />
+                </div>
+                {isSuperAdmin && !ratingSummaryLoading && (
+                  <div className="review-stat-box">
+                    <div className="review-stat-label">Vintara Avg Rating</div>
+                    <div className="review-stat-value">
+                      {ratingSummary?.overallAverage != null ? `${ratingSummary.overallAverage.toFixed(1)}★` : "-"}
+                    </div>
+                    <div className="review-stat-sublabel">All-time, across every resort</div>
+                  </div>
+                )}
+              </div>
+
+              <h3 className="review-list-heading">Rating Breakdown</h3>
+              <div className="review-rating-bars">
+                {[5, 4, 3, 2, 1].map((star) => {
+                  const count = overviewData.ratingBreakdown?.[star] ?? 0;
+                  const pct = overviewData.totalReviews > 0 ? (count / overviewData.totalReviews) * 100 : 0;
+                  return (
+                    <div key={star} className="review-rating-bar-row">
+                      <span className="review-rating-bar-label">{star}★</span>
+                      <div className="review-rating-bar">
+                        <div className="review-rating-bar-fill" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="review-rating-bar-count">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <h3 className="review-list-heading">Reply Status</h3>
+              <div className="review-status-breakdown-row">
+                {Object.entries(overviewData.statusBreakdown || {}).map(([status, count]) => (
+                  <div key={status} className="review-status-breakdown-item">
+                    <StatusBadge status={status} />
+                    <span className="review-status-breakdown-count">{count}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       )}
 
       {activeTab === "TEMPLATES" && canManage && (

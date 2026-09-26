@@ -185,7 +185,10 @@
   border-bottom-color: var(--primary-teal);
 }
 
-/* --- Stat boxes --- */
+/* --- Stat boxes ---
+   Matches AdminBookingsDashboard.css's .account-card: same border/top-accent/
+   radius/padding recipe and compact label+value sizing, so a stat card here
+   reads as the same component as the rest of the app, not a taller one-off. */
 
 .review-stat-row {
   display: flex;
@@ -197,31 +200,43 @@
 .review-stat-box {
   display: inline-flex;
   flex-direction: column;
-  gap: 4px;
-  border: 1px solid var(--gray-400);
-  border-radius: var(--radius-sm);
-  padding: 14px 20px;
+  gap: 2px;
   background: #fff;
-  min-width: 200px;
+  border: 1px solid var(--gray-300);
+  border-top: 3px solid var(--primary-teal);
+  border-radius: 8px;
+  padding: 10px 18px;
+  min-width: 190px;
 }
 
 .review-stat-label {
+  font-size: 11px;
   font-weight: 700;
-  font-size: 14px;
-  color: var(--gray-900);
+  color: var(--gray-700);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .review-stat-value {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 700;
-  color: var(--primary-teal);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dark);
+}
+
+/* Small secondary line under a stat box's value, e.g. a review count backing
+   a per-resort average rating card. */
+.review-stat-sublabel {
+  font-size: 11px;
+  color: var(--gray-600);
 }
 
 /* Pending count reads like an inbox badge - purple, the app's existing
    "needs attention" tone (see .review-badge--warn/.review-card--low), rather
    than a neutral teal like the plain review-count box next to it. */
 .review-stat-box--pending {
-  border-color: var(--primary-purple);
+  border-top-color: var(--primary-purple);
 }
 
 .review-stat-box--pending .review-stat-value {
@@ -472,53 +487,120 @@
   cursor: pointer;
 }
 
-.rating-summary {
+
+/* --- Overview tab --- */
+
+.review-period-toggle {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 18px;
-  margin-bottom: 16px;
-  background: var(--gray-50, #f9fafb);
-  border: 1px solid var(--gray-200, #e5e7eb);
-  border-radius: 8px;
+  height: 40px;
+  border: 1px solid var(--gray-400);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
-.rating-summary__overall {
-  display: flex;
-  flex-direction: column;
-  padding-right: 16px;
-  border-right: 1px solid var(--gray-200, #e5e7eb);
-}
-
-.rating-summary__value {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text-dark);
-}
-
-.rating-summary__label {
-  font-size: 12px;
-  color: var(--gray-600);
-}
-
-.rating-summary__per-resort {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 20px;
-}
-
-.rating-summary__resort {
-  display: flex;
-  flex-direction: column;
-  font-size: 12px;
-}
-
-.rating-summary__resort-name {
-  color: var(--gray-600);
-}
-
-.rating-summary__resort-value {
+.review-period-btn {
+  background: #fff;
+  border: none;
+  border-left: 1px solid var(--gray-400);
+  padding: 0 16px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-dark);
+  color: var(--gray-700);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.review-period-btn:first-child {
+  border-left: none;
+}
+
+.review-period-btn--active {
+  background: var(--primary-teal);
+  color: #fff;
+}
+
+.review-rating-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.review-rating-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.review-rating-bar-label {
+  width: 28px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-800);
+  text-align: right;
+}
+
+.review-rating-bar {
+  flex: 1;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--gray-100);
+  overflow: hidden;
+}
+
+.review-rating-bar-fill {
+  height: 100%;
+  border-radius: 7px;
+  background: var(--primary-teal);
+  transition: width 0.3s ease;
+}
+
+.review-rating-bar-count {
+  width: 36px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-900);
+  text-align: right;
+}
+
+.review-status-breakdown-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.review-status-breakdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  background: #fff;
+}
+
+.review-status-breakdown-count {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--gray-900);
+}
+
+/* Trend line under a stat box's value - teal for up, purple for down,
+   matching the app's existing high/low-rating palette (Stars component)
+   rather than introducing green/red. */
+.review-trend {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.review-trend--up {
+  color: var(--primary-teal);
+}
+
+.review-trend--down {
+  color: var(--primary-purple);
+}
+
+.review-trend--neutral {
+  color: var(--gray-600);
 }

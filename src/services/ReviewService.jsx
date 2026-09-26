@@ -74,6 +74,14 @@ export const getAverageRatings = async () => {
   return safeFetch(`${config.BASE_URL}/api/reviews/manage/average-rating`);
 };
 
+// Review volume + 1-5 star / reply-status mix for one calendar period -
+// backs the Overview tab. period: "WEEK" | "MONTH" | "YEAR".
+export const getReviewOverview = async (resortId, period = "MONTH") => {
+  const params = new URLSearchParams({ period });
+  if (resortId) params.append("resortId", resortId);
+  return safeFetch(`${config.BASE_URL}/api/reviews/manage/overview?${params.toString()}`);
+};
+
 export const getTemplates = async () => {
   return safeFetch(`${config.BASE_URL}/api/reviews/manage/templates`);
 };
