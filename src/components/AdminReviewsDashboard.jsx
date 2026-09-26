@@ -107,11 +107,11 @@ const AdminReviewsDashboard = () => {
   const { confirm, ConfirmDialogElement } = useConfirm();
   const role = getUserRole();
   // This page is reachable by every role via "view_reviews" (see
-  // PermissionService.java), but only SUPER_ADMIN/ADMIN/SUPER_USER can
-  // actually reply/manage - everyone else gets a read-only view. Matches
+  // PermissionService.java), but only SUPER_ADMIN/SUPER_USER can actually
+  // reply/manage - ADMIN and everyone else gets a read-only view. Matches
   // the same role split enforced server-side on every write endpoint in
   // ReviewManagementController.
-  const canManage = role === "SUPER_ADMIN" || role === "ADMIN" || role === "SUPER_USER";
+  const canManage = role === "SUPER_ADMIN" || role === "SUPER_USER";
   // Stricter than canManage - a resort-by-resort rating breakdown is
   // business-sensitive in a way an individual review list isn't, so this
   // stays SUPER_ADMIN-only, matching the backend endpoint's own gating.
