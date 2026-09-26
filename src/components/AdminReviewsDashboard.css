@@ -1,0 +1,458 @@
+/* AdminReviewsDashboard.css
+   Reuses theme.css's teal/purple/gray semantic tokens rather than
+   introducing new colors (this app deliberately has no green/red).
+
+   Filter classes (.dashboard-filters/.filter-item/.date-picker/
+   .reset-filters-btn) are scoped under .admin-reviews-dashboard, same as
+   every other dashboard's own CSS file - each one defines these names at
+   equal specificity, so an unscoped rule here would collide unpredictably
+   with whichever of those files the bundler happens to load last. */
+
+.admin-reviews-dashboard .dashboard-filters {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.admin-reviews-dashboard .dashboard-filters .filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+  flex: 0 0 auto;
+}
+
+.admin-reviews-dashboard .dashboard-filters .filter-item label {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--gray-900);
+  text-align: left;
+}
+
+.admin-reviews-dashboard .dashboard-filters .react-select__control,
+.admin-reviews-dashboard .dashboard-filters .date-picker,
+.admin-reviews-dashboard .dashboard-filters .reset-filters-btn,
+.admin-reviews-dashboard .dashboard-filters .vt-btn {
+  height: 40px;
+  min-height: 40px;
+  box-sizing: border-box;
+}
+
+.admin-reviews-dashboard .dashboard-filters .react-select__control {
+  padding: 0;
+  border-color: var(--primary-teal);
+}
+
+.admin-reviews-dashboard .dashboard-filters .date-picker {
+  width: 100%;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
+  box-sizing: border-box;
+}
+
+.admin-reviews-dashboard .dashboard-filters .date-picker:focus {
+  border-color: var(--primary-teal);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--primary-teal);
+}
+
+.admin-reviews-dashboard .dashboard-filters .reset-filters-btn {
+  background-color: var(--primary-purple);
+  color: #fff;
+  font-weight: 600;
+  padding: 0 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-reviews-dashboard .dashboard-filters .reset-filters-btn:hover {
+  background-color: var(--primary-teal);
+}
+
+/* --- Star rating range slider --- */
+
+.admin-reviews-dashboard .dashboard-filters .filter-item--rating {
+  min-width: 160px;
+}
+
+/* Same 40px control height as the Select/DatePicker filters beside it, so
+   the row stays aligned - the label above already carries the "1★ – 5★"
+   readout, so nothing sits below the track competing for height. */
+.star-range {
+  position: relative;
+  height: 40px;
+}
+
+.star-range-track {
+  position: absolute;
+  top: 50%;
+  left: 7px;
+  right: 7px;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 2px;
+  background: var(--gray-300);
+}
+
+.star-range-fill {
+  position: absolute;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--primary-teal);
+}
+
+/* Two overlapping native range inputs sharing one track: both are
+   transparent/track-less (only the thumb is visible and clickable via
+   pointer-events), stacked on top of .star-range-track so the thumbs sit on
+   the fill bar drawn above. Standard dependency-free dual-handle technique. */
+.star-range-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 40px;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.star-range-input::-webkit-slider-runnable-track {
+  background: transparent;
+}
+
+.star-range-input::-moz-range-track {
+  background: transparent;
+}
+
+.star-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--primary-teal);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--gray-400);
+  cursor: pointer;
+  margin-top: 13.5px;
+}
+
+.star-range-input::-moz-range-thumb {
+  pointer-events: auto;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--primary-teal);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--gray-400);
+  cursor: pointer;
+}
+
+.star-range-input:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--color-success-bg);
+}
+
+/* --- Tabs --- */
+
+.review-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 20px;
+  border-bottom: 1px solid var(--gray-300);
+}
+
+.review-tab {
+  background: none;
+  border: none;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-700);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.review-tab--active {
+  color: var(--primary-teal);
+  border-bottom-color: var(--primary-teal);
+}
+
+/* --- Stat boxes --- */
+
+.review-stat-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.review-stat-box {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--gray-400);
+  border-radius: var(--radius-sm);
+  padding: 14px 20px;
+  background: #fff;
+  min-width: 200px;
+}
+
+.review-stat-label {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--gray-900);
+}
+
+.review-stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--primary-teal);
+}
+
+/* Pending count reads like an inbox badge - purple, the app's existing
+   "needs attention" tone (see .review-badge--warn/.review-card--low), rather
+   than a neutral teal like the plain review-count box next to it. */
+.review-stat-box--pending {
+  border-color: var(--primary-purple);
+}
+
+.review-stat-box--pending .review-stat-value {
+  color: var(--primary-purple);
+}
+
+.review-list-heading {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0 0 14px;
+}
+
+/* --- Review cards --- */
+
+.review-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.review-card {
+  border: 1px solid var(--gray-400);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  padding: 18px 22px;
+}
+
+.review-card--low {
+  border-left: 4px solid var(--primary-purple);
+}
+
+.review-card:not(.review-card--low) {
+  border-left: 4px solid var(--primary-teal);
+}
+
+/* The review itself no longer exists on Google - kept as a historical row,
+   dimmed so it reads as "gone" without actually disappearing from the list. */
+.review-card--deleted {
+  opacity: 0.55;
+  border-left-color: var(--gray-400);
+}
+
+.review-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.review-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-card-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--gray-900);
+}
+
+.review-card-edited-note {
+  font-size: 12px;
+  color: var(--gray-600);
+  background: var(--gray-100);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 10px;
+}
+
+.review-card-meta {
+  margin-bottom: 10px;
+}
+
+.review-card-resort {
+  color: var(--primary-teal);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.review-card-address {
+  color: var(--primary-teal);
+  font-size: 13px;
+}
+
+.review-card-line {
+  font-size: 13px;
+  color: var(--gray-800);
+  margin-bottom: 4px;
+}
+
+.review-card-label {
+  color: var(--primary-teal);
+  font-weight: 600;
+}
+
+.review-card-comment {
+  margin-top: 10px;
+}
+
+.review-card-comment p,
+.review-card-reply p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--gray-900);
+  white-space: pre-wrap;
+}
+
+.review-card-reply {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--gray-300);
+}
+
+.review-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+/* --- Status badges --- */
+
+.review-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.review-badge--success {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.review-badge--warn {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.review-badge--danger {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.review-badge--blue {
+  background: rgba(0, 128, 128, 0.06);
+  color: var(--gray-800);
+}
+
+.review-badge--neutral {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+.review-stars {
+  letter-spacing: 1px;
+  font-size: 14px;
+}
+
+.review-stars--high {
+  color: var(--primary-teal);
+}
+
+.review-stars--low {
+  color: var(--primary-purple);
+}
+
+.review-stars-empty {
+  color: var(--gray-300);
+}
+
+/* --- Draft edit panel (inside a card) --- */
+
+.review-draft-panel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--gray-300);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.review-draft-panel label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.review-draft-panel textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.review-draft-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* --- Templates tab --- */
+
+.review-templates textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  margin: 8px 0;
+}
+
+.review-template-help {
+  font-size: 12px;
+  color: var(--gray-600);
+  margin: 4px 0 0;
+}
+
+.review-template-help code {
+  background: var(--gray-100);
+  padding: 1px 5px;
+  border-radius: 4px;
+}

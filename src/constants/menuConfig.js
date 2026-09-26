@@ -20,6 +20,7 @@ import {
   FaMoneyCheckAlt,
   FaCoins,
   FaChartLine,
+  FaStar,
 } from "react-icons/fa";
 
 // Single source of truth for the sidebar. Each item is shown only if the
@@ -31,6 +32,7 @@ const MENU_CONFIG = [
   { label: "Create Booking", path: "/user/create-booking", icon: FaCalendarPlus, requiredPermission: "create_booking" },
   { label: "Inventory", path: "/user/inventory", icon: FaBoxes, requiredPermission: "view_inventory" },
   { label: "Bookings", path: "/admin/bookings", icon: FaBook, requiredPermission: "view_admin_bookings" },
+  { label: "Reviews", path: "/admin/reviews", icon: FaStar, requiredPermission: "view_reviews" },
   { label: "Performance", path: "/admin/performance", icon: FaChartLine, requiredPermission: "view_performance" },
   {
     label: "Daily Entry",

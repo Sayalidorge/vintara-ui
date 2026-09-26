@@ -8,6 +8,7 @@ import PaymentAccounts from "./PaymentAccounts";
 import SimpleSelect from "./common/SimpleSelect";
 import ToastContainer, { useToast } from "./common/Toast";
 import { useConfirm } from "./common/useConfirm";
+import { setResortGbpLocation } from "../services/ReviewService";
 import "../css/theme.css";
 import "../css/components.css";
 import "./ManageResorts.css";
@@ -72,6 +73,27 @@ const ManageResorts = () => {
   const [showForm, setShowForm] = useState(false);
   const { toasts, showToast, dismissToast } = useToast();
   const { confirm, ConfirmDialogElement } = useConfirm();
+
+  // Google Business Profile location mapping - a per-row inline editor
+  // rather than part of the main add/edit form, same as googlePlaceId/
+  // ezeeHotelCode (also integration details, not business fields staff edit
+  // often). editingGbpId tracks which row's editor is open.
+  const [editingGbpId, setEditingGbpId] = useState(null);
+  const [gbpLocationDraft, setGbpLocationDraft] = useState("");
+
+  const saveGbpLocation = async (resort) => {
+    try {
+      await setResortGbpLocation(resort.id, gbpLocationDraft.trim());
+      setResorts((prev) =>
+        prev.map((r) => (r.id === resort.id ? { ...r, gbpLocationId: gbpLocationDraft.trim() || null } : r))
+      );
+      setEditingGbpId(null);
+      showToast("GBP location updated", "success");
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "Failed to update GBP location", "danger");
+    }
+  };
 
   const navigate = useNavigate();
   const currentUser = JSON.parse(localStorage.getItem("user") || "null");
@@ -864,6 +886,7 @@ const getCommissionModelLabel = (value) =>
                 <th>Location</th>
                 <th>Contact</th>
                 <th>Google Map</th>
+                <th>GBP Location</th>
                 <th>Room Categories</th>
                 <th>Commission</th>
                 <th>Status</th>
@@ -872,7 +895,7 @@ const getCommissionModelLabel = (value) =>
             </thead>
             <tbody>
               {filteredResorts.length === 0 ? (
-                <tr><td colSpan="9" style={{ textAlign: "center", padding: "20px" }}>{resorts.length === 0 ? "No resorts available" : "No resorts match your search"}</td></tr>
+                <tr><td colSpan="10" style={{ textAlign: "center", padding: "20px" }}>{resorts.length === 0 ? "No resorts available" : "No resorts match your search"}</td></tr>
               ) : (
                 filteredResorts.map((resort) => {
                   const totalRooms = resort.roomCategories?.reduce((sum, c) => sum + (c.totalRooms || 0), 0) || 0;
@@ -894,6 +917,33 @@ const getCommissionModelLabel = (value) =>
                           {resort.googleMapLink}
                         </a>
                       ) : "-"}
+                    </td>
+                    <td style={{ maxWidth: "160px" }}>
+                      {editingGbpId === resort.id ? (
+                        <div style={{ display: "flex", gap: "4px" }}>
+                          <input
+                            type="text"
+                            value={gbpLocationDraft}
+                            onChange={(e) => setGbpLocationDraft(e.target.value)}
+                            placeholder="locations/..."
+                            style={{ width: "110px", fontSize: "12px", padding: "3px 6px" }}
+                            autoFocus
+                          />
+                          <button className="edit-btn" style={{ padding: "3px 8px", fontSize: "12px" }} onClick={() => saveGbpLocation(resort)}>Save</button>
+                          <button className="edit-btn" style={{ padding: "3px 8px", fontSize: "12px" }} onClick={() => setEditingGbpId(null)}>Cancel</button>
+                        </div>
+                      ) : (
+                        <span
+                          title="Paste the exact locations/{id} value from Accounts/Locations lookup - don't guess by name, some listings are duplicates"
+                          style={{ cursor: "pointer", fontSize: "12px", color: resort.gbpLocationId ? "var(--text-dark)" : "var(--gray-500)" }}
+                          onClick={() => {
+                            setEditingGbpId(resort.id);
+                            setGbpLocationDraft(resort.gbpLocationId || "");
+                          }}
+                        >
+                          {resort.gbpLocationId || "Not mapped"}
+                        </span>
+                      )}
                     </td>
                     <td style={{ fontSize: "13px", maxWidth: "220px" }}>
                       {resort.roomCategories?.length > 0 ? (
