@@ -10,6 +10,15 @@ import "./ViewBookingEnquiry.css";
 import { toLocalDateStr } from "../utils/date";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 
+// Display-only: strips any country code, showing just the last 10 digits -
+// stored contactNo is left untouched, this only affects what's rendered.
+// Mirrors DailyEntryDashboard.jsx's identical fix for the same underlying data.
+const last10Digits = (contactNo) => {
+  if (!contactNo) return contactNo;
+  const digitsOnly = contactNo.replace(/\D/g, "");
+  return digitsOnly.length > 10 ? digitsOnly.slice(-10) : digitsOnly;
+};
+
 const ViewBookingEnquiry = () => {
   const navigate = useNavigate();
   const [entries, setEntries] = useState([]);
@@ -243,7 +252,7 @@ const ViewBookingEnquiry = () => {
                     )}
                   </td>
                   <td>{entry.name}</td>
-                  <td>{entry.contactNo}</td>
+                  <td>{last10Digits(entry.contactNo)}</td>
                   <td>{entry.preferredLocation}</td>
                   <td>{entry.propertyName}</td>
                   <td>{entry.noOfPeople}</td>
