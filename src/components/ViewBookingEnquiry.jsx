@@ -21,6 +21,8 @@ const ViewBookingEnquiry = () => {
   const [userFilter, setUserFilter] = useState(""); // admin can enter user id
   const [bookingStatuses, setBookingStatuses] = useState({});
   const [userOptions, setUserOptions] = useState([]);
+  const [assigningId, setAssigningId] = useState(null);
+  const currentUser = JSON.parse(localStorage.getItem("user") || "null");
 
   // DD/MM/YYYY, hh:mm AM/PM - built manually (not via toLocaleString) so the
   // format is identical across browsers regardless of locale defaults.
@@ -93,6 +95,26 @@ const ViewBookingEnquiry = () => {
     };
     fetchEntries();
   }, [statusFilter, fromDate, toDate, userFilter]);
+
+  const handleAssignToMe = async (entryId) => {
+    if (!currentUser?.userId) return;
+    setAssigningId(entryId);
+    try {
+      const res = await fetch(
+        `${config.BASE_URL}/api/booking-enquiry/assign/${entryId}?userId=${currentUser.userId}`,
+        { method: "PUT", headers: config.getHeaders() }
+      );
+      if (!res.ok) throw new Error("Failed to assign enquiry");
+      const updated = await res.json();
+      setEntries((prev) =>
+        prev.map((e) => (e.id === entryId ? { ...e, createdBy: updated.createdBy } : e))
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAssigningId(null);
+    }
+  };
 
   // Reset filters
   const resetFilters = () => {
@@ -203,7 +225,23 @@ const ViewBookingEnquiry = () => {
               entries.map((entry) => (
                 <tr key={entry.id}>
                   <td>{formatDateTime(entry.date)}</td>
-                  <td>{entry.createdBy}</td>
+                  <td>
+                    {entry.createdBy ? (
+                      entry.createdBy
+                    ) : (
+                      <span className="enquiry-unassigned">
+                        <span className="enquiry-unassigned-label">Unassigned</span>
+                        <button
+                          type="button"
+                          className="vt-btn vt-btn-teal enquiry-assign-btn"
+                          disabled={assigningId === entry.id}
+                          onClick={() => handleAssignToMe(entry.id)}
+                        >
+                          {assigningId === entry.id ? "Assigning..." : "Assign to me"}
+                        </button>
+                      </span>
+                    )}
+                  </td>
                   <td>{entry.name}</td>
                   <td>{entry.contactNo}</td>
                   <td>{entry.preferredLocation}</td>

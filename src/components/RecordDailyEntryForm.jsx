@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import "../css/theme.css";
 import "./RecordDailyEntryForm.css";
 import config from "../config";
 import Select from "react-select";
@@ -193,7 +194,7 @@ const RecordDailyEntryForm = () => {
   return (
     <div className="daily-entry-form-wrapper">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-      <h2 className="page-title" style={{ fontSize: "21px", fontWeight: 700, color: "var(--primary-teal)", textAlign: "center", letterSpacing: "0.2px", marginTop: 0, marginBottom: "18px" }}>
+      <h2 className="page-title">
         {dailyEntryToEdit ? "Edit Daily Entry" : "Record Daily Entry"}
       </h2>
 
@@ -203,7 +204,7 @@ const RecordDailyEntryForm = () => {
           <DatePicker
             selected={entryDate}
             onChange={(date) => setEntryDate(date)}
-            dateFormat="yyyy-MM-dd"
+            dateFormat="dd/MM/yyyy"
             minDate={minEntryDate}
             portalId="daily-entry-datepicker-portal"
           />
