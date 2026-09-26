@@ -69,6 +69,11 @@ export const triggerSync = async () => {
   return safeFetch(`${config.BASE_URL}/api/reviews/manage/sync`, { method: "POST" });
 };
 
+// SUPER_ADMIN only (see ReviewManagementController.averageRating).
+export const getAverageRatings = async () => {
+  return safeFetch(`${config.BASE_URL}/api/reviews/manage/average-rating`);
+};
+
 export const getTemplates = async () => {
   return safeFetch(`${config.BASE_URL}/api/reviews/manage/templates`);
 };

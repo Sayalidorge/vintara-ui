@@ -20,6 +20,7 @@ import {
   getTemplates,
   saveTemplate,
   deactivateTemplate,
+  getAverageRatings,
 } from "../services/ReviewService";
 
 const PAGE_SIZE = 12;
@@ -111,8 +112,16 @@ const AdminReviewsDashboard = () => {
   // the same role split enforced server-side on every write endpoint in
   // ReviewManagementController.
   const canManage = role === "SUPER_ADMIN" || role === "ADMIN" || role === "SUPER_USER";
+  // Stricter than canManage - a resort-by-resort rating breakdown is
+  // business-sensitive in a way an individual review list isn't, so this
+  // stays SUPER_ADMIN-only, matching the backend endpoint's own gating.
+  const isSuperAdmin = role === "SUPER_ADMIN";
 
   const [activeTab, setActiveTab] = useState("REVIEWS");
+
+  // --- Average rating summary (SUPER_ADMIN only) ---
+  const [ratingSummary, setRatingSummary] = useState(null);
+  const [ratingSummaryLoading, setRatingSummaryLoading] = useState(false);
 
   // --- Reviews tab state ---
   const [resorts, setResorts] = useState([]);
@@ -200,6 +209,22 @@ const AdminReviewsDashboard = () => {
       fetchPendingCount();
     }
   }, [activeTab, fetchReviews, fetchPendingCount]);
+
+  useEffect(() => {
+    if (activeTab !== "REVIEWS" || !isSuperAdmin) return;
+    const fetchRatingSummary = async () => {
+      setRatingSummaryLoading(true);
+      try {
+        setRatingSummary(await getAverageRatings());
+      } catch (err) {
+        console.error("Failed to fetch rating summary", err);
+      } finally {
+        setRatingSummaryLoading(false);
+      }
+    };
+    fetchRatingSummary();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isSuperAdmin]);
 
   const resetFilters = () => {
     setSelectedResort(null);
@@ -370,6 +395,29 @@ const AdminReviewsDashboard = () => {
 
       {activeTab === "REVIEWS" && (
         <>
+          {isSuperAdmin && ratingSummary && !ratingSummaryLoading && (
+            <div className="rating-summary">
+              <div className="rating-summary__overall">
+                <span className="rating-summary__value">
+                  {ratingSummary.overallAverage != null ? ratingSummary.overallAverage.toFixed(2) : "-"}★
+                </span>
+                <span className="rating-summary__label">
+                  Overall average ({ratingSummary.totalReviews} reviews)
+                </span>
+              </div>
+              <div className="rating-summary__per-resort">
+                {ratingSummary.perResort.map((r) => (
+                  <div key={r.resortId} className="rating-summary__resort">
+                    <span className="rating-summary__resort-name">{r.resortName}</span>
+                    <span className="rating-summary__resort-value">
+                      {r.averageRating.toFixed(2)}★ ({r.reviewCount})
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="dashboard-filters">
             <div className="filter-item">
               <label>Resort</label>
