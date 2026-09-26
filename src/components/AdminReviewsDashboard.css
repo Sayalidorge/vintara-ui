@@ -456,3 +456,18 @@
   padding: 1px 5px;
   border-radius: 4px;
 }
+
+.review-template-audience-toggle {
+  display: flex;
+  gap: 20px;
+  font-size: 13px;
+  margin: 8px 0;
+  color: var(--text-dark);
+}
+
+.review-template-audience-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}

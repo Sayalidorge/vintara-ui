@@ -80,7 +80,12 @@ export const saveTemplate = async (template) => {
     : `${config.BASE_URL}/api/reviews/manage/templates`;
   return safeFetch(url, {
     method: isEdit ? "PUT" : "POST",
-    body: JSON.stringify({ ratingBand: "FOUR_TO_FIVE", text: template.text, active: template.active }),
+    body: JSON.stringify({
+      ratingBand: "FOUR_TO_FIVE",
+      audience: template.audience,
+      text: template.text,
+      active: template.active,
+    }),
   });
 };
 

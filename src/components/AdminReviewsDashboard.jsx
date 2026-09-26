@@ -134,6 +134,7 @@ const AdminReviewsDashboard = () => {
   // --- Templates tab state ---
   const [templates, setTemplates] = useState([]);
   const [newTemplateText, setNewTemplateText] = useState("");
+  const [newTemplateAudience, setNewTemplateAudience] = useState("WITH_COMMENT");
   const [templatesLoading, setTemplatesLoading] = useState(false);
 
   useEffect(() => {
@@ -311,7 +312,7 @@ const AdminReviewsDashboard = () => {
   const handleAddTemplate = async () => {
     if (!newTemplateText.trim()) return;
     try {
-      await saveTemplate({ text: newTemplateText.trim(), active: true });
+      await saveTemplate({ text: newTemplateText.trim(), audience: newTemplateAudience, active: true });
       setNewTemplateText("");
       fetchTemplates();
       showToast("Template added", "success");
@@ -597,6 +598,26 @@ const AdminReviewsDashboard = () => {
             <p className="review-template-help">
               Placeholders: <code>{"{{reviewerName}}"}</code> and <code>{"{{resortName}}"}</code>
             </p>
+            <div className="review-template-audience-toggle">
+              <label>
+                <input
+                  type="radio"
+                  name="newTemplateAudience"
+                  checked={newTemplateAudience === "WITH_COMMENT"}
+                  onChange={() => setNewTemplateAudience("WITH_COMMENT")}
+                />
+                {" "}For reviews with a written comment
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="newTemplateAudience"
+                  checked={newTemplateAudience === "WITHOUT_COMMENT"}
+                  onChange={() => setNewTemplateAudience("WITHOUT_COMMENT")}
+                />
+                {" "}For star-only reviews (no comment)
+              </label>
+            </div>
             <textarea
               rows={3}
               value={newTemplateText}
@@ -615,19 +636,21 @@ const AdminReviewsDashboard = () => {
               <thead>
                 <tr>
                   <th>Text</th>
+                  <th>Audience</th>
                   <th>Active</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {templatesLoading ? (
-                  <tr><td colSpan={3}>Loading...</td></tr>
+                  <tr><td colSpan={4}>Loading...</td></tr>
                 ) : templates.length === 0 ? (
-                  <tr><td colSpan={3}>No templates yet</td></tr>
+                  <tr><td colSpan={4}>No templates yet</td></tr>
                 ) : (
                   templates.map((t) => (
                     <tr key={t.id}>
                       <td>{t.text}</td>
+                      <td>{t.audience === "WITHOUT_COMMENT" ? "Star-only" : "With comment"}</td>
                       <td>{t.active ? "Yes" : "No"}</td>
                       <td className="actions">
                         <button
