@@ -509,7 +509,11 @@ const AdminReviewsDashboard = () => {
                     <p>{r.comment || <em>(no comment)</em>}</p>
                   </div>
 
-                  {canManage && (
+                  {/* 4-5 star reviews are picked up and sent automatically by
+                      the sync/auto-post pipeline - no manual draft step for
+                      those. The manual fallback is for 1-3 star only, where
+                      Gemini drafting can fail and staff need another way in. */}
+                  {canManage && r.starRating <= 3 && (
                     <div className="review-card-actions">
                       <button
                         type="button"
