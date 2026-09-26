@@ -42,6 +42,14 @@ const statusSelectStyles = themedSelectStyles({
   indicatorSeparator: () => ({ display: "none" }),
 });
 
+// Display-only: strips any country code, showing just the last 10 digits -
+// stored contactNo is left untouched, this only affects what's rendered.
+const last10Digits = (contactNo) => {
+  if (!contactNo) return contactNo;
+  const digitsOnly = contactNo.replace(/\D/g, "");
+  return digitsOnly.length > 10 ? digitsOnly.slice(-10) : digitsOnly;
+};
+
 // Compact variant for the per-row status editor inside the table - the
 // filter-row sizing above is too tall for a table cell. menuPortalTarget is
 // mandatory here too: unportaled, the menu would be clipped by
@@ -137,7 +145,10 @@ const DailyEntryDashboard = () => {
     if (!res.ok) throw new Error("Failed to fetch daily entries");
 
     const data = await res.json();
-    setEntries(data);
+    // Backend returns no guaranteed order - sort newest first, same as
+    // ViewBookingEnquiry.jsx's admin equivalent of this same endpoint.
+    const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+    setEntries(sorted);
   } catch (err) {
     console.error("Error fetching daily entries:", err);
     setEntries([]);
@@ -278,7 +289,7 @@ const handleStatusChange = async (id, newStatus) => {
               entries.map((entry) => (
                 <tr key={entry.id}>
                   <td>{entry.name}</td>
-                  <td>{entry.contactNo}</td>
+                  <td>{last10Digits(entry.contactNo)}</td>
                   <td>{entry.preferredLocation}</td>
                   <td>{entry.propertyName}</td>
                   <td>{entry.noOfPeople}</td>
