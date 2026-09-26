@@ -42,6 +42,17 @@
     color: var(--primary-teal);
 }
 
+/* Teal/purple, not green/red - this app has no green/red anywhere. */
+.balance-amount-ok {
+    color: var(--primary-teal);
+    font-weight: bold;
+}
+
+.balance-amount-due {
+    color: var(--color-danger-text);
+    font-weight: bold;
+}
+
 .drawer-header p {
     margin: 5px 0 0;
     color: #666;
@@ -364,13 +375,15 @@
     font-weight: bold;
 }
 
+/* Teal/purple, not green/red - matches the same approve/reject convention
+   used in TeamAttendanceLeave.css and AdminLeaveDashboard.css. */
 .approve-btn {
-    background: #2e7d32;
+    background: var(--primary-teal);
     color: white;
 }
 
 .reject-btn {
-    background: #c62828;
+    background: var(--primary-purple);
     color: white;
 }
 

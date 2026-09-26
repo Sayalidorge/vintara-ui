@@ -1,8 +1,7 @@
+/* --primary-teal/--primary-purple/--bg-light/--text-dark come from theme.css
+   (imported in the JSX) - only the two hover shades below are unique to this
+   page, so only those still need declaring locally. */
 :root {
-  --primary-teal: #008080;
-  --primary-purple: #800080;
-  --bg-light: #f5f5f5;
-  --text-dark: #333;
   --button-hover: #006666;
   --button-purple-hover: #660066;
 }
@@ -24,25 +23,20 @@
   gap:0!important;
 }
 
-/* Header Sections */
-.header-section {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin-bottom: 15px;
-  gap: 0 !important;
-}
-
 /* Drastically reduces title margins causing the top navigation gap.
    Scoped to this page only — a bare, unscoped ".page-title" here used to
    leak (with !important, so it couldn't even be overridden by inline
    styles) into every other page in the app that also uses the page-title
    class, since CRA bundles all component CSS globally. */
-.user-inventory-wrapper .header-section .page-title,
 .user-inventory-wrapper .page-title {
   margin-top: 5px !important;
   padding-top: 0 !important;
   margin-bottom: 20px !important;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--primary-purple);
+  text-align: left;
+  letter-spacing: 0.4px;
 }
 
 .user-info {
@@ -80,7 +74,7 @@
 /* Perspective view switcher (Room Grid / Active Bookings) */
 .view-switcher-tabs {
   display: flex;
-  border: 1px solid #ccc;
+  border: 1px solid var(--gray-400);
   border-radius: 6px;
   overflow: hidden;
   flex-shrink: 0;
@@ -91,13 +85,14 @@
   cursor: pointer;
   border: none;
   background: #fff;
-  color: #333;
+  color: var(--gray-900);
   font-weight: bold;
   white-space: nowrap;
 }
 
+/* Purple, not blue - this app has no blue anywhere. */
 .view-tab-btn.active {
-  background: #0d47a1;
+  background: var(--primary-purple);
   color: #fff;
 }
 
@@ -115,24 +110,11 @@
   min-height: 38px !important;
 }
 
-/* Replaces react-select's default blue focus/selection theme with the app's purple.
-   Scoped to .user-inventory-wrapper (this page only) since plain CSS imports in
-   CRA are global, and .filter-item/.react-select__* are reused by other pages. */
-.user-inventory-wrapper .filter-item .react-select__control--is-focused {
-  border-color: var(--primary-purple);
-  box-shadow: none;
-}
-
-.user-inventory-wrapper .filter-item .react-select__option--is-focused {
-  background: #f3e6f5;
-  color: var(--text-dark);
-}
-
-/* Placed after --is-focused so it wins when an option is both selected and focused */
-.user-inventory-wrapper .filter-item .react-select__option--is-selected {
-  background: var(--primary-purple);
-  color: #fff;
-}
+/* Every Select on this page passes styles={themedSelectStyles()} (or a
+   wrapper around it) in the JSX, so focus/option colors are set via that
+   inline `styles` prop, not CSS - inline styles always win over these
+   .react-select__* class names, which five other stylesheets in this app
+   also define at the same specificity tier. */
 
 /* react-datepicker wraps its input in nested inline-block containers
    (.react-datepicker-wrapper, .react-datepicker__input-container), which
@@ -173,7 +155,7 @@
   font-size: 14px;
   font-weight: bold;
   border-radius: 6px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--gray-400);
   background-color: #fff;
   cursor: pointer;
   display: inline-flex;
@@ -309,19 +291,20 @@
 
 .modal .cancel-btn {
   background-color: #fff;
-  color: #555;
+  color: var(--gray-800);
   margin-right: 0;
-  border: 1px solid #ccc;
+  border: 1px solid var(--gray-400);
 }
 
 .modal .cancel-btn:hover {
-  background-color: #f5f5f5;
+  background-color: var(--gray-100);
 }
 
+/* Purple, not green - matches .room-card.checked-in's color for the same status. */
 .checked-in-label {
   font-weight: bold;
   color: #fff;
-  background-color: #4caf50;
+  background-color: var(--primary-purple);
   padding: 2px 6px;
   border-radius: 4px;
   margin-top: 5px;
@@ -362,7 +345,7 @@
   margin-bottom: 15px;
   padding: 6px 8px;
   border-radius: 6px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--gray-400);
 }
 
 .modal-overlay {
@@ -391,15 +374,20 @@
   font-size: 14px;
 }
 
+/* Purple, not red - this app has no red/green/amber anywhere. */
 .checkin-modal__balance {
-  color: var(--primary-red, #c0392b);
+  color: var(--color-danger-text);
   font-weight: bold;
+}
+
+.checkin-modal__hint--danger {
+  color: var(--color-danger-text);
 }
 
 .checkin-modal__section {
   margin-top: 16px;
   padding-top: 14px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--gray-200);
 }
 
 .checkin-modal .field-label {
@@ -407,7 +395,14 @@
   margin: 0 0 6px 0;
   font-size: 13px;
   font-weight: 600;
-  color: #444;
+  color: var(--gray-800);
+}
+
+/* Needs to out-specify ".checkin-modal .field-label" above (which resets
+   margin-top to 0 as part of its shorthand margin), not just add a plain
+   single-class rule that rule would win over. */
+.checkin-modal .field-label.field-label--spaced {
+  margin-top: 10px;
 }
 
 .checkin-modal__input {
@@ -416,7 +411,7 @@
   box-sizing: border-box;
   padding: 8px 10px;
   border-radius: 6px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--gray-400);
   font-size: 14px;
 }
 
@@ -428,7 +423,7 @@
 .checkin-modal__hint {
   margin: 8px 0 0 0;
   font-size: 13px;
-  color: #555;
+  color: var(--gray-800);
 }
 
 .split-row {
@@ -477,7 +472,7 @@
 .split-row__remove {
   background: none;
   border: none;
-  color: var(--primary-red, #c0392b);
+  color: var(--color-danger-text);
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
@@ -487,22 +482,22 @@
 }
 
 .split-row__remove:hover:not(:disabled) {
-  background: #fdecea;
+  background: var(--color-danger-bg);
 }
 
 .split-row__remove:disabled {
-  color: #ccc;
+  color: var(--gray-400);
   cursor: not-allowed;
 }
 
 .add-split-btn {
   background: none;
-  border: 1px dashed #999;
+  border: 1px dashed var(--gray-500);
   border-radius: 6px;
   padding: 6px 12px;
   cursor: pointer;
   font-size: 13px;
-  color: #555;
+  color: var(--gray-800);
   margin-top: 2px;
 }
 
@@ -517,12 +512,13 @@
   font-weight: 600;
 }
 
+/* Purple/teal, not red/green - this app has no red/green/amber anywhere. */
 .allocation-status.is-balanced {
-  color: #1e7e34;
+  color: var(--color-success-text);
 }
 
 .allocation-status.is-mismatched {
-  color: var(--primary-red, #c0392b);
+  color: var(--color-danger-text);
 }
 
 .checkin-modal__actions {
@@ -532,8 +528,277 @@
 }
 
 .checkin-modal .checkin-btn:disabled {
-  background-color: #ccc;
+  background-color: var(--gray-400);
   cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Active Bookings List View - alert banners, booking cards, checkout modal
+   ========================================================================== */
+.inventory-alerts-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.inventory-alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.inventory-alert-banner--warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.inventory-alert-banner--danger {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.inventory-alert-banner--info {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  justify-content: space-between;
+  font-weight: normal;
+}
+
+.inventory-alert-banner__action {
+  padding: 4px 12px;
+}
+
+.inventory-empty-state {
+  padding: 20px;
+  text-align: center;
+  background: var(--gray-50);
+  border-radius: 6px;
+}
+
+.booking-list-card {
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  padding: 20px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.booking-list-card + .booking-list-card {
+  margin-top: 15px;
+}
+
+.booking-list-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-bottom: 1px solid var(--gray-200);
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+.booking-list-card__title {
+  margin: 0;
+  color: var(--gray-900);
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.booking-list-card__title-id {
+  font-size: 13px;
+  font-weight: normal;
+  color: var(--gray-700);
+}
+
+.booking-list-card__meta {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: var(--gray-800);
+}
+
+.booking-list-card__tag {
+  margin: 6px 0 0 0;
+}
+
+.booking-list-card__total {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: var(--gray-900);
+}
+
+.booking-list-card__remarks {
+  margin: 8px 0 0 0;
+  font-size: 13px;
+  color: var(--color-warning-text);
+  background: var(--color-warning-bg);
+  border-radius: 6px;
+  padding: 6px 10px;
+  max-width: 480px;
+}
+
+.booking-list-card__status-col {
+  text-align: right;
+}
+
+.booking-list-card__stay {
+  margin: 6px 0 0 0;
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--gray-900);
+}
+
+.booking-list-card__created-by {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: var(--gray-800);
+}
+
+.booking-list-card__rooms {
+  background: var(--gray-50);
+  padding: 10px 15px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.booking-list-card__rooms-main {
+  flex: 1;
+  min-width: 200px;
+}
+
+.booking-list-card__rooms-title {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: var(--gray-700);
+}
+
+.booking-list-card__rooms-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.booking-list-card__room-item {
+  font-size: 13px;
+}
+
+.booking-list-card__qr {
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.booking-list-card__qr-badge {
+  margin-bottom: 8px;
+}
+
+.booking-list-card__qr-link {
+  display: block;
+  text-decoration: none;
+}
+
+.booking-list-card__qr-label {
+  margin: 4px 0 0 0;
+  font-size: 10px;
+  color: var(--gray-600);
+}
+
+.booking-list-card__ledger {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.booking-list-card__ledger-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 30px;
+  font-size: 14px;
+}
+
+.booking-list-card__ledger-items p {
+  margin: 0;
+}
+
+.booking-list-card__amount-ok {
+  color: var(--primary-teal);
+  font-weight: bold;
+}
+
+.booking-list-card__amount-due {
+  color: var(--color-danger-text);
+  font-weight: bold;
+}
+
+.booking-list-card__food-ledger {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 30px;
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+.booking-list-card__food-ledger p {
+  margin: 0;
+}
+
+.booking-list-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.booking-list-card .checkin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bookings-list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.bookings-list-view__filter-tabs {
+  align-self: flex-start;
+}
+
+.early-checkout-modal {
+  background-color: #fff;
+  padding: 25px;
+  max-width: 450px;
+}
+
+.modal-field {
+  margin-top: 12px;
+}
+
+.modal-field label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.modal-field textarea,
+.modal-field input {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
 }
 
 @media screen and (max-width: 768px) {

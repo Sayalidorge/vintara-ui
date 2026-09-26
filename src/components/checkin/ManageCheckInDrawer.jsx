@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { FaChevronDown } from "react-icons/fa";
+import "../../css/theme.css";
 import "./ManageCheckInDrawer.css";
 import config from "../../config";
 import Select from "react-select";
@@ -350,7 +351,7 @@ const ManageCheckInDrawer = ({
 
                         <div>
                             <label>Balance</label>
-                            <span style={{ color: (booking.status === "CHECKED_IN" || booking.balanceAmount === 0) ? "green" : "red", fontWeight: "bold" }}>
+                            <span className={(booking.status === "CHECKED_IN" || booking.balanceAmount === 0) ? "balance-amount-ok" : "balance-amount-due"}>
                                 ₹{booking.status === "CHECKED_IN" ? 0 : booking.balanceAmount}
                             </span>
                         </div>

@@ -4,6 +4,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import "../css/theme.css";
+import "../css/components.css";
 import "./UserDashboard.css";
 import config from "../config";
 import { toLocalDateStr } from "../utils/date";
@@ -29,6 +30,35 @@ const tomorrow = () => {
   d.setDate(d.getDate() + 1);
   return d;
 };
+
+// Matches DatePicker/Reset button height, kept as an override on the shared
+// theme rather than a bespoke styles object so this Select's colors/focus
+// state stay in sync with every other dropdown in the app.
+const resortSelectStyles = themedSelectStyles({
+  control: (base) => ({
+    ...base,
+    minHeight: 40,
+    height: 40,
+    borderRadius: 5,
+  }),
+  valueContainer: (base) => ({
+    ...base,
+    height: 40,
+    padding: "0 10px",
+  }),
+  indicatorsContainer: (base) => ({ ...base, height: 40 }),
+});
+
+// Booking status -> the shared semantic badge classes (teal/purple/gray -
+// this app has no green/red/amber). CHECKED_IN is the "good" outcome,
+// CANCELLED/EARLY_CHECK_OUT are terminal/negative, anything else (BOOKED,
+// pending states) is neutral.
+const bookingStatusBadgeClass = (status) =>
+  status === "CHECKED_IN"
+    ? "vt-badge vt-badge-success"
+    : status === "CANCELLED" || status === "EARLY_CHECK_OUT"
+    ? "vt-badge vt-badge-danger"
+    : "vt-badge vt-badge-warning";
 
 // Collapses check-in/check-out into one compact range, e.g. "08-09 Aug 2026"
 // when they fall in the same month/year, expanding only as far as needed
@@ -377,8 +407,8 @@ const UserDashboard = () => {
   return (
     <div className="user-dashboard">
     <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-    <div className="page-header">
-  <h2 style={{ fontSize: "25px", fontWeight: 700, color: "var(--primary-purple)", textAlign: "left", letterSpacing: "0.3px", marginTop: "5px", marginBottom: "18px" }}>User Dashboard</h2>
+    <div className="vt-page-header">
+  <h2>User Dashboard</h2>
   <button type="button" className="btn-create-booking" onClick={handleCreateBooking}>
     + Create Booking
   </button>
@@ -403,33 +433,7 @@ const UserDashboard = () => {
   // doesn't lose any theming the way a CSS-class-based approach would.
   menuPortalTarget={menuPortalTarget}
   menuPosition={menuPosition}
-  styles={{
-    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-    control: (base, state) => ({
-      ...base,
-      minHeight: 40,       // match DatePicker / Reset button
-      height: 40,          // exact height
-      borderRadius: 5,
-      borderColor: state.isFocused ? "var(--primary-purple)" : "#ccc",
-      boxShadow: state.isFocused ? "0 0 0 1px var(--primary-purple)" : "none",
-      '&:hover': { borderColor: "var(--primary-purple)" },
-    }),
-    valueContainer: (base) => ({
-      ...base,
-      height: 40,
-      padding: "0 8px",
-    }),
-    input: (base) => ({ ...base, margin: 0, padding: 0, height: "100%" }),
-    placeholder: (base) => ({ ...base, margin: 0, lineHeight: "40px" }),
-    singleValue: (base) => ({ ...base, lineHeight: "40px" }),
-    option: (base, state) => ({
-      ...base,
-      backgroundColor: state.isFocused ? "var(--primary-purple)" : "#fff",
-      color: state.isFocused ? "#fff" : "#333",
-    }),
-    indicatorsContainer: (base) => ({ ...base, height: 40 }),
-    dropdownIndicator: (base) => ({ ...base, padding: "0 8px" }),
-  }}
+  styles={resortSelectStyles}
 />
           </div>
           <div className="filter-item">
@@ -437,7 +441,7 @@ const UserDashboard = () => {
             <DatePicker
               selected={fromDate}
               onChange={setFromDate}
-              dateFormat="dd-MM-yyyy"
+              dateFormat="dd/MM/yyyy"
               className="date-picker"
               portalId="datepicker-portal"
               minDate={isFrontDeskRole ? firstOfLastMonth() : undefined}
@@ -449,7 +453,7 @@ const UserDashboard = () => {
             <DatePicker
               selected={toDate}
               onChange={setToDate}
-              dateFormat="dd-MM-yyyy"
+              dateFormat="dd/MM/yyyy"
               placeholderText="Optional"
               className="date-picker"
               portalId="datepicker-portal"
@@ -458,82 +462,57 @@ const UserDashboard = () => {
             />
           </div>
         <div className="filter-item">
-  <label style={{ visibility: "hidden" }}>Reset</label>
+  <label className="label-spacer">Reset</label>
   <button onClick={resetFilters} className="reset-filters-btn">
     Reset
   </button>
 </div>
-        <div className="filter-item" style={{ position: "relative", minWidth: "260px" }}>
+        <div className="filter-item search-filter-item">
           <label>Search Any Property</label>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div className="search-input-row">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && runSearch()}
               placeholder="Guest name or phone..."
-              style={{ padding: "8px 10px", borderRadius: "5px", border: "1px solid #ccc", height: "40px", boxSizing: "border-box", flex: 1 }}
+              className="search-input"
             />
             <button
               type="button"
               onClick={runSearch}
               disabled={searching}
-              className="reset-filters-btn"
-              style={{ whiteSpace: "nowrap", height: "40px", boxSizing: "border-box", margin: 0 }}
+              className="reset-filters-btn search-btn"
             >
               {searching ? "..." : "Search"}
             </button>
           </div>
 
           {searchResults && (
-            <div
-              style={{
-                position: "absolute",
-                top: "calc(100% + 8px)",
-                left: 0,
-                width: "520px",
-                maxHeight: "400px",
-                overflowY: "auto",
-                background: "#fff",
-                color: "#333",
-                border: "1px solid #ddd",
-                borderRadius: "8px",
-                boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
-                zIndex: 2000,
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderBottom: "1px solid #eee" }}>
+            <div className="search-results-panel">
+              <div className="search-results-header">
                 <strong>{searchResults.length} result{searchResults.length === 1 ? "" : "s"}</strong>
-                <button type="button" onClick={closeSearchResults} style={{ border: "none", background: "none", cursor: "pointer", fontSize: "16px" }}>
+                <button type="button" onClick={closeSearchResults} className="search-results-close">
                   ✕
                 </button>
               </div>
 
               {searchResults.length === 0 ? (
-                <div style={{ padding: "14px" }}>No bookings found.</div>
+                <div className="search-result-empty">No bookings found.</div>
               ) : (
                 searchResults.map((b) => (
                   <div
                     key={b.id}
-                    style={{ padding: "10px 14px", borderBottom: "1px solid #f0f0f0", cursor: "pointer" }}
+                    className="search-result-row"
                     onClick={() => goToBooking(b)}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div className="search-result-row-top">
                       <strong>{b.customerName}</strong>
-                      <span
-                        style={{
-                          padding: "2px 8px",
-                          borderRadius: "10px",
-                          fontSize: "11px",
-                          fontWeight: "bold",
-                          background: b.status === "CHECKED_IN" ? "#d4edda" : b.status === "CANCELLED" || b.status === "EARLY_CHECK_OUT" ? "#f8d7da" : "#fff3cd",
-                          color: b.status === "CHECKED_IN" ? "#155724" : b.status === "CANCELLED" || b.status === "EARLY_CHECK_OUT" ? "#721c24" : "#856404",
-                        }}
-                      >
+                      <span className={bookingStatusBadgeClass(b.status)}>
                         {b.status}
                       </span>
                     </div>
-                    <div style={{ fontSize: "13px", color: "#555", marginTop: "4px" }}>
+                    <div className="search-result-row-meta">
                       {b.customerContactNumber} · {b.property || "-"} · {b.checkInDate} to {b.checkOutDate}
                     </div>
                   </div>
@@ -573,7 +552,7 @@ const UserDashboard = () => {
                       el.scrollIntoView({ behavior: "smooth", block: "center" });
                     }
                   }}
-                  style={b.id === highlightedBookingId ? { background: "#f3e6f5", transition: "background 1s ease" } : undefined}
+                  className={b.id === highlightedBookingId ? "row-highlighted" : undefined}
                 >
                   <td>
                     <button
@@ -591,15 +570,7 @@ const UserDashboard = () => {
                     {b.extendedIntoBookingId && (
                       <span
                         title={`Extended into Booking #${b.extendedIntoBookingId}`}
-                        style={{
-                          marginLeft: "6px",
-                          padding: "2px 8px",
-                          borderRadius: "10px",
-                          fontSize: "11px",
-                          fontWeight: "bold",
-                          background: "#d6e9f8",
-                          color: "#1a5a96",
-                        }}
+                        className="vt-badge vt-badge-success tag-badge"
                       >
                         → Extended
                       </span>
@@ -607,15 +578,7 @@ const UserDashboard = () => {
                     {b.extendedFromBookingId && (
                       <span
                         title={`Extended from Booking #${b.extendedFromBookingId} (${b.extendedFromCustomerName})`}
-                        style={{
-                          marginLeft: "6px",
-                          padding: "2px 8px",
-                          borderRadius: "10px",
-                          fontSize: "11px",
-                          fontWeight: "bold",
-                          background: "#e0d6f8",
-                          color: "#5a1a96",
-                        }}
+                        className="vt-badge vt-badge-danger tag-badge"
                       >
                         Extension
                       </span>
@@ -623,15 +586,7 @@ const UserDashboard = () => {
                     {b.discountAmount > 0 && (
                       <span
                         title={b.discountReason ? `Discount: ₹${b.discountAmount} (${b.discountReason})` : `Discount: ₹${b.discountAmount}`}
-                        style={{
-                          marginLeft: "6px",
-                          padding: "2px 8px",
-                          borderRadius: "10px",
-                          fontSize: "11px",
-                          fontWeight: "bold",
-                          background: "#fde8d8",
-                          color: "#a05a1a",
-                        }}
+                        className="vt-badge vt-badge-warning tag-badge"
                       >
                         Discounted
                       </span>
@@ -654,26 +609,7 @@ const UserDashboard = () => {
     : "-"}
 </td>
                   <td>
-                    <span
-                      style={{
-                        padding: "3px 8px",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                        fontWeight: "bold",
-                        background:
-                          b.status === "CHECKED_IN"
-                            ? "#d4edda"
-                            : b.status === "CANCELLED" || b.status === "EARLY_CHECK_OUT"
-                            ? "#f8d7da"
-                            : "#fff3cd",
-                        color:
-                          b.status === "CHECKED_IN"
-                            ? "#155724"
-                            : b.status === "CANCELLED" || b.status === "EARLY_CHECK_OUT"
-                            ? "#721c24"
-                            : "#856404",
-                      }}
-                    >
+                    <span className={bookingStatusBadgeClass(b.status)}>
                       {b.status}
                     </span>
                   </td>
@@ -805,7 +741,7 @@ const UserDashboard = () => {
         </div>
 
         {totalPages > 1 && (
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", marginTop: "14px" }}>
+          <div className="pagination-controls">
             <button
               type="button"
               className="reset-filters-btn"
@@ -827,39 +763,34 @@ const UserDashboard = () => {
         )}
 
         {cancelModalBooking && (
-          <div
-            className="modal-overlay"
-            style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}
-          >
-            <div className="modal" style={{ background: "#fff", padding: "25px", borderRadius: "8px", maxWidth: "450px", width: "100%" }}>
+          <div className="modal-overlay">
+            <div className="modal">
               <h3>Cancel Booking</h3>
               <p><strong>Guest:</strong> {cancelModalBooking.customerName}</p>
               <p><strong>Total Bill:</strong> ₹{cancelModalBooking.totalAmount}</p>
 
-              <div style={{ marginTop: "12px" }}>
-                <label style={{ display: "block", marginBottom: "4px" }}>Reason:</label>
+              <div className="modal-field">
+                <label>Reason:</label>
                 <textarea
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                   placeholder="Why is this booking being cancelled?"
                   rows={3}
-                  style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
                 />
               </div>
 
-              <div style={{ marginTop: "12px" }}>
-                <label style={{ display: "block", marginBottom: "4px" }}>Refund Amount (₹):</label>
+              <div className="modal-field">
+                <label>Refund Amount (₹):</label>
                 <input
                   type="number"
                   value={cancelRefundAmount}
                   onChange={(e) => setCancelRefundAmount(e.target.value)}
                   placeholder="0.00"
-                  style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
                 />
               </div>
 
-              <div style={{ marginTop: "12px" }}>
-                <label style={{ display: "block", marginBottom: "4px" }}>Refunded From Account:</label>
+              <div className="modal-field">
+                <label>Refunded From Account:</label>
                 <Select
                   options={creditDestinations}
                   value={cancelRefundAccount}
@@ -871,7 +802,7 @@ const UserDashboard = () => {
                 />
               </div>
 
-              <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+              <div className="modal-actions">
                 <button
                   className="btn-cancel"
                   onClick={handleCancelSubmit}

@@ -76,7 +76,7 @@ const ChangePassword = () => {
           &larr; Back
         </button>
 
-        <h2 className="page-title" style={{ fontSize: "18px", fontWeight: 700, color: "var(--primary-teal)", textAlign: "left", letterSpacing: "1.5px", textTransform: "uppercase", marginTop: "4px", marginBottom: "20px" }}>Change Password</h2>
+        <h2 className="page-title">Change Password</h2>
 
         <form onSubmit={handleSubmit} className="change-password-form">
 

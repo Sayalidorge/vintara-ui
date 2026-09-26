@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import Select from "react-select";
 import classnames from "classnames";
 import {
     FaExclamationTriangle,
@@ -21,9 +22,16 @@ import {
 } from "react-icons/fa";
 import config from "../../config";
 import logo from "../../assets/logo-icon.png";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../../utils/reactSelectTheme";
 import "../../css/theme.css";
 import "./GuestCheckInPage.css";
 import ToastContainer, { useToast } from "../common/Toast";
+
+const GENDER_OPTIONS = [
+    { value: "MALE", label: "Male" },
+    { value: "FEMALE", label: "Female" },
+    { value: "OTHER", label: "Other" },
+];
 
 const GuestCheckInPage = () => {
     const { toasts, showToast, dismissToast } = useToast();
@@ -617,15 +625,19 @@ const GuestCheckInPage = () => {
                             />
 
                             <label>Gender</label>
-                            <select
-                                value={form.gender}
-                                onChange={(e) => handleFormChange(index, "gender", e.target.value)}
-                            >
-                                <option value="">Select Gender</option>
-                                <option value="MALE">Male</option>
-                                <option value="FEMALE">Female</option>
-                                <option value="OTHER">Other</option>
-                            </select>
+                            <Select
+                                classNamePrefix="react-select"
+                                className="guest-form-card__select"
+                                options={GENDER_OPTIONS}
+                                value={GENDER_OPTIONS.find((o) => o.value === form.gender) || null}
+                                onChange={(selected) => handleFormChange(index, "gender", selected ? selected.value : "")}
+                                placeholder="Select Gender"
+                                isClearable
+                                isSearchable={false}
+                                menuPortalTarget={menuPortalTarget}
+                                menuPosition={menuPosition}
+                                styles={themedSelectStyles()}
+                            />
 
                             {form.leadGuest && (
                                 <>

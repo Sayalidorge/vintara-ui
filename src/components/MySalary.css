@@ -1,3 +1,13 @@
+/* .page-container (previously on the JSX root alongside this class) turned
+   out to be a no-op - the only .page-container rules elsewhere in the app
+   are compound selectors requiring a second class this page never had
+   (.page-container.admin-leave-dashboard, .page-container.leave-portal), so
+   this page had no page-level padding at all. Give it its own. */
+.my-salary {
+  padding: 0 20px 20px 20px;
+  box-sizing: border-box;
+}
+
 .my-salary .salary-card {
   background: #fff;
   border-radius: 8px;
@@ -16,32 +26,25 @@
   margin-bottom: 16px;
 }
 
-.salary-header h2 {
-  margin: 0;
-  color: var(--primary-purple);
-}
-
 .month-picker {
   display: flex;
   gap: 8px;
 }
 
-.month-picker select {
-  padding: 6px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.my-salary .month-picker .filter-select {
+  width: 130px;
 }
 
 .salary-error {
-  color: #b91c1c;
-  background: #fee2e2;
+  color: var(--color-danger-text);
+  background: var(--color-danger-bg);
   padding: 10px 14px;
   border-radius: 6px;
 }
 
 .permanent-wfh-note {
-  background: #e6f7ed;
-  color: #1e7e34;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 13px;
@@ -65,7 +68,7 @@
 }
 
 .salary-breakdown .total-deduction-row td {
-  border-top: 2px solid #ddd;
+  border-top: 2px solid var(--gray-300);
   font-weight: 700;
 }
 
@@ -76,12 +79,12 @@
   padding: 10px 14px;
   border-radius: 6px;
   margin-top: 8px;
-  background: #fafafa;
+  background: var(--gray-50);
 }
 
 .net-pay-box .net-pay-label {
   font-size: 14px;
-  color: #555;
+  color: var(--gray-800);
 }
 
 .net-pay-box .net-pay-value {
@@ -89,18 +92,19 @@
   font-weight: 700;
 }
 
+/* Purple, not red - this app has no red/green/amber anywhere. */
 .net-pay-box .net-pay-value.deduction {
-  color: #c0392b;
+  color: var(--color-danger-text);
 }
 
 .net-pay-box.net-pay-final {
-  background: #fff4e5;
-  border: 2px solid #b45309;
+  background: var(--color-success-bg);
+  border: 2px solid var(--primary-teal);
   margin-top: 12px;
 }
 
 .net-pay-box.net-pay-final .net-pay-label,
 .net-pay-box.net-pay-final .net-pay-value {
-  color: #b45309;
+  color: var(--primary-teal);
   font-size: 18px;
 }

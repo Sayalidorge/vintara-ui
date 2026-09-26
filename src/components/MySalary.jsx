@@ -1,7 +1,10 @@
 // src/components/MySalary.jsx
 import React, { useEffect, useState } from "react";
+import Select from "react-select";
 import { getPayslip } from "../services/SalaryService";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 import "../css/theme.css";
+import "../css/components.css";
 import "./MySalary.css";
 
 const MONTH_NAMES = [
@@ -25,6 +28,10 @@ const MySalary = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const monthOptions = MONTH_NAMES.map((m, idx) => ({ value: idx + 1, label: m }));
+  const yearOptions = [today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1]
+    .map((y) => ({ value: y, label: String(y) }));
+
   const loadPayslip = async () => {
     if (!userId) return;
     setLoading(true);
@@ -46,28 +53,43 @@ const MySalary = () => {
   }, [userId, year, month]);
 
   return (
-    <div className="page-container my-salary">
+    <div className="my-salary">
+      <div className="vt-page-header">
+        <h2>My Salary</h2>
+      </div>
+
       <div className="salary-card">
         <div className="salary-header">
-          <h2>
-            My Salary{" "}
+          <span className="salary-status">
             {payslip && (
-              <span className={`salary-pill ${payslip.finalized ? "salary-pill-finalized" : "salary-pill-draft"}`}>
+              <span className={`vt-badge ${payslip.finalized ? "vt-badge-success" : "vt-badge-warning"}`}>
                 {payslip.finalized ? "Finalized" : "Draft"}
               </span>
             )}
-          </h2>
+          </span>
           <div className="month-picker">
-            <select value={month} onChange={(e) => setMonth(Number(e.target.value))}>
-              {MONTH_NAMES.map((m, idx) => (
-                <option key={m} value={idx + 1}>{m}</option>
-              ))}
-            </select>
-            <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
-              {[today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1].map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
+            <Select
+              options={monthOptions}
+              value={monthOptions.find((o) => o.value === month)}
+              onChange={(selected) => setMonth(selected.value)}
+              isSearchable={false}
+              classNamePrefix="react-select"
+              className="react-select-container filter-select"
+              menuPortalTarget={menuPortalTarget}
+              menuPosition={menuPosition}
+              styles={themedSelectStyles()}
+            />
+            <Select
+              options={yearOptions}
+              value={yearOptions.find((o) => o.value === year)}
+              onChange={(selected) => setYear(selected.value)}
+              isSearchable={false}
+              classNamePrefix="react-select"
+              className="react-select-container filter-select"
+              menuPortalTarget={menuPortalTarget}
+              menuPosition={menuPosition}
+              styles={themedSelectStyles()}
+            />
           </div>
         </div>
 

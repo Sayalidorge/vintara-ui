@@ -3,29 +3,10 @@
    ============================== */
 .user-dashboard {
   padding: 0 8px 20px 8px;
-  background: #f4f4f4;
+  background: var(--gray-100);
   min-height: 100vh;
   width: 100%;
   box-sizing: border-box;
-}
-
-/* Neutralizes ViewBookingEnquiry.css's bare ".page-header" (border-bottom +
-   padding) leaking in here, and the browser's default <h2> margin - both were
-   the real source of the big gap under the navbar. */
-.user-dashboard .page-header {
-  margin: 0 0 15px 0;
-  padding: 0;
-  border-bottom: none;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.user-dashboard .page-header h2 {
-  margin: 0;
-  padding-top: 5px;
 }
 
 .btn-create-booking {
@@ -42,60 +23,6 @@
 
 .btn-create-booking:hover {
   background: #660066;
-}
-
-/* ==============================
-   Header
-   ============================== */
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-}
-
-.dashboard-header h2 {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--primary-purple);
-  margin: 0;
-}
-
-.dashboard-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-/* ==============================
-   Buttons
-   ============================== */
-.btn-primary {
-  padding: 8px 16px;
-  background: var(--primary-purple);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.btn-primary:hover {
-  background: var(--primary-teal);
-}
-
-.btn-secondary {
-  padding: 8px 16px;
-  background: #777;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.btn-secondary:hover {
-  background: #555;
 }
 
 /* ==============================
@@ -135,7 +62,7 @@
 .user-dashboard .dashboard-filters .filter-item label {
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: var(--gray-900);
   text-align: left;
 }
 
@@ -171,7 +98,7 @@
   width: 100%;
   padding: 0 10px;
   border-radius: 6px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--gray-400);
   box-sizing: border-box;
 }
 
@@ -187,7 +114,7 @@
    doesn't. Explicitly reset back to the default grey whenever this page's
    date field isn't focused, regardless of whether it has a value. */
 .user-dashboard .dashboard-filters .date-picker:not(:focus) {
-  border-color: #ccc;
+  border-color: var(--gray-400);
   box-shadow: none;
 }
 
@@ -240,7 +167,7 @@
 
 .user-dashboard .bookings-table th,
 .user-dashboard .bookings-table td {
-  border: 1px solid #ccc;
+  border: 1px solid var(--gray-400);
   padding: 6px 8px;
   font-size: 13px;
   white-space: normal;
@@ -286,21 +213,6 @@
   gap: 6px;
 }
 
-/* Scoped to this table only - the Cancel Booking modal's "Confirm
-   Cancellation" button also uses .btn-cancel and should stay red as a
-   destructive-action warning; only the row-level Cancel action here (which
-   just opens that modal, and isn't destructive by itself) matches Edit's
-   purple instead. ":not(:disabled)" isn't just a nicety here - without it
-   this 4-class selector would outrank the base ".btn-cancel:disabled" rule's
-   lower specificity and silently paint over the greyed-out disabled state. */
-.user-dashboard .bookings-table .row-actions .btn-cancel:not(:disabled) {
-  background: var(--primary-purple);
-}
-
-.user-dashboard .bookings-table .row-actions .btn-cancel:hover:not(:disabled) {
-  background: #660066;
-}
-
 .btn-edit {
   background: var(--primary-purple);
   color: #fff;
@@ -315,8 +227,8 @@
 }
 
 .btn-edit:disabled {
-  background: #ccc;
-  color: #666;
+  background: var(--gray-400);
+  color: var(--gray-700);
   cursor: not-allowed;
 }
 
@@ -334,13 +246,16 @@
 }
 
 .btn-confirm:disabled {
-  background: #ccc;
-  color: #666;
+  background: var(--gray-400);
+  color: var(--gray-700);
   cursor: not-allowed;
 }
 
+/* Purple, not red - this app has no red/green/amber anywhere (see
+   theme.css), including for destructive actions like this modal's "Confirm
+   Cancellation" button. */
 .btn-cancel {
-  background: #d32f2f;
+  background: var(--primary-purple);
   color: #fff;
   padding: 6px 10px;
   border: none;
@@ -349,12 +264,12 @@
 }
 
 .btn-cancel:hover:not(:disabled) {
-  background: #b71c1c;
+  background: #660066;
 }
 
 .btn-cancel:disabled {
-  background: #ccc;
-  color: #666;
+  background: var(--gray-400);
+  color: var(--gray-700);
   cursor: not-allowed;
 }
 
@@ -406,8 +321,168 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #666;
+  color: var(--gray-700);
 }
+
+/* Keeps the Reset button's label row the same height as the labeled filters
+   beside it, without actually showing a label - "Reset" has no field of its
+   own to name. */
+.label-spacer {
+  visibility: hidden;
+}
+
+/* ==============================
+   Cross-Property Search
+   ============================== */
+.user-dashboard .search-filter-item {
+  position: relative;
+  min-width: 260px;
+}
+
+.user-dashboard .search-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-dashboard .search-input {
+  flex: 1;
+  height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--gray-400);
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+.user-dashboard .search-btn {
+  height: 40px;
+  margin: 0;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.user-dashboard .search-results-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 520px;
+  max-width: 90vw;
+  max-height: 400px;
+  overflow-y: auto;
+  background: #fff;
+  color: var(--gray-900);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 2000;
+}
+
+.user-dashboard .search-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.user-dashboard .search-results-close {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.user-dashboard .search-result-empty {
+  padding: 14px;
+}
+
+.user-dashboard .search-result-row {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--gray-200);
+  cursor: pointer;
+}
+
+.user-dashboard .search-result-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.user-dashboard .search-result-row-meta {
+  font-size: 13px;
+  color: var(--gray-800);
+  margin-top: 4px;
+}
+
+/* Small tag badges sitting inline next to the customer name (Extended,
+   Extension, Discounted) - vt-badge already provides the padding/radius/
+   font, this just adds the gap from the name before it. */
+.tag-badge {
+  margin-left: 6px;
+}
+
+/* Briefly tints a row purple after a cross-property search jumps to it, so
+   the landing spot is obvious even though it's already been scrolled into
+   view - fades back to normal over 1s. */
+.user-dashboard .row-highlighted {
+  background: var(--color-select-hover-bg);
+  transition: background 1s ease;
+}
+
+.user-dashboard .pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+/* ==============================
+   Cancel Booking Modal
+   ============================== */
+.user-dashboard .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.user-dashboard .modal {
+  background: #fff;
+  padding: 25px;
+  border-radius: var(--radius-md);
+  max-width: 450px;
+  width: 100%;
+}
+
+.user-dashboard .modal-field {
+  margin-top: 12px;
+}
+
+.user-dashboard .modal-field label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.user-dashboard .modal-field textarea,
+.user-dashboard .modal-field input {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.user-dashboard .modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
 /* ==========================================================================
    Calendar Dropdown Z-Index Layering Fix
    ========================================================================== */
@@ -468,11 +543,6 @@
 
   .user-dashboard .dashboard-filters .filter-item {
     width: 100%;
-  }
-
-  .dashboard-actions {
-    flex-direction: column;
-    align-items: flex-start;
   }
 }
 

@@ -38,7 +38,7 @@
 
 .state-icon{
     font-size:32px;
-    color:#c62828;
+    color:var(--primary-purple);
     margin-bottom:12px;
 }
 
@@ -192,7 +192,7 @@
 }
 
 .progress-fill--complete{
-    background:#2e7d32;
+    background:var(--primary-teal);
 }
 
 /* ==============================
@@ -231,7 +231,7 @@
 }
 
 .guest-form-card--submitted{
-    border:2px solid #2e7d32;
+    border:2px solid var(--primary-teal);
 }
 
 .guest-form-card h3{
@@ -239,7 +239,6 @@
 }
 
 .guest-form-card input,
-.guest-form-card select,
 .guest-form-card textarea{
     width:100%;
     margin-bottom:15px;
@@ -250,11 +249,21 @@
     font-size:16px; /* prevents iOS Safari auto-zoom-on-focus */
 }
 
-.guest-form-card input:disabled,
-.guest-form-card select:disabled{
+.guest-form-card input:disabled{
     background:#e9ecef;
     cursor:not-allowed;
     opacity:.85;
+}
+
+/* Gender is a react-select - sizing/colors are set via the `styles` prop in
+   the JSX, not CSS, but the wrapper itself still needs the same width/margin
+   as the plain inputs above to line up in this stacked form layout. */
+.guest-form-card__select{
+    margin-bottom:15px;
+}
+
+.guest-form-card__select .react-select__control{
+    min-height:44px; /* matches the 10px-padding + 16px-font inputs above */
 }
 
 .guest-form-card textarea{
@@ -323,13 +332,13 @@
 }
 
 .badge--extra{
-    background:#fff3cd;
-    color:#8a6100;
+    background:var(--color-warning-bg);
+    color:var(--color-warning-text);
 }
 
 .badge--submitted{
-    background:rgba(46,125,50,.12);
-    color:#2e7d32;
+    background:var(--color-success-bg);
+    color:var(--primary-teal);
 }
 
 /* Read-only guest summary (submitted state) */
@@ -405,7 +414,7 @@
 }
 
 .verified-text{
-    color:#2e7d32;
+    color:var(--primary-teal);
     font-weight:700;
     display:flex;
     align-items:center;

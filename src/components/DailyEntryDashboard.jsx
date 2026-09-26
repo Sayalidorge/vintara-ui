@@ -6,6 +6,8 @@ import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import config from "../config";
+import "../css/theme.css";
+import "../css/components.css";
 import "./DailyEntryDashboard.css";
 import { toLocalDateStr } from "../utils/date";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
@@ -40,6 +42,29 @@ const statusSelectStyles = themedSelectStyles({
   indicatorSeparator: () => ({ display: "none" }),
 });
 
+// Compact variant for the per-row status editor inside the table - the
+// filter-row sizing above is too tall for a table cell. menuPortalTarget is
+// mandatory here too: unportaled, the menu would be clipped by
+// .table-wrapper's overflow-x:auto on every row but the last few.
+const rowStatusSelectStyles = themedSelectStyles({
+  control: (base) => ({
+    ...base,
+    minHeight: 32,
+    height: 32,
+    fontSize: 13,
+  }),
+  valueContainer: (base) => ({
+    ...base,
+    height: 32,
+    padding: "0 8px",
+  }),
+  indicatorsContainer: (base) => ({
+    ...base,
+    height: 32,
+  }),
+  indicatorSeparator: () => ({ display: "none" }),
+});
+
 const DailyEntryDashboard = () => {
   const { toasts, showToast, dismissToast } = useToast();
   const navigate = useNavigate();
@@ -68,6 +93,13 @@ const DailyEntryDashboard = () => {
   ];
   const selectedStatusOption =
     statusSelectOptions.find((opt) => opt.value === status) || null;
+
+  // Same list, minus "All Statuses" - used by each row's own status editor,
+  // which only ever needs to set one real status, never the filter's "ALL".
+  const rowStatusOptions = sortedStatusEntries.map(([key, label]) => ({
+    value: key,
+    label,
+  }));
 
   // -----------------------------------
   // Fetch filtered daily enquiries
@@ -172,17 +204,15 @@ const handleStatusChange = async (id, newStatus) => {
   return (
     <div className="daily-entries-page">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-      {/* Header */}
-<div className="page-header">
-  <h2 style={{ fontSize: "23px", fontWeight: 700, color: "var(--primary-purple)", textAlign: "left", marginTop: "6px", marginBottom: "16px" }}>Daily Enquiries</h2>
-</div>
+      <div className="vt-page-header">
+        <h2>Daily Enquiries</h2>
         <button
           className="record-entry-btn"
           onClick={() => navigate("/user/record-daily-entry")}
         >
           + Record Entry
         </button>
-     
+      </div>
 
       {/* Filters */}
       <div className="dashboard-filters">
@@ -202,7 +232,7 @@ const handleStatusChange = async (id, newStatus) => {
         <DatePicker
   selected={fromDate}
   onChange={(date) => setFromDate(date)}
-  dateFormat="yyyy-MM-dd"
+  dateFormat="dd/MM/yyyy"
   placeholderText="Select Date(Optional)"
   openToDate={new Date()}   // 👈 shows current month
   className="date-picker"
@@ -212,7 +242,7 @@ const handleStatusChange = async (id, newStatus) => {
         <DatePicker
           selected={toDate}
           onChange={(date) => setToDate(date)}
-          dateFormat="yyyy-MM-dd"
+          dateFormat="dd/MM/yyyy"
           placeholderText="Select Date(Optional)"
           className="date-picker"
         />
@@ -254,19 +284,19 @@ const handleStatusChange = async (id, newStatus) => {
                   <td>{entry.noOfPeople}</td>
                   <td>{entry.source}</td>
 
-                  <td>                
-  <select
-    className="status-dropdown"
-    value={entry.status}
-    onChange={(e) => handleStatusChange(entry.id, e.target.value)}
-  >
-    {Object.entries(statusOptions).map(([key, label]) => (
-      <option key={key} value={key}>
-        {label}
-      </option>
-    ))}
-  </select>
-</td>
+                  <td className="status-dropdown-cell">
+                    <Select
+                      className="status-dropdown"
+                      classNamePrefix="react-select"
+                      styles={rowStatusSelectStyles}
+                      menuPortalTarget={menuPortalTarget}
+                      menuPosition={menuPosition}
+                      options={rowStatusOptions}
+                      value={rowStatusOptions.find((o) => o.value === entry.status) || null}
+                      onChange={(selected) => handleStatusChange(entry.id, selected.value)}
+                      isSearchable={false}
+                    />
+                  </td>
                   <td>
                     {entry.date
                       ? new Date(entry.date).toLocaleDateString("en-GB", {

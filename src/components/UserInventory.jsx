@@ -4,7 +4,8 @@ import { useSearchParams } from "react-router-dom";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import "./DailyEntryDashboard.css";
+import "../css/theme.css";
+import "../css/components.css";
 import "./UserInventory.css";
 import config from "../config";
 import ManageCheckInDrawer from "./checkin/ManageCheckInDrawer";
@@ -864,7 +865,7 @@ const UserInventory = () => {
     <div className="user-inventory-wrapper">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-      <h2 className="page-title" style={{ fontSize: "24px", fontWeight: 600, color: "var(--primary-purple)", textAlign: "left", letterSpacing: "0.4px" }}>Inventory Dashboard</h2>
+      <h2 className="page-title">Inventory Dashboard</h2>
 
       {/* Control Filters Block */}
       <div className="filters">
@@ -973,8 +974,8 @@ const UserInventory = () => {
 
       {/* PERSPECTIVE TWO: COMPREHENSIVE ACTIVE BOOKINGS LIST VIEW */}
       {activeTab === "BOOKINGS" && (
-        <div className="bookings-list-view" style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-          <div className="view-switcher-tabs" style={{ alignSelf: "flex-start" }}>
+        <div className="bookings-list-view">
+          <div className="view-switcher-tabs bookings-list-view__filter-tabs">
             <button
               className={`view-tab-btn ${arrivalDepartureFilter === "ALL" ? "active" : ""}`}
               onClick={() => setArrivalDepartureFilter("ALL")}
@@ -996,14 +997,14 @@ const UserInventory = () => {
           </div>
 
           {(pendingCheckInCount > 0 || pendingDocVerificationCount > 0) && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+            <div className="inventory-alerts-row">
               {pendingCheckInCount > 0 && (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 15px", background: "#fff3cd", border: "1px solid #ffe69c", borderRadius: "6px", fontSize: "13px", color: "#856404", fontWeight: "bold" }}>
+                <div className="inventory-alert-banner inventory-alert-banner--warning">
                   <span>⚠ {pendingCheckInCount} booking{pendingCheckInCount === 1 ? "" : "s"} awaiting check-in</span>
                 </div>
               )}
               {pendingDocVerificationCount > 0 && (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 15px", background: "#f1e5fa", border: "1px solid #e2c8f2", borderRadius: "6px", fontSize: "13px", color: "var(--primary-purple)", fontWeight: "bold" }}>
+                <div className="inventory-alert-banner inventory-alert-banner--danger">
                   <span>⚠ {pendingDocVerificationCount} booking{pendingDocVerificationCount === 1 ? "" : "s"} awaiting document verification</span>
                 </div>
               )}
@@ -1011,12 +1012,11 @@ const UserInventory = () => {
           )}
 
           {bookingFilterId != null && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 15px", background: "#eef6f6", border: "1px solid #cfe8e8", borderRadius: "6px", fontSize: "13px" }}>
+            <div className="inventory-alert-banner inventory-alert-banner--info">
               <span>Showing only the booking selected from Room Grid View.</span>
               <button
                 type="button"
-                className="checkin-btn"
-                style={{ padding: "4px 12px" }}
+                className="checkin-btn inventory-alert-banner__action"
                 onClick={() => setBookingFilterId(null)}
               >
                 Show All Bookings
@@ -1025,71 +1025,53 @@ const UserInventory = () => {
           )}
 
           {displayedBookingsList.length === 0 ? (
-            <p style={{ padding: "20px", textAlign: "center", background: "#f9f9f9", borderRadius: "6px" }}>No active reservations tracked on this date target room matrix.</p>
+            <p className="inventory-empty-state">No active reservations tracked on this date target room matrix.</p>
           ) : (
             displayedBookingsList.map((b) => (
-              <div key={b.id} style={{ border: "1px solid #ddd", borderRadius: "8px", padding: "20px", background: "#ffffff", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", borderBottom: "1px solid #eee", paddingBottom: "10px", marginBottom: "15px" }}>
+              <div key={b.id} className="booking-list-card">
+                <div className="booking-list-card__header">
                   <div>
-                    <h3 style={{ margin: 0, color: "#333", fontSize: "22px", fontWeight: "bold" }}>{b.customerName} <span style={{ fontSize: "13px", fontWeight: "normal", color: "#777" }}>(ID: #{b.id})</span></h3>
-                    <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#555" }}>Contact: {b.customerContactNumber} | Source: <strong>{sourceLabel(b.source)}</strong></p>
+                    <h3 className="booking-list-card__title">{b.customerName} <span className="booking-list-card__title-id">(ID: #{b.id})</span></h3>
+                    <p className="booking-list-card__meta">Contact: {b.customerContactNumber} | Source: <strong>{sourceLabel(b.source)}</strong></p>
                     {b.extendedFromBookingId && (
-                      <p style={{ margin: "6px 0 0 0" }}>
-                        <span
-                          style={{
-                            padding: "3px 10px",
-                            borderRadius: "10px",
-                            fontSize: "12px",
-                            fontWeight: "bold",
-                            background: "#e0d6f8",
-                            color: "#5a1a96",
-                          }}
-                        >
+                      <p className="booking-list-card__tag">
+                        <span className="vt-badge vt-badge-danger">
                           Extended from Booking #{b.extendedFromBookingId} ({b.extendedFromCustomerName})
                         </span>
                       </p>
                     )}
                     {b.extendedIntoBookingId && (
-                      <p style={{ margin: "6px 0 0 0" }}>
-                        <span
-                          style={{
-                            padding: "3px 10px",
-                            borderRadius: "10px",
-                            fontSize: "12px",
-                            fontWeight: "bold",
-                            background: "#d6e9f8",
-                            color: "#1a5a96",
-                          }}
-                        >
+                      <p className="booking-list-card__tag">
+                        <span className="vt-badge vt-badge-success">
                           → Extended into Booking #{b.extendedIntoBookingId}
                         </span>
                       </p>
                     )}
-                    <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#333" }}><strong>Total Headcount:</strong> {(b.adults ?? 0) + (b.kids ?? 0)} People ({b.adults ?? 0} Adults, {b.kids ?? 0} Kids)</p>
+                    <p className="booking-list-card__total"><strong>Total Headcount:</strong> {(b.adults ?? 0) + (b.kids ?? 0)} People ({b.adults ?? 0} Adults, {b.kids ?? 0} Kids)</p>
                     {b.remarks && (
-                      <p style={{ margin: "8px 0 0 0", fontSize: "13px", color: "#856404", background: "#fff3cd", border: "1px solid #ffe69c", borderRadius: "6px", padding: "6px 10px", maxWidth: "480px" }}>
+                      <p className="booking-list-card__remarks">
                         <strong>Remarks:</strong> {b.remarks}
                       </p>
                     )}
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <span style={{ padding: "4px 10px", borderRadius: "20px", fontSize: "12px", fontWeight: "bold", background: b.status === "CHECKED_IN" ? "#d4edda" : "#fff3cd", color: b.status === "CHECKED_IN" ? "#155724" : "#856404" }}>
+                  <div className="booking-list-card__status-col">
+                    <span className={`vt-badge ${b.status === "CHECKED_IN" ? "vt-badge-success" : "vt-badge-warning"}`}>
                       {b.status}
                     </span>
-                    <p style={{ margin: "6px 0 0 0", fontSize: "14px", fontWeight: "bold", color: "#333" }}>Stay: {formatDateDMY(b.checkInDate)} to {formatDateDMY(b.checkOutDate)} ({b.numberOfNights} Night)</p>
+                    <p className="booking-list-card__stay">Stay: {formatDateDMY(b.checkInDate)} to {formatDateDMY(b.checkOutDate)} ({b.numberOfNights} Night)</p>
                     {b.createdByUser && (
-                      <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#555" }}>Created By: <strong>{b.createdByUser}</strong></p>
+                      <p className="booking-list-card__created-by">Created By: <strong>{b.createdByUser}</strong></p>
                     )}
                   </div>
                 </div>
 
                 {/* Rooms composition details structure layout block */}
-                <div style={{ background: "#f9f9f9", padding: "10px 15px", borderRadius: "6px", marginBottom: "15px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "15px", flexWrap: "wrap" }}>
-                  <div style={{ flex: 1, minWidth: "200px" }}>
-                    <h4 style={{ margin: "0 0 8px 0", fontSize: "13px", color: "#666" }}>Allocated Room Inventory Breakdown</h4>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "20px" }}>
+                <div className="booking-list-card__rooms">
+                  <div className="booking-list-card__rooms-main">
+                    <h4 className="booking-list-card__rooms-title">Allocated Room Inventory Breakdown</h4>
+                    <div className="booking-list-card__rooms-grid">
                       {b.bookingItems?.map((item, idx) => (
-                        <div key={idx} style={{ fontSize: "13px" }}>
+                        <div key={idx} className="booking-list-card__room-item">
                           <strong>{item.roomCategoryName}:</strong> {item.roomNumbers?.join(", ")}
                         </div>
                       ))}
@@ -1097,84 +1079,66 @@ const UserInventory = () => {
                   </div>
 
                   {getCheckInUrl(b) && (
-                    <div style={{ textAlign: "center", flexShrink: 0 }}>
-                      <span
-                        style={{
-                          display: "inline-block",
-                          padding: "3px 10px",
-                          borderRadius: "20px",
-                          fontSize: "11px",
-                          fontWeight: "bold",
-                          marginBottom: "8px",
-                          background: b.documentsVerified ? "#d4edda" : "#f1e5fa",
-                          color: b.documentsVerified ? "#155724" : "var(--primary-purple)",
-                        }}
-                      >
+                    <div className="booking-list-card__qr">
+                      <span className={`vt-badge ${b.documentsVerified ? "vt-badge-success" : "vt-badge-danger"} booking-list-card__qr-badge`}>
                         {b.documentsVerified ? "Document Verification Completed" : "Document Verification Pending"}
                       </span>
                       <a
                         href={getCheckInUrl(b)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ display: "block", textDecoration: "none" }}
+                        className="booking-list-card__qr-link"
                         title="Open guest self check-in page in a new tab"
                       >
                         <QRCodeSVG value={getCheckInUrl(b)} size={90} />
-                        <p style={{ margin: "4px 0 0 0", fontSize: "10px", color: "#888" }}>Guest Check-In</p>
+                        <p className="booking-list-card__qr-label">Guest Check-In</p>
                       </a>
                     </div>
                   )}
                 </div>
 
                 {/* Financial Ledger Section */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "15px" }}>
+                <div className="booking-list-card__ledger">
                   <div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "20px 30px", fontSize: "14px" }}>
-                      <p style={{ margin: 0 }}><strong>🛏️ Room Bill:</strong> ₹{b.totalAmount}</p>
-                      <p style={{ margin: 0 }}><strong>Paid Advance:</strong> ₹{b.advanceAmount}</p>
-                      <p style={{ margin: 0 }}>
-  <strong>Balance Due:</strong>{" "}
-  <span style={{ color: (b.pendingBalanceAmount ?? b.balanceAmount) === 0 ? "green" : "red", fontWeight: "bold" }}>
-    ₹{b.pendingBalanceAmount ?? b.balanceAmount}
-  </span>
-</p>
+                    <div className="booking-list-card__ledger-items">
+                      <p><strong>🛏️ Room Bill:</strong> ₹{b.totalAmount}</p>
+                      <p><strong>Paid Advance:</strong> ₹{b.advanceAmount}</p>
+                      <p>
+                        <strong>Balance Due:</strong>{" "}
+                        <span className={(b.pendingBalanceAmount ?? b.balanceAmount) === 0 ? "booking-list-card__amount-ok" : "booking-list-card__amount-due"}>
+                          ₹{b.pendingBalanceAmount ?? b.balanceAmount}
+                        </span>
+                      </p>
                       {b.status === "CHECKED_IN" && b.balanceSplits?.length > 0 && (
-                        <p style={{ margin: 0 }}>
+                        <p>
                           <strong>Balance Collected In:</strong>{" "}
                           {b.balanceSplits.map((s) => `${s.accountName} (₹${s.amount})`).join(", ")}
                         </p>
                       )}
                       {b.status === "CHECKED_IN" && !(b.balanceSplits?.length > 0) && b.balanceCreditedToAccountName && (
-                        <p style={{ margin: 0 }}>
+                        <p>
                           <strong>Balance Collected In:</strong> {b.balanceCreditedToAccountName}
                         </p>
                       )}
                       {b.discountAmount > 0 && (
-                        <p style={{ margin: 0 }}>
+                        <p>
                           <span
                             title={b.discountReason || undefined}
-                            style={{
-                              padding: "3px 10px",
-                              borderRadius: "10px",
-                              fontSize: "12px",
-                              fontWeight: "bold",
-                              background: "#fde8d8",
-                              color: "#a05a1a",
-                            }}
+                            className="vt-badge vt-badge-warning"
                           >
                             Discount Applied: ₹{b.discountAmount}{b.discountReason ? ` (${b.discountReason})` : ""}
                           </span>
                         </p>
                       )}
                       {b.lateCheckoutCharge > 0 && (
-                        <p style={{ margin: 0 }}>
+                        <p>
                           <strong>Late Checkout:</strong> ₹{b.lateCheckoutCharge}
                           {b.lateCheckoutCreditedToAccountName ? ` (${b.lateCheckoutCreditedToAccountName})` : ""}
                           {b.lateCheckoutReason ? ` - ${b.lateCheckoutReason}` : ""}
                         </p>
                       )}
                       {b.extraCharge > 0 && (
-                        <p style={{ margin: 0 }}>
+                        <p>
                           <strong>Extra Charge:</strong> ₹{b.extraCharge}
                           {b.extraChargeCreditedToAccountName ? ` (${b.extraChargeCreditedToAccountName})` : ""}
                           {b.extraChargeReason ? ` - ${b.extraChargeReason}` : ""}
@@ -1189,28 +1153,28 @@ const UserInventory = () => {
                       const foodBalance = b.status === "CHECKED_IN" ? 0 : (b.foodBalanceAmount ?? 0);
                       const totalDue = roomBalance + foodBalance;
                       return (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "20px 30px", fontSize: "14px", marginTop: "6px" }}>
-                          <p style={{ margin: 0 }}><strong>🍽 Food Total:</strong> ₹{b.totalFoodAmount ?? 0}</p>
-                          <p style={{ margin: 0 }}><strong>Food Advance:</strong> ₹{b.advanceFoodAmount ?? 0}</p>
-                          <p style={{ margin: 0 }}>
-  <strong>Food Balance:</strong>{" "}
-  <span style={{ color: foodBalance === 0 ? "green" : "red", fontWeight: "bold" }}>
-    ₹{foodBalance}
-  </span>
-</p>
-                          <p style={{ margin: 0 }}>
-  <strong>Total Amount to be Paid:</strong>{" "}
-  <span style={{ color: totalDue === 0 ? "green" : "red", fontWeight: "bold" }}>
-    ₹{totalDue}
-  </span>
-</p>
+                        <div className="booking-list-card__food-ledger">
+                          <p><strong>🍽 Food Total:</strong> ₹{b.totalFoodAmount ?? 0}</p>
+                          <p><strong>Food Advance:</strong> ₹{b.advanceFoodAmount ?? 0}</p>
+                          <p>
+                            <strong>Food Balance:</strong>{" "}
+                            <span className={foodBalance === 0 ? "booking-list-card__amount-ok" : "booking-list-card__amount-due"}>
+                              ₹{foodBalance}
+                            </span>
+                          </p>
+                          <p>
+                            <strong>Total Amount to be Paid:</strong>{" "}
+                            <span className={totalDue === 0 ? "booking-list-card__amount-ok" : "booking-list-card__amount-due"}>
+                              ₹{totalDue}
+                            </span>
+                          </p>
                         </div>
                       );
                     })()}
                   </div>
 
 {/* Actions Engine Panel Context */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+                  <div className="booking-list-card__actions">
                     <button
                       className="checkin-btn"
                       onClick={() => {
@@ -1233,7 +1197,6 @@ const UserInventory = () => {
                             ? `Check-in opens on ${formatDateDMY(b.checkInDate)}`
                             : `Check-in window closed after ${formatDateDMY(b.checkOutDate)}`
                         }
-                        style={!canCheckInToday(b) ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
                       >
                         Check In
                       </button>
@@ -1258,7 +1221,6 @@ const UserInventory = () => {
                             ? `Early checkout is only available before the scheduled checkout date (${formatDateDMY(b.checkOutDate)})`
                             : undefined
                         }
-                        style={!canEarlyCheckoutToday(b) ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
                       >
                         Process Early Checkout
                       </button>
@@ -1465,7 +1427,7 @@ const UserInventory = () => {
                 className="checkin-modal__input"
               />
 
-              <label className="field-label" style={{ marginTop: "10px" }}>Room for the Extended Stay</label>
+              <label className="field-label field-label--spaced">Room for the Extended Stay</label>
               <div className="split-row">
                 <div className="split-row__account">
                   <Select
@@ -1497,7 +1459,7 @@ const UserInventory = () => {
                 <p className="checkin-modal__hint">Checking room availability for these dates…</p>
               )}
               {extendRoomUnavailable ? (
-                <p className="checkin-modal__hint" style={{ color: "red" }}>
+                <p className="checkin-modal__hint checkin-modal__hint--danger">
                   Room {extendRoom.label} is already booked by another guest for these dates -
                   please select a different room above.
                 </p>
@@ -1508,7 +1470,7 @@ const UserInventory = () => {
                 </p>
               )}
 
-              <label className="field-label" style={{ marginTop: "10px" }}>Total Amount</label>
+              <label className="field-label field-label--spaced">Total Amount</label>
               <input
                 type="number"
                 min="0"
@@ -1634,7 +1596,7 @@ const UserInventory = () => {
                 className="checkin-modal__input"
               />
 
-              <label className="field-label" style={{ marginTop: "10px" }}>Credit Account Destination</label>
+              <label className="field-label field-label--spaced">Credit Account Destination</label>
               <Select
                 options={creditDestinations}
                 value={lateCheckoutAccount}
@@ -1646,7 +1608,7 @@ const UserInventory = () => {
                 styles={themedSelectStyles()}
               />
 
-              <label className="field-label" style={{ marginTop: "10px" }}>Reason (optional)</label>
+              <label className="field-label field-label--spaced">Reason (optional)</label>
               <input
                 type="text"
                 value={lateCheckoutReason}
@@ -1692,7 +1654,7 @@ const UserInventory = () => {
                 className="checkin-modal__input"
               />
 
-              <label className="field-label" style={{ marginTop: "10px" }}>Credit Account Destination</label>
+              <label className="field-label field-label--spaced">Credit Account Destination</label>
               <Select
                 options={creditDestinations}
                 value={extraChargeAccount}
@@ -1704,7 +1666,7 @@ const UserInventory = () => {
                 styles={themedSelectStyles()}
               />
 
-              <label className="field-label" style={{ marginTop: "10px" }}>Reason (optional)</label>
+              <label className="field-label field-label--spaced">Reason (optional)</label>
               <input
                 type="text"
                 value={extraChargeReason}
@@ -1728,38 +1690,36 @@ const UserInventory = () => {
 
       {/* Global Early Checkout / Cancellation Modal Overlay Container */}
       {showEarlyCheckoutModal && selectedBooking && (
-        <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
-          <div className="modal" style={{ background: "#fff", padding: "25px", borderRadius: "8px", maxWidth: "450px", width: "100%" }}>
+        <div className="modal-overlay">
+          <div className="modal early-checkout-modal">
             <h3>
               {selectedBooking.status === "CHECKED_IN" ? "Group Checkout Processing" : "Cancel Reservation Group Contract"}
             </h3>
             <p><strong>Guest:</strong> {selectedBooking.customerName}</p>
             <p><strong>Total Account Bill:</strong> ₹{selectedBooking.totalAmount}</p>
 
-            <div style={{ marginTop: "12px" }}>
-              <label style={{ display: "block", marginBottom: "4px" }}>Reason:</label>
+            <div className="modal-field">
+              <label>Reason:</label>
               <textarea
                 value={checkoutReason}
                 onChange={(e) => setCheckoutReason(e.target.value)}
                 placeholder="Why is this status state modification occurring?"
                 rows={3}
-                style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
               />
             </div>
 
-            <div style={{ marginTop: "12px" }}>
-              <label style={{ display: "block", marginBottom: "4px" }}>Refund Amount Distributed (₹):</label>
+            <div className="modal-field">
+              <label>Refund Amount Distributed (₹):</label>
               <input
                 type="number"
                 value={refundAmount}
                 onChange={(e) => setRefundAmount(e.target.value)}
                 placeholder="0.00"
-                style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
               />
             </div>
 
-            <div style={{ marginTop: "12px" }}>
-              <label style={{ display: "block", marginBottom: "4px" }}>Refunded From Account:</label>
+            <div className="modal-field">
+              <label>Refunded From Account:</label>
               <Select
                 options={creditDestinations}
                 value={refundAccount}
@@ -1771,7 +1731,7 @@ const UserInventory = () => {
               />
             </div>
 
-            <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+            <div className="modal-actions">
               <button
                 className="checkin-btn"
                 onClick={handleEarlyCheckoutSubmit}
