@@ -111,36 +111,43 @@
 
 /* 4. HIGH SPECIFICITY TILES: Forces Approved Leave Colors onto Calendar Day Circles */
 .leave-calendar-container .react-calendar__tile.leave-paid {
-  background-color: var(--primary-teal, #2ecc71) !important;
+  background-color: var(--primary-teal, #008080) !important;
   color: #ffffff !important;
   border-radius: 50% !important;
   font-weight: 600;
 }
 
 .leave-calendar-container .react-calendar__tile.leave-unpaid {
-  background-color: var(--primary-teal, #2ecc71) !important;
+  background-color: var(--primary-teal, #008080) !important;
   color: #ffffff !important;
   border-radius: 50% !important;
   font-weight: 600;
 }
 
 .leave-calendar-container .react-calendar__tile.leave-wfh {
-  background-color: var(--primary-purple, #8e44ad) !important;
+  background-color: var(--primary-purple, #800080) !important;
   color: #ffffff !important;
   border-radius: 50% !important;
   font-weight: 600;
 }
 
 .leave-calendar-container .react-calendar__tile.leave-sick {
-  background-color: var(--primary-teal, #2ecc71) !important;
+  background-color: var(--primary-teal, #008080) !important;
   color: #ffffff !important;
   border-radius: 50% !important;
   font-weight: 600;
 }
 
 .leave-calendar-container .react-calendar__tile.leave-casual {
-  background-color: var(--primary-teal, #2ecc71) !important;
+  background-color: var(--primary-teal, #008080) !important;
   color: #ffffff !important;
+  border-radius: 50% !important;
+  font-weight: 600;
+}
+
+.leave-calendar-container .react-calendar__tile.leave-weekly-off {
+  background-color: var(--gray-300, #cccccc) !important;
+  color: #555555 !important;
   border-radius: 50% !important;
   font-weight: 600;
 }
@@ -150,7 +157,8 @@
 .leave-calendar-container .react-calendar__tile.leave-unpaid:hover,
 .leave-calendar-container .react-calendar__tile.leave-wfh:hover,
 .leave-calendar-container .react-calendar__tile.leave-sick:hover,
-.leave-calendar-container .react-calendar__tile.leave-casual:hover {
+.leave-calendar-container .react-calendar__tile.leave-casual:hover,
+.leave-calendar-container .react-calendar__tile.leave-weekly-off:hover {
   filter: brightness(90%) !important;
 }
 
@@ -177,23 +185,27 @@
 
 /* Map legend box backgrounds explicitly to your dashboard colors */
 .leave-calendar-container .legend-box.leave-paid {
-  background-color: var(--primary-teal, #2ecc71) !important;
+  background-color: var(--primary-teal, #008080) !important;
 }
 
 .leave-calendar-container .legend-box.leave-unpaid {
-  background-color: var(--primary-teal, #2ecc71) !important;
+  background-color: var(--primary-teal, #008080) !important;
 }
 
 .leave-calendar-container .legend-box.leave-wfh {
-  background-color: var(--primary-purple, #8e44ad) !important;
+  background-color: var(--primary-purple, #800080) !important;
 }
 
 .leave-calendar-container .legend-box.leave-sick {
-  background-color: var(--primary-teal, #2ecc71) !important;
+  background-color: var(--primary-teal, #008080) !important;
 }
 
 .leave-calendar-container .legend-box.leave-casual {
-  background-color: var(--primary-teal, #2ecc71) !important;
+  background-color: var(--primary-teal, #008080) !important;
+}
+
+.leave-calendar-container .legend-box.leave-weekly-off {
+  background-color: var(--gray-300, #cccccc) !important;
 }
 
 .leave-calendar-container .leave-legend span {
@@ -204,22 +216,24 @@
 
 /* 7. Attendance tile colors (opt-in via showAttendance prop) - distinct hues
    from the leave colors above so the two layers stay visually separable. */
+/* Teal, not green - this app has no green anywhere. Matches "Office" being
+   the primary/default status color elsewhere (room cards, location badges). */
 .leave-calendar-container .react-calendar__tile.attendance-office {
-  background-color: #28a745 !important;
+  background-color: var(--primary-teal, #008080) !important;
   color: #ffffff !important;
   border-radius: 50% !important;
   font-weight: 600;
 }
 
 .leave-calendar-container .react-calendar__tile.attendance-remote {
-  background-color: var(--primary-purple, #8e44ad) !important;
+  background-color: var(--primary-purple, #800080) !important;
   color: #ffffff !important;
   border-radius: 50% !important;
   font-weight: 600;
 }
 
 .leave-calendar-container .react-calendar__tile.attendance-absent {
-  background-color: var(--primary-red, #e74c3c) !important;
+  background-color: var(--primary-red, #c0392b) !important;
   color: #ffffff !important;
   border-radius: 50% !important;
   font-weight: 600;
@@ -233,32 +247,21 @@
   font-weight: 600;
 }
 
-.leave-calendar-container .react-calendar__tile.attendance-holiday {
-  background-color: var(--gray-300, #cccccc) !important;
-  color: #555555 !important;
-  border-radius: 50% !important;
-  font-weight: 600;
-}
-
 .leave-calendar-container .legend-box.attendance-office {
-  background-color: #28a745 !important;
+  background-color: var(--primary-teal, #008080) !important;
 }
 
 .leave-calendar-container .legend-box.attendance-remote {
-  background-color: var(--primary-purple, #8e44ad) !important;
+  background-color: var(--primary-purple, #800080) !important;
 }
 
 .leave-calendar-container .legend-box.attendance-absent {
-  background-color: var(--primary-red, #e74c3c) !important;
+  background-color: var(--primary-red, #c0392b) !important;
 }
 
 .leave-calendar-container .legend-box.attendance-pending {
   background-color: #ffffff !important;
   border: 2px dashed #999999 !important;
-}
-
-.leave-calendar-container .legend-box.attendance-holiday {
-  background-color: var(--gray-300, #cccccc) !important;
 }
 
 .leave-calendar-container .attendance-hint {
@@ -288,13 +291,19 @@
   color: #555555;
 }
 
-.leave-calendar-container .correction-panel select,
 .leave-calendar-container .correction-panel textarea {
   width: 100%;
   box-sizing: border-box;
   padding: 6px 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
+}
+
+/* Status is now a react-select, whose sizing/colors are set via the
+   `styles` prop in the JSX, not CSS - inline styles always win. This just
+   matches its width to the textarea above it. */
+.leave-calendar-container .correction-panel .react-select-container {
+  width: 100%;
 }
 
 .leave-calendar-container .correction-panel-buttons {

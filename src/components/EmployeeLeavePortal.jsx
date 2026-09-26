@@ -226,7 +226,7 @@ const EmployeeLeavePortal = () => {
 
           {/* Dynamic counter block showing total count of days being applied for */}
           {requestedDays > 0 && (
-            <div className="requested-days-box" style={{ margin: "12px 0", padding: "8px", background: "#eef5fc", borderRadius: "4px", fontSize: "14px", color: "#2c3e50" }}>
+            <div className="requested-days-box">
               Total Applied Duration: <strong>{requestedDays} Day(s)</strong>
             </div>
           )}
@@ -238,19 +238,19 @@ const EmployeeLeavePortal = () => {
           />
 
           {requestedDays > paidLeavesLeft && ((form.type || "").trim().toUpperCase() === "PAID" || (form.type || "").trim().toUpperCase() === "PRIVILEGE_LEAVE" || (form.type || "").trim().toUpperCase() === "PRIVILAGE_LEAVE") && (
-            <p className="warning-text" style={{ color: "red", fontWeight: "500" }}>
+            <p className="warning-text">
               ⚠️ Warning: Requested duration exceeds your available paid balance!
             </p>
           )}
 
           {requestedDays > casualLeavesLeft && (form.type || "").trim().toUpperCase() === "CASUAL" && (
-            <p className="warning-text" style={{ color: "red", fontWeight: "500" }}>
+            <p className="warning-text">
               ⚠️ Warning: Requested duration exceeds your available casual leave balance!
             </p>
           )}
 
           {requestedDays > sickLeavesLeft && (form.type || "").trim().toUpperCase() === "SICK" && (
-            <p className="warning-text" style={{ color: "red", fontWeight: "500" }}>
+            <p className="warning-text">
               ⚠️ Warning: Requested duration exceeds your available sick leave balance!
             </p>
           )}
@@ -291,14 +291,14 @@ const EmployeeLeavePortal = () => {
                 <td>{l.startDate}</td>
                 <td>{l.endDate}</td>
                 <td>{l.leaveDays}</td>
-                <td style={{ color: l.status === "APPROVED" ? "green" : l.status === "REJECTED" ? "red" : "orange" }}>
+                <td className={`leave-status-cell leave-status-cell--${l.status?.toLowerCase()}`}>
                   {l.status}
                 </td>
                 <td>{new Date(l.appliedAt).toLocaleDateString()}</td>
               </tr>
             )) : (
               <tr>
-                <td colSpan="6" style={{ textAlign: "center" }}>No leave requests found</td>
+                <td colSpan="6" className="leave-history-empty">No leave requests found</td>
               </tr>
             )}
           </tbody>

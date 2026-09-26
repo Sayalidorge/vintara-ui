@@ -10,13 +10,6 @@
   box-sizing: border-box;
 }
 
-.page-title {
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 20px;
-  color: #333;
-}
-
 /* ------------------------
    Leave Balance Card
    ------------------------ */
@@ -31,7 +24,7 @@
 .leave-balance-card h3 {
   margin-bottom: 15px;
   font-size: 20px;
-  color: #333;
+  color: var(--gray-900);
 }
 
 .leave-balance-card div {
@@ -42,7 +35,7 @@
 .leave-balance-card small {
   display: block;
   margin-top: 10px;
-  color: #666;
+  color: var(--gray-700);
 }
 
 /* ------------------------
@@ -75,14 +68,14 @@
   min-width: 250px;
   padding: 20px;
   border-radius: 8px;
-  background-color: #fafafa;
+  background-color: var(--gray-50);
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 .apply-leave-form h3 {
   margin-bottom: 15px;
   font-size: 20px;
-  color: #333;
+  color: var(--gray-900);
 }
 
 .apply-leave-form label {
@@ -98,7 +91,7 @@
   padding: 8px 10px;
   font-size: 14px;
   border-radius: 4px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--gray-400);
   margin-bottom: 10px;
   box-sizing: border-box;
 }
@@ -109,7 +102,7 @@
 }
 
 .btn-apply-leave {
-  background-color: #009688;
+  background-color: var(--primary-teal);
   color: #fff;
   font-weight: 600;
   padding: 10px 18px;
@@ -120,18 +113,47 @@
 }
 
 .btn-apply-leave:hover:not(:disabled) {
-  background-color: #00796b;
+  background-color: var(--primary-purple);
 }
 
 .btn-apply-leave:disabled {
-  background-color: #ccc;
+  background-color: var(--gray-400);
   cursor: not-allowed;
 }
 
+/* Purple, not red - this app has no red/green/amber anywhere. */
 .warning-text {
-  color: #d32f2f;
+  color: var(--color-danger-text);
   font-weight: 500;
   margin-bottom: 10px;
+}
+
+.requested-days-box {
+  margin: 12px 0;
+  padding: 8px;
+  background: var(--color-success-bg);
+  border-radius: 4px;
+  font-size: 14px;
+  color: var(--color-success-text);
+}
+
+/* Teal/purple/gray, not green/red/orange - this app has no green/red/amber
+   anywhere. Matches the same APPROVED/REJECTED/pending mapping used for
+   booking status badges elsewhere in the app. */
+.leave-status-cell--approved {
+  color: var(--color-success-text);
+}
+
+.leave-status-cell--rejected {
+  color: var(--color-danger-text);
+}
+
+.leave-status-cell--pending {
+  color: var(--color-warning-text);
+}
+
+.leave-history-empty {
+  text-align: center;
 }
 
 /* ------------------------
@@ -162,16 +184,16 @@
 .leave-history-table td {
   text-align: left;
   padding: 14px 12px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--gray-200);
   min-height: 50px;      /* prevents rows from shrinking */
   vertical-align: middle; /* vertically center text */
   box-sizing: border-box;
 }
 
 .leave-history-table th {
-  background-color: #f5f5f5;
+  background-color: var(--gray-100);
   font-weight: 600;
-  color: #333;
+  color: var(--gray-900);
 }
 
 .leave-history-table tr:hover {
@@ -223,10 +245,6 @@
   .apply-leave-form textarea {
     font-size: 13px;
   }
-
-  .page-title {
-    font-size: 24px;
-  }
 }
 
 @media (max-width: 768px) {
@@ -243,10 +261,6 @@
 }
 
 @media (max-width: 480px) {
-  .page-title {
-    font-size: 20px;
-  }
-
   .apply-leave-form label {
     font-size: 13px;
   }

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { checkIn, checkOut, getTodayStatus } from "../services/AttendanceService";
 import EmployeeLeavePortal from "./EmployeeLeavePortal";
 import "../css/theme.css";
+import "../css/components.css";
 import "./MyAttendanceLeave.css";
 import ToastContainer, { useToast } from "./common/Toast";
 
@@ -94,8 +95,11 @@ const MyAttendanceLeave = () => {
   const hasCheckedOut = !!today?.checkOutTime;
 
   return (
-    <div className="page-container my-attendance-leave">
+    <div className="my-attendance-leave">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      <div className="vt-page-header">
+        <h2>My Attendance &amp; Leave</h2>
+      </div>
       <div className="attendance-card">
         <h2>Today's Attendance</h2>
 

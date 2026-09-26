@@ -1,3 +1,12 @@
+/* .page-container (previously on the JSX root alongside this class) turned
+   out to be a no-op - the only .page-container rules elsewhere in the app
+   are compound selectors requiring a second class this page never had, so
+   this page had no page-level padding at all. Give it its own. */
+.my-attendance-leave {
+  padding: 0 20px 20px 20px;
+  box-sizing: border-box;
+}
+
 .my-attendance-leave .attendance-card {
   background: #fff;
   border-radius: 8px;
@@ -26,7 +35,7 @@
 
 .attendance-status-label {
   font-size: 13px;
-  color: #888;
+  color: var(--gray-600);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -48,19 +57,21 @@
   text-transform: uppercase;
 }
 
+/* Matches TeamAttendanceLeave.css's identical badges - teal/purple/gray,
+   not green/amber. */
 .badge-office {
-  background: #e6f7ed;
-  color: #1e7e34;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .badge-remote {
-  background: #fff4e0;
-  color: #b45309;
+  background: rgba(128, 0, 128, 0.08);
+  color: var(--primary-purple);
 }
 
 .badge-unknown {
-  background: #eee;
-  color: #666;
+  background: var(--gray-200);
+  color: var(--gray-700);
 }
 
 .attendance-buttons {
@@ -96,5 +107,5 @@
 .my-attendance-leave small {
   display: block;
   margin-top: 10px;
-  color: #888;
+  color: var(--gray-600);
 }

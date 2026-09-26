@@ -1,7 +1,8 @@
 // src/components/LeaveCalendar.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+import Select from "react-select";
 import { getLeaveRequestsForMonth } from "../services/LeaveService";
 import {
   getAttendanceHistory,
@@ -9,8 +10,16 @@ import {
   submitCorrection,
 } from "../services/AttendanceService";
 import { toLocalDateStr } from "../utils/date";
+import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 import ToastContainer, { useToast } from "./common/Toast";
+import "../css/theme.css";
 import "./LeaveCalendar.css";
+
+const CORRECTION_STATUS_OPTIONS = [
+  { value: "PRESENT", label: "Present (worked that day)" },
+  { value: "WFH", label: "Work From Home" },
+  { value: "WEEKLY_OFF", label: "Weekly Off" },
+];
 
 const LEAVE_TYPE_LABEL = {
   PRIVILAGE_LEAVE: "Privilege Leave",
@@ -19,6 +28,7 @@ const LEAVE_TYPE_LABEL = {
   WFH: "WFH",
   SICK: "Sick Leave",
   CASUAL: "Casual Leave",
+  WEEKLY_OFF: "Weekly Off",
 };
 
 // WFH leave requests share the "remote/wfh" purple with attendance's own
@@ -47,6 +57,16 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
   const [selectedDate, setSelectedDate] = useState(null);
   const [correctionForm, setCorrectionForm] = useState({ status: "PRESENT", reason: "" });
   const [submitting, setSubmitting] = useState(false);
+  const correctionPanelRef = useRef(null);
+
+  // The panel renders below the calendar/summary grid, off-screen on most
+  // viewports when it first appears - without this, clicking a day silently
+  // does nothing visible until the user scrolls down themselves.
+  useEffect(() => {
+    if (selectedDate && correctionPanelRef.current) {
+      correctionPanelRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [selectedDate]);
 
   useEffect(() => {
     // Extract month and year safely inside the effect hook
@@ -166,6 +186,7 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
       if (type === "WFH") return "leave-wfh";
       if (type === "SICK") return "leave-sick";
       if (type === "CASUAL") return "leave-casual";
+      if (type === "WEEKLY_OFF") return "leave-weekly-off";
     }
     return "";
   };
@@ -180,19 +201,12 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
     return myCorrections.find((c) => c.date === dateStr && c.status === "PENDING") || null;
   };
 
-  // Mirrors the backend's WeeklyHoliday util (Sunday, company-wide, same day
-  // for every USER/SUPER_USER) - the absence scheduler never creates an
-  // AttendanceRecord for this day, so without this check it would otherwise
-  // fall through to the "no record found" gap-fill below and get painted red
-  // as if someone forgot to check in.
-  const isWeeklyHoliday = (tileDate) => tileDate.getDay() === 0;
-
   // Attendance is the ground-truth layer, so it takes precedence over the
   // leave-type coloring when both exist for the same day (shouldn't normally
-  // diverge, since ON_LEAVE records are themselves derived from an approved
-  // leave, but attendance winning is the safer default if they ever do).
+  // diverge, since ON_LEAVE/WEEKLY_OFF records are themselves derived from
+  // an approved leave, but attendance winning is the safer default if they
+  // ever do).
   const getAttendanceClassName = (tileDate) => {
-    if (isWeeklyHoliday(tileDate)) return "attendance-holiday";
     if (getPendingCorrectionForDate(tileDate)) return "attendance-pending";
 
     const record = getAttendanceForDate(tileDate);
@@ -207,6 +221,7 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
         case "WFH":
           return "attendance-remote";
         case "ON_LEAVE":
+        case "WEEKLY_OFF":
           return ""; // already colored by the leave-type class above
         case "ABSENT":
           return "attendance-absent";
@@ -237,8 +252,8 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
     today.setHours(0, 0, 0, 0);
     if (clickedDate >= today) return; // backfill is for past dates only - today uses real check-in
 
-    if (isWeeklyHoliday(clickedDate)) {
-      showToast("Sunday is a weekly holiday - no correction needed.", "warning");
+    if (getTileClassName(clickedDate) === "leave-weekly-off") {
+      showToast("This is your approved weekly off - no correction needed.", "warning");
       return;
     }
 
@@ -332,8 +347,8 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
                   <span>Correction Pending</span>
                 </div>
                 <div className="legend-item">
-                  <span className="legend-box attendance-holiday"></span>
-                  <span>Holiday (Sunday)</span>
+                  <span className="legend-box leave-weekly-off"></span>
+                  <span>Weekly Off</span>
                 </div>
               </>
             )}
@@ -374,16 +389,20 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
       </div>
 
       {selectedDate && (
-        <div className="correction-panel">
+        <div className="correction-panel" ref={correctionPanelRef}>
           <h4>Request correction for {toLocalDateStr(selectedDate)}</h4>
           <label>Status</label>
-          <select
-            value={correctionForm.status}
-            onChange={(e) => setCorrectionForm({ ...correctionForm, status: e.target.value })}
-          >
-            <option value="PRESENT">Present (worked that day)</option>
-            <option value="WFH">Work From Home</option>
-          </select>
+          <Select
+            options={CORRECTION_STATUS_OPTIONS}
+            value={CORRECTION_STATUS_OPTIONS.find((o) => o.value === correctionForm.status) || null}
+            onChange={(selected) => setCorrectionForm({ ...correctionForm, status: selected.value })}
+            isSearchable={false}
+            classNamePrefix="react-select"
+            className="react-select-container"
+            menuPortalTarget={menuPortalTarget}
+            menuPosition={menuPosition}
+            styles={themedSelectStyles()}
+          />
           <label>Reason</label>
           <textarea
             value={correctionForm.reason}
