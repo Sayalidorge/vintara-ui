@@ -105,11 +105,12 @@ const AdminReviewsDashboard = () => {
   const { toasts, showToast, dismissToast } = useToast();
   const { confirm, ConfirmDialogElement } = useConfirm();
   const role = getUserRole();
-  // This whole page is only reachable via the "view_reviews" permission,
-  // which only SUPER_ADMIN holds (see PermissionService.java) - matching
-  // that here instead of also allowing ADMIN, which could never actually
-  // reach this component but would be misleading if that ever changed.
-  const canManage = role === "SUPER_ADMIN";
+  // This page is reachable by every role via "view_reviews" (see
+  // PermissionService.java), but only SUPER_ADMIN/ADMIN/SUPER_USER can
+  // actually reply/manage - everyone else gets a read-only view. Matches
+  // the same role split enforced server-side on every write endpoint in
+  // ReviewManagementController.
+  const canManage = role === "SUPER_ADMIN" || role === "ADMIN" || role === "SUPER_USER";
 
   const [activeTab, setActiveTab] = useState("REVIEWS");
 
@@ -241,7 +242,12 @@ const AdminReviewsDashboard = () => {
 
   const openDraft = (review) => {
     setExpandedId(review.id);
-    setDraftText(review.aiDraftText || "");
+    // aiDraftText for a Gemini draft, replyText for anything already
+    // rendered/sent (a dry-run template render, or an already-sent reply
+    // being corrected) - blank otherwise, for a fully manual reply. This is
+    // the one always-available fallback: if Gemini/templates aren't working,
+    // staff can still type and send a reply by hand.
+    setDraftText(review.aiDraftText || review.replyText || "");
   };
 
   const closeDraft = () => {
@@ -275,8 +281,8 @@ const AdminReviewsDashboard = () => {
 
   const handleDiscard = async (review) => {
     const ok = await confirm({
-      title: "Discard this draft?",
-      message: "The AI draft will be discarded without sending. You can generate a fresh one later.",
+      title: "Discard this reply?",
+      message: "This reply will be discarded without sending.",
       confirmLabel: "Discard",
       danger: true,
     });
@@ -503,7 +509,7 @@ const AdminReviewsDashboard = () => {
                     <p>{r.comment || <em>(no comment)</em>}</p>
                   </div>
 
-                  {canManage && r.replyStatus === "PENDING_APPROVAL" && (
+                  {canManage && (
                     <div className="review-card-actions">
                       <button
                         type="button"
@@ -524,12 +530,12 @@ const AdminReviewsDashboard = () => {
 
                   {expandedId === r.id && (
                     <div className="review-draft-panel">
-                      <label>AI-drafted reply - edit before sending:</label>
+                      <label>Reply - edit before sending:</label>
                       <textarea
                         rows={4}
                         value={draftText}
                         onChange={(e) => setDraftText(e.target.value)}
-                        placeholder="Draft reply..."
+                        placeholder="Type a reply..."
                       />
                       <div className="review-draft-actions">
                         <button
@@ -540,22 +546,26 @@ const AdminReviewsDashboard = () => {
                         >
                           Send
                         </button>
-                        <button
-                          type="button"
-                          className="vt-btn vt-btn-purple"
-                          disabled={busyIds.has(r.id)}
-                          onClick={() => handleRegenerate(r)}
-                        >
-                          Regenerate
-                        </button>
-                        <button
-                          type="button"
-                          className="vt-btn vt-btn-danger"
-                          disabled={busyIds.has(r.id)}
-                          onClick={() => handleDiscard(r)}
-                        >
-                          Discard
-                        </button>
+                        {r.starRating <= 3 && (
+                          <button
+                            type="button"
+                            className="vt-btn vt-btn-purple"
+                            disabled={busyIds.has(r.id)}
+                            onClick={() => handleRegenerate(r)}
+                          >
+                            Regenerate (AI)
+                          </button>
+                        )}
+                        {r.replyStatus !== "SENT" && r.replyStatus !== "AUTO_SENT" && (
+                          <button
+                            type="button"
+                            className="vt-btn vt-btn-danger"
+                            disabled={busyIds.has(r.id)}
+                            onClick={() => handleDiscard(r)}
+                          >
+                            Discard
+                          </button>
+                        )}
                         <button type="button" className="vt-btn vt-btn-secondary" onClick={closeDraft}>
                           Cancel
                         </button>
