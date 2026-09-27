@@ -69,6 +69,17 @@ const firstOfLastMonth = () => {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth() - 1, 1);
 };
+// Day 0 of next month = last day of this month, regardless of what today's
+// date actually is - "This Month" means the whole calendar month, not
+// "so far this month".
+const lastOfCurrentMonth = () => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+};
+const lastOfLastMonth = () => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 0);
+};
 
 const AdminBookingsDashboard = () => {
   const role = getUserRole();
@@ -104,6 +115,7 @@ const AdminBookingsDashboard = () => {
   const [selectedCreatedBy, setSelectedCreatedBy] = useState(null);
   const [selectedLeadOwner, setSelectedLeadOwner] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState(null);
+  const [quickRange, setQuickRange] = useState(null);
 
   useEffect(() => {
     const fetchResorts = async () => {
@@ -163,6 +175,24 @@ const AdminBookingsDashboard = () => {
     setSelectedCreatedBy(null);
     setSelectedLeadOwner(null);
     setSelectedStatus(null);
+    setQuickRange(null);
+  };
+
+  const quickRangeOptions = [
+    { value: "this_month", label: "This Month" },
+    { value: "previous_month", label: "Previous Month" },
+  ];
+
+  const handleQuickRangeChange = (option) => {
+    setQuickRange(option);
+    if (!option) return;
+    if (option.value === "this_month") {
+      setFromDate(firstOfCurrentMonth());
+      setToDate(lastOfCurrentMonth());
+    } else if (option.value === "previous_month") {
+      setFromDate(firstOfLastMonth());
+      setToDate(lastOfLastMonth());
+    }
   };
 
   const roomsFor = (b) =>
@@ -544,6 +574,26 @@ const AdminBookingsDashboard = () => {
           />
         </div>
         <div className="filter-item">
+          <label>Quick Range</label>
+          <Select
+            options={quickRangeOptions}
+            value={quickRange}
+            onChange={handleQuickRangeChange}
+            placeholder="Custom"
+            isClearable
+            classNamePrefix="react-select"
+            className="react-select-container"
+            menuPortalTarget={menuPortalTarget}
+            menuPosition={menuPosition}
+            styles={themedSelectStyles()}
+          />
+        </div>
+        {/* Forces From Date/To Date onto their own line - .dashboard-filters
+            is a wrapping flex row, so a full-width zero-height break element
+            pushes everything after it to the next line regardless of
+            viewport width. */}
+        <div className="filter-row-break" />
+        <div className="filter-item">
           <label>From Date</label>
           <DatePicker
             selected={fromDate}
@@ -593,7 +643,7 @@ const AdminBookingsDashboard = () => {
               title="Money actually collected across every account, net of refunds - a booking's still-unpaid balance doesn't count. Matches Monthly Settlement's Resort Turnover."
             >
               <div className="account-name">
-                Turnover <span className="rank">CASH BASIS</span>
+                Turnover <span className="rank">Net Turnover</span>
               </div>
               <div className="collected-label">This filter</div>
               <div className="collected">{money(realTurnover)}</div>
@@ -604,12 +654,12 @@ const AdminBookingsDashboard = () => {
               </div>
               <div className="collected-label">Collected</div>
               <div className="collected">{money(allAccountsTotal.collected)}</div>
-              {allAccountsTotal.refunded > 0 && (
-                <div className="sub-line">
+              <div className="sub-line">
+                {allAccountsTotal.refunded > 0 && (
                   <span className="refunded">Refunded {money(allAccountsTotal.refunded)}</span>
-                  <span className="net">Net {money(allAccountsTotal.collected - allAccountsTotal.refunded)}</span>
-                </div>
-              )}
+                )}
+                <span className="net">Net {money(allAccountsTotal.collected - allAccountsTotal.refunded)}</span>
+              </div>
             </div>
             {accountTotals.map((a, i) => (
               <div className="account-card" key={a.accountName}>
@@ -618,12 +668,12 @@ const AdminBookingsDashboard = () => {
                 </div>
                 <div className="collected-label">Collected</div>
                 <div className="collected">{money(a.collected)}</div>
-                {a.refunded > 0 && (
-                  <div className="sub-line">
+                <div className="sub-line">
+                  {a.refunded > 0 && (
                     <span className="refunded">Refunded {money(a.refunded)}</span>
-                    <span className="net">Net {money(a.net)}</span>
-                  </div>
-                )}
+                  )}
+                  <span className="net">Net {money(a.net)}</span>
+                </div>
               </div>
             ))}
           </div>

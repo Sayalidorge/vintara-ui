@@ -34,6 +34,13 @@
   flex: 0 0 auto;
 }
 
+/* Zero-height, full-width - forces everything after it in the wrapping flex
+   row onto a new line, regardless of viewport width. */
+.admin-bookings-dashboard .dashboard-filters .filter-row-break {
+  flex-basis: 100%;
+  height: 0;
+}
+
 .admin-bookings-dashboard .dashboard-filters .filter-item:first-child {
   min-width: 240px; /* Resort slightly wider */
 }
@@ -302,9 +309,9 @@
 }
 
 .admin-bookings-dashboard .account-card.all-accounts {
-  border-top-color: var(--primary-teal);
-  background: #f3fbfb;
-  border-color: #d3ecec;
+  border-top-color: var(--primary-purple);
+  background: rgba(128, 0, 128, 0.05);
+  border-color: rgba(128, 0, 128, 0.22);
 }
 
 .admin-bookings-dashboard .account-card .account-name {
@@ -327,9 +334,7 @@
   letter-spacing: 0.03em;
 }
 
-.admin-bookings-dashboard .account-card.all-accounts .rank {
-  background: var(--primary-teal);
-}
+/* All Accounts now uses the base .rank purple - no override needed. */
 
 .admin-bookings-dashboard .account-card .collected-label {
   font-size: 11px;
@@ -363,16 +368,21 @@
 }
 
 .admin-bookings-dashboard .account-card .sub-line .net {
-  color: var(--text-dark);
-  font-weight: 600;
+  color: var(--primary-teal);
+  font-weight: 700;
 }
 
-/* Real Turnover ticker card - default .account-card border-top is already
-   purple (the "calculated" accent used throughout this page), so it just
-   needs a slightly stronger tint to stand out as the lead card in the row. */
+/* Real Turnover ticker card - teal, matching the "Net Turnover" badge and the
+   Net figure's color (teal is this app's brand color for "positive/success" -
+   see theme.css; this app deliberately has no green anywhere). */
 .admin-bookings-dashboard .account-card.real-turnover-card {
-  background: rgba(128, 0, 128, 0.05);
-  border-color: rgba(128, 0, 128, 0.22);
+  border-top-color: var(--primary-teal);
+  background: #f3fbfb;
+  border-color: #d3ecec;
+}
+
+.admin-bookings-dashboard .account-card.real-turnover-card .rank {
+  background: var(--primary-teal);
 }
 
 @media (max-width: 900px) {
