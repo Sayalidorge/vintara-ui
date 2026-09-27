@@ -35,15 +35,25 @@
   font-weight: var(--font-weight-semibold);
 }
 
-.team-attendance-leave .attendance-roster-header input[type="date"] {
-  padding: 6px 10px;
-  border: 1px solid var(--gray-400);
+.team-attendance-leave .attendance-roster-header .date-picker {
+  width: 150px;
+  height: 40px;
+  padding: 0 10px;
   border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
+  box-sizing: border-box;
 }
 
-.team-attendance-leave .attendance-roster-header input[type="date"]:focus {
+.team-attendance-leave .attendance-roster-header .date-picker:focus {
   outline: none;
   border-color: var(--primary-purple);
+}
+
+/* react-datepicker portals its calendar to <body> (portalId on the
+   DatePicker), so this can't be scoped under .team-attendance-leave - must
+   target the library's own class name. */
+.react-datepicker-popper {
+  z-index: 1000;
 }
 
 .team-attendance-leave .filter-select {

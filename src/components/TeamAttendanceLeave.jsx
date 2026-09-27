@@ -1,6 +1,8 @@
 // src/components/TeamAttendanceLeave.jsx
 import React, { useEffect, useState } from "react";
 import Select from "react-select";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import {
   getTeamAttendance,
   getCorrections,
@@ -55,7 +57,7 @@ const TeamAttendanceLeave = () => {
     return true;
   };
 
-  const [date, setDate] = useState(toLocalDateStr(new Date()));
+  const [date, setDate] = useState(new Date());
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pendingCorrections, setPendingCorrections] = useState([]);
@@ -94,7 +96,7 @@ const TeamAttendanceLeave = () => {
   };
 
   useEffect(() => {
-    loadTeamAttendance(date);
+    loadTeamAttendance(toLocalDateStr(date));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
@@ -102,8 +104,10 @@ const TeamAttendanceLeave = () => {
     loadPendingCorrections();
   }, []);
 
+  // Fetched for both roles now, not just SUPER_ADMIN - the Team Attendance
+  // table below needs the full roster to show everyone, not just whoever
+  // already has a record for the selected date.
   useEffect(() => {
-    if (currentUser.role !== "SUPER_ADMIN") return;
     const loadAttendanceUsers = async () => {
       try {
         const data = await getAttendanceEligibleUsers();
@@ -154,6 +158,17 @@ const TeamAttendanceLeave = () => {
 
   const calendarUserOptions = attendanceUsers.map((u) => ({ value: u.userId, label: `${u.name} (${u.userId})` }));
 
+  // Full roster (attendanceUsers) left-joined with today's records - a user
+  // with no AttendanceRecord yet (hasn't checked in, and the nightly sweep
+  // hasn't run) still gets a row instead of silently disappearing from the
+  // table, same idea as LeaveCalendar's "no record for this date" gap-fill.
+  const attendanceByUserId = new Map(records.map((r) => [r.userId, r]));
+  const rosterRows = attendanceUsers.map((u) => ({
+    userId: u.userId,
+    userName: u.name || u.userId,
+    record: attendanceByUserId.get(u.userId) || null,
+  }));
+
   return (
     <div className="team-attendance-leave">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
@@ -184,10 +199,12 @@ const TeamAttendanceLeave = () => {
           <div className="attendance-roster-card">
             <div className="attendance-roster-header">
               <h2 className="section-title">Team Attendance</h2>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
+              <DatePicker
+                selected={date}
+                onChange={(d) => d && setDate(d)}
+                dateFormat="dd/MM/yyyy"
+                className="date-picker"
+                portalId="team-attendance-datepicker-portal"
               />
             </div>
 
@@ -203,31 +220,38 @@ const TeamAttendanceLeave = () => {
                 </tr>
               </thead>
               <tbody>
-                {records.length > 0 ? (
-                  records.map((r) => (
-                    <tr key={r.id}>
-                      <td>{r.userName || r.userId}</td>
-                      <td>
-                        {formatTime(r.checkInTime)} <LocationBadge type={r.checkInLocationType} />
-                      </td>
-                      <td>
-                        {formatTime(r.checkOutTime)} <LocationBadge type={r.checkOutLocationType} />
-                      </td>
-                      <td>{STATUS_LABEL[r.status] || r.status || "--"}</td>
+                {rosterRows.length > 0 ? (
+                  rosterRows.map((row) => (
+                    <tr key={row.userId}>
+                      <td>{row.userName}</td>
+                      {row.record ? (
+                        <>
+                          <td>
+                            {formatTime(row.record.checkInTime)} <LocationBadge type={row.record.checkInLocationType} />
+                          </td>
+                          <td>
+                            {formatTime(row.record.checkOutTime)} <LocationBadge type={row.record.checkOutLocationType} />
+                          </td>
+                          <td>{STATUS_LABEL[row.record.status] || row.record.status || "--"}</td>
+                        </>
+                      ) : (
+                        <>
+                          <td>--</td>
+                          <td>--</td>
+                          <td><span className="vt-badge vt-badge-warning">Not Checked In</span></td>
+                        </>
+                      )}
                     </tr>
                   ))
                 ) : (
                   <tr>
                     <td colSpan="4" style={{ textAlign: "center" }}>
-                      No attendance records for this date yet
+                      No employees found
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
-            <small>
-              Staff who haven't checked in yet (or are on leave, before the nightly sweep runs) won't appear here until they do.
-            </small>
           </div>
 
           {currentUser.role === "SUPER_ADMIN" && (
