@@ -190,6 +190,21 @@
   top: 34px;
 }
 
+/* Collapse/expand toggle, reused for both the "Booking Details" group header
+   and any column.subgroup's header cell (e.g. GST) - same borderless-
+   triangle look as UserDashboard's .row-expand-btn, just white instead of
+   teal since it sits on a colored header background here rather than a
+   white cell (teal for the booking-details header, purple for a payment-col
+   subgroup like GST). */
+.admin-bookings-dashboard .column-group-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #fff;
+  padding: 0;
+}
+
 /* Payment columns (header, body, footer) get a distinct purple tint running
    the full height of the table, so the whole payment block reads as one
    contiguous region next to the booking-detail columns - not just ordering. */

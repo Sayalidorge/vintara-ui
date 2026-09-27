@@ -40,6 +40,17 @@ const formatSplits = (splits) =>
     ? splits.map((s) => `${s.accountName}: ₹${s.amount}`).join(", ")
     : "-";
 
+// Mirrors BookingStatus.java - no drop-down endpoint exists for this yet,
+// same as every other place in the frontend that renders/matches status.
+const statusOptions = [
+  { value: "BOOKED", label: "Booked" },
+  { value: "CHECKED_IN", label: "Checked In" },
+  { value: "CHECKED_OUT", label: "Checked Out" },
+  { value: "CANCELLED", label: "Cancelled" },
+  { value: "EARLY_CHECK_OUT", label: "Early Check-Out" },
+  { value: "NO_SHOW", label: "No Show" },
+];
+
 const statusBadgeClass = (status) => {
   if (status === "CHECKED_IN") return "vt-badge-success";
   if (status === "CANCELLED" || status === "EARLY_CHECK_OUT") return "vt-badge-danger";
@@ -64,6 +75,26 @@ const AdminBookingsDashboard = () => {
   const contactVisible = role !== "ADMIN";
   const dateRestricted = role !== "SUPER_ADMIN";
 
+  // Collapses every "booking" group column except the two frozen ones
+  // (ID, Customer - see the nth-child(1)/(2) CSS) - the table has grown too
+  // wide to scan at a glance, and most of the time only the payment columns
+  // (or just who/when) are what someone's actually looking for.
+  const [bookingDetailsCollapsed, setBookingDetailsCollapsed] = useState(false);
+  // Same idea, generalized to any named column.subgroup within a column -
+  // GST today (gstAmount/gstPercentage/gstOnAdvance/gstOnBalance), more can
+  // be added later just by tagging columns with the same subgroup key. A Set
+  // of currently-collapsed subgroup keys, toggled from that subgroup's
+  // subgroupHeader column (see the thead row below).
+  const [collapsedSubgroups, setCollapsedSubgroups] = useState(new Set());
+  const toggleSubgroup = (subgroup) => {
+    setCollapsedSubgroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(subgroup)) next.delete(subgroup);
+      else next.add(subgroup);
+      return next;
+    });
+  };
+
   const [resorts, setResorts] = useState([]);
   const [selectedResort, setSelectedResort] = useState(null);
   const [bookings, setBookings] = useState([]);
@@ -72,6 +103,7 @@ const AdminBookingsDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCreatedBy, setSelectedCreatedBy] = useState(null);
   const [selectedLeadOwner, setSelectedLeadOwner] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState(null);
 
   useEffect(() => {
     const fetchResorts = async () => {
@@ -130,6 +162,7 @@ const AdminBookingsDashboard = () => {
     setSearchTerm("");
     setSelectedCreatedBy(null);
     setSelectedLeadOwner(null);
+    setSelectedStatus(null);
   };
 
   const roomsFor = (b) =>
@@ -157,6 +190,9 @@ const AdminBookingsDashboard = () => {
     { key: "kids", label: "Kids", group: "booking", render: (b) => b.kids ?? 0 },
     { key: "source", label: "Source", group: "booking", render: (b) => sourceLabel(b.source) },
     { key: "rooms", label: "Rooms", group: "booking", render: (b) => roomsFor(b) },
+    { key: "createdByUser", label: "Created By", group: "booking", render: (b) => b.createdByUser || "-" },
+    { key: "leadOwnerName", label: "Lead Owner", group: "booking", render: (b) => b.leadOwnerName || "-" },
+    { key: "remarks", label: "Remarks", group: "booking", render: (b) => b.remarks || "-" },
     {
       key: "status",
       label: "Status",
@@ -167,9 +203,6 @@ const AdminBookingsDashboard = () => {
         </span>
       ),
     },
-    { key: "createdByUser", label: "Created By", group: "booking", render: (b) => b.createdByUser || "-" },
-    { key: "leadOwnerName", label: "Lead Owner", group: "booking", render: (b) => b.leadOwnerName || "-" },
-    { key: "remarks", label: "Remarks", group: "booking", render: (b) => b.remarks || "-" },
 
     // --- Payment details (kept contiguous - see thead/tfoot below).
     // Total/Advance/Balance/Balance Split/GST group pulled to the front on
@@ -178,10 +211,13 @@ const AdminBookingsDashboard = () => {
     { key: "advanceAmount", label: "Advance", group: "payment", summable: true, render: (b) => b.advanceAmount },
     { key: "balanceAmount", label: "Balance", group: "payment", summable: true, render: (b) => b.balanceAmount },
     { key: "balanceSplits", label: "Balance Split", group: "payment", summable: true, render: (b) => formatSplits(b.balanceSplits) },
-    { key: "gstPercentage", label: "GST %", group: "payment", render: (b) => b.gstPercentage },
-    { key: "gstAmount", label: "GST Amount", group: "payment", summable: true, render: (b) => b.gstAmount },
-    { key: "gstOnAdvance", label: "GST On Advance", group: "payment", summable: true, render: (b) => b.gstOnAdvance ?? "-" },
-    { key: "gstOnBalance", label: "GST On Balance", group: "payment", summable: true, render: (b) => b.gstOnBalance ?? "-" },
+    // GST columns as one collapsible subgroup - gstAmount is the
+    // subgroupHeader (carries the toggle, always visible); the other three
+    // hide together when it's collapsed. See visibleColumns' filter below.
+    { key: "gstAmount", label: "GST Amount", group: "payment", summable: true, subgroup: "gst", subgroupHeader: true, render: (b) => b.gstAmount },
+    { key: "gstPercentage", label: "GST %", group: "payment", subgroup: "gst", render: (b) => b.gstPercentage },
+    { key: "gstOnAdvance", label: "GST On Advance", group: "payment", summable: true, subgroup: "gst", render: (b) => b.gstOnAdvance ?? "-" },
+    { key: "gstOnBalance", label: "GST On Balance", group: "payment", summable: true, subgroup: "gst", render: (b) => b.gstOnBalance ?? "-" },
     { key: "advanceCreditedToAccountName", label: "Advance Account", group: "payment", render: (b) => b.advanceCreditedToAccountName || "-" },
     { key: "advanceReceivedAt", label: "Advance Received", group: "payment", render: (b) => formatDateTime(b.advanceReceivedAt) },
     { key: "pendingBalanceAmount", label: "Pending Balance", group: "payment", summable: true, render: (b) => b.pendingBalanceAmount },
@@ -207,7 +243,17 @@ const AdminBookingsDashboard = () => {
     { key: "refundCreditedToAccountName", label: "Refund Account", group: "payment", render: (b) => b.refundCreditedToAccountName || "-" },
   ];
 
-  const visibleColumns = columns.filter((c) => !c.contactOnly || contactVisible);
+  const visibleColumns = columns.filter((c) => {
+    if (c.contactOnly && !contactVisible) return false;
+    // Collapsed: hide every "booking" column except the two frozen ones -
+    // payment columns are never affected by this toggle.
+    if (bookingDetailsCollapsed && c.group === "booking" && c.key !== "id" && c.key !== "customerName") return false;
+    // A collapsed subgroup hides every column tagged with that subgroup
+    // except its subgroupHeader, which always stays visible - it's where
+    // the toggle lives.
+    if (c.subgroup && !c.subgroupHeader && collapsedSubgroups.has(c.subgroup)) return false;
+    return true;
+  });
   const bookingColumns = visibleColumns.filter((c) => c.group === "booking");
   const paymentColumns = visibleColumns.filter((c) => c.group === "payment");
 
@@ -244,6 +290,7 @@ const AdminBookingsDashboard = () => {
   const filteredBookings = bookings.filter((b) => {
     if (selectedCreatedBy && b.createdByUserId !== selectedCreatedBy.value) return false;
     if (selectedLeadOwner && b.leadOwnerUserId !== selectedLeadOwner.value) return false;
+    if (selectedStatus && b.status !== selectedStatus.value) return false;
     const term = searchTerm.trim().toLowerCase();
     if (!term) return true;
     return (
@@ -471,6 +518,21 @@ const AdminBookingsDashboard = () => {
           />
         </div>
         <div className="filter-item">
+          <label>Status</label>
+          <Select
+            options={statusOptions}
+            value={selectedStatus}
+            onChange={setSelectedStatus}
+            placeholder="All statuses"
+            isClearable
+            classNamePrefix="react-select"
+            className="react-select-container"
+            menuPortalTarget={menuPortalTarget}
+            menuPosition={menuPosition}
+            styles={themedSelectStyles()}
+          />
+        </div>
+        <div className="filter-item">
           <label>Search</label>
           <input
             type="text"
@@ -573,12 +635,38 @@ const AdminBookingsDashboard = () => {
         <table className="bookings-table">
           <thead>
             <tr>
-              <th colSpan={bookingColumns.length}>Booking Details</th>
+              <th colSpan={bookingColumns.length}>
+                <button
+                  type="button"
+                  className="column-group-toggle"
+                  onClick={() => setBookingDetailsCollapsed((prev) => !prev)}
+                  aria-label={bookingDetailsCollapsed ? "Expand booking details columns" : "Collapse booking details columns"}
+                >
+                  {bookingDetailsCollapsed ? "▸" : "▾"}
+                </button>
+                {" "}Booking Details
+              </th>
               <th colSpan={paymentColumns.length} className="payment-col">Payment Details</th>
             </tr>
             <tr>
               {visibleColumns.map((c) => (
                 <th key={c.key} className={c.group === "payment" ? "payment-col" : undefined}>
+                  {c.subgroupHeader && (
+                    <>
+                      <button
+                        type="button"
+                        className="column-group-toggle"
+                        onClick={() => toggleSubgroup(c.subgroup)}
+                        aria-label={
+                          collapsedSubgroups.has(c.subgroup)
+                            ? `Expand ${c.label} columns`
+                            : `Collapse ${c.label} columns`
+                        }
+                      >
+                        {collapsedSubgroups.has(c.subgroup) ? "▸" : "▾"}
+                      </button>{" "}
+                    </>
+                  )}
                   {c.label}
                 </th>
               ))}
