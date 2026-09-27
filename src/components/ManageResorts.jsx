@@ -64,6 +64,10 @@ const ManageResorts = () => {
   const [location, setLocation] = useState("");
   const [googleMapLink, setGoogleMapLink] = useState("");
   const [propertyContact, setPropertyContact] = useState("");
+  // Form-level GBP Location ID (SUPER_ADMIN only, optional) - separate from
+  // editingGbpId/gbpLocationDraft below, which back the table's own inline
+  // quick-edit column; both write through the same setResortGbpLocation call.
+  const [gbpLocationId, setGbpLocationId] = useState("");
   const [roomCategories, setRoomCategories] = useState([]);
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -362,10 +366,24 @@ const getCommissionModelLabel = (value) =>
       showToast(err.message || "Resort saved, but failed to update its payment accounts.", "warning");
     }
 
+    // SUPER_ADMIN only - the field isn't even rendered for anyone else, so
+    // gbpLocationId always sits at "" for them; skipping the call entirely
+    // (rather than submitting that blank) avoids silently wiping an existing
+    // mapping when a SUPER_USER saves a resort for an unrelated reason.
+    if (isSuperAdmin) {
+      try {
+        await setResortGbpLocation(savedResort.id, gbpLocationId.trim());
+      } catch (err) {
+        console.error("Failed to update GBP location", err);
+        showToast(err.message || "Resort saved, but failed to update its GBP location.", "warning");
+      }
+    }
+
     setName("");
     setLocation("");
     setGoogleMapLink("");
     setPropertyContact("");
+    setGbpLocationId("");
     setCommissionModel("");
     setCommissionPercentage("");
     setOtherOtaCommissionPercentage("");
@@ -391,6 +409,7 @@ const getCommissionModelLabel = (value) =>
     setLocation(resort.location || "");
     setGoogleMapLink(resort.googleMapLink || "");
     setPropertyContact(resort.propertyContact || "");
+    setGbpLocationId(resort.gbpLocationId || "");
     setCommissionModel(resort.commissionModel || "");
     setCommissionPercentage(resort.commissionPercentage || "");
     setOtherOtaCommissionPercentage(resort.otherOtaCommissionPercentage ?? "");
@@ -488,6 +507,7 @@ const getCommissionModelLabel = (value) =>
     setLocation("");
     setGoogleMapLink("");
     setPropertyContact("");
+    setGbpLocationId("");
     setCommissionModel("");
     setCommissionPercentage("");
     setOtherOtaCommissionPercentage("");
@@ -563,13 +583,24 @@ const getCommissionModelLabel = (value) =>
               />
             </div>
             <div className="form-field">
-              <label>Google Map Link</label>
+              <label>Contact Number</label>
               <input
                 type="text"
-                placeholder="Paste maps link location URL"
-                value={googleMapLink}
-                onChange={(e) => setGoogleMapLink(e.target.value)}
+                placeholder="10 digit phone number"
+                value={propertyContact}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "");
+                  if (val.length <= 10) {
+                    setPropertyContact(val);
+                  }
+                  if (val.length > 0 && val.length < 10) {
+                    setContactError("Contact number must be 10 digits");
+                  } else {
+                    setContactError("");
+                  }
+                }}
               />
+              {contactError && <span className="field-error">{contactError}</span>}
             </div>
           </div>
 
@@ -633,26 +664,32 @@ const getCommissionModelLabel = (value) =>
           {/* ROW 3 */}
           <div className="form-row form-row--2col">
             <div className="form-field">
-              <label>Contact Number</label>
+              <label>Google Map Link</label>
               <input
                 type="text"
-                placeholder="10 digit phone number"
-                value={propertyContact}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, "");
-                  if (val.length <= 10) {
-                    setPropertyContact(val);
-                  }
-                  if (val.length > 0 && val.length < 10) {
-                    setContactError("Contact number must be 10 digits");
-                  } else {
-                    setContactError("");
-                  }
-                }}
+                placeholder="Paste maps link location URL"
+                value={googleMapLink}
+                onChange={(e) => setGoogleMapLink(e.target.value)}
               />
-              {contactError && <span className="field-error">{contactError}</span>}
             </div>
 
+            <div className="form-field">
+              <label>GBP Location ID</label>
+              {isSuperAdmin ? (
+                <input
+                  type="text"
+                  placeholder="locations/1234567890123456789 (optional)"
+                  value={gbpLocationId}
+                  onChange={(e) => setGbpLocationId(e.target.value)}
+                />
+              ) : (
+                <p className="field-hint">Only a SUPER_ADMIN can set this.</p>
+              )}
+            </div>
+          </div>
+
+          {/* ROW 4 */}
+          <div className="form-row form-row--2col">
             <div className="form-field">
               <label>Linked Payment Accounts</label>
               {paymentAccounts.length === 0 ? (
@@ -670,9 +707,7 @@ const getCommissionModelLabel = (value) =>
                 />
               )}
             </div>
-          </div>
 
-          <div className="form-row">
             <div className="form-field">
               <label>Advance Collection Account(s)</label>
               <Select
@@ -685,10 +720,6 @@ const getCommissionModelLabel = (value) =>
                 menuPosition={menuPosition}
                 styles={multiSelectStyles}
               />
-              <p className="field-hint">
-                Leave blank to keep collecting this resort's advance into the VINTARA account. Only accounts assigned to this resort (above) can be picked.
-                Selecting more than one lets staff choose which account at booking creation; selecting exactly one keeps it fully automatic, same as leaving it blank.
-              </p>
             </div>
           </div>
 
