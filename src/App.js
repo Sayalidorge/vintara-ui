@@ -29,7 +29,6 @@ import AuditLog from "./components/AuditLog";
 import GstInvoicePage from "./components/GstInvoicePage";
 import CompanySettings from "./components/CompanySettings";
 import MySalary from "./components/MySalary";
-import AdminSalaryManagement from "./components/AdminSalaryManagement";
 import GuestCheckInPage from "./components/guest-checkin/GuestCheckInPage";
 
 function App() {
@@ -78,7 +77,6 @@ function App() {
     <Route path="monthly-settlement" element={<ProtectedRoute requiredPermission="view_monthly_settlement"><MonthlySettlement /></ProtectedRoute>} />
     <Route path="audit-log" element={<ProtectedRoute requiredPermission="view_audit_log"><AuditLog /></ProtectedRoute>} />
     <Route path="settings" element={<ProtectedRoute requiredPermission="manage_company_settings"><CompanySettings /></ProtectedRoute>} />
-    <Route path="salary" element={<ProtectedRoute requiredPermission="manage_salary"><AdminSalaryManagement /></ProtectedRoute>} />
   </Route>
 
   {/* User routes */}

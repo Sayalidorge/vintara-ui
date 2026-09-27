@@ -17,7 +17,6 @@ import {
   FaCog,
   FaBook,
   FaHistory,
-  FaMoneyCheckAlt,
   FaCoins,
   FaChartLine,
   FaStar,
@@ -46,8 +45,12 @@ const MENU_CONFIG = [
   { label: "Resorts", path: "/admin/resorts", icon: FaHotel, requiredPermission: "manage_resorts" },
   { label: "Users", path: "/admin/users", icon: FaUsers, requiredPermission: "manage_users" },
   { label: "Enquiries", path: "/admin/enquiries", icon: FaEnvelope, requiredPermission: "view_enquiries" },
-  { label: "Team Attendance & Leave", path: "/admin/leaves", icon: FaCalendarCheck, requiredPermission: "manage_leaves" },
-  { label: "Salary", path: "/admin/salary", icon: FaMoneyCheckAlt, requiredPermission: "manage_salary" },
+  // Covers Attendance + Leave (gated on manage_leaves) + Salary (the Salary
+  // tab inside additionally gates itself on manage_salary via hasPermission -
+  // see TeamAttendanceLeave.jsx). Only SUPER_ADMIN has both permissions today,
+  // so this single menu gate doesn't over-expose Salary to SUPER_USER, who
+  // has manage_leaves but not manage_salary.
+  { label: "Workforce", path: "/admin/leaves", icon: FaCalendarCheck, requiredPermission: "manage_leaves" },
   { label: "Revenue", path: "/admin/revenue", icon: FaDollarSign, requiredPermission: "view_revenue" },
   { label: "Expenses", path: "/admin/expenses", icon: FaReceipt, requiredPermission: "view_expenses" },
   {

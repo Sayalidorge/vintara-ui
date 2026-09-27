@@ -173,9 +173,7 @@ const AdminSalaryManagement = () => {
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       {ConfirmDialogElement}
 
-      <div className="vt-page-header">
-        <h2>Salary Management</h2>
-      </div>
+      <h2 className="section-title">Salary Management</h2>
 
       <div className="salary-admin-card">
         <h2>Set / Update Salary</h2>

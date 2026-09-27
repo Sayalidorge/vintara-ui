@@ -11,8 +11,10 @@ import {
 } from "../services/AttendanceService";
 import { getAttendanceEligibleUsers } from "../services/LeaveService";
 import AdminLeaveDashboard from "./AdminLeaveDashboard";
+import AdminSalaryManagement from "./AdminSalaryManagement";
 import LeaveCalendar from "./LeaveCalendar";
 import { toLocalDateStr } from "../utils/date";
+import { hasPermission } from "../utils/auth";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 import ToastContainer, { useToast } from "./common/Toast";
 import "../css/theme.css";
@@ -174,7 +176,7 @@ const TeamAttendanceLeave = () => {
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       <div className="vt-page-header">
-        <h2>Team Attendance &amp; Leave</h2>
+        <h2>Workforce</h2>
       </div>
 
       <div className="vt-tabs">
@@ -192,6 +194,18 @@ const TeamAttendanceLeave = () => {
         >
           Leave
         </button>
+        {/* manage_salary is narrower than this page's own manage_leaves gate
+            (only SUPER_ADMIN has both today) - hidden entirely for anyone
+            without it, e.g. SUPER_USER, rather than shown and blocked. */}
+        {hasPermission("manage_salary") && (
+          <button
+            type="button"
+            className={`vt-tab ${activeTab === "salary" ? "active" : ""}`}
+            onClick={() => setActiveTab("salary")}
+          >
+            Salary
+          </button>
+        )}
       </div>
 
       {activeTab === "attendance" && (
@@ -333,6 +347,8 @@ const TeamAttendanceLeave = () => {
       )}
 
       {activeTab === "leave" && <AdminLeaveDashboard />}
+
+      {activeTab === "salary" && hasPermission("manage_salary") && <AdminSalaryManagement />}
     </div>
   );
 };
