@@ -27,10 +27,18 @@ const safeFetch = async (url, options = {}) => {
 };
 
 /** Admin-only. effectiveFrom is optional (YYYY-MM-DD) - defaults to today server-side if omitted. */
-export const setSalary = async (userId, monthlySalary, healthInsuranceCost, professionalTax, permanentWfh, effectiveFrom) => {
+export const setSalary = async (userId, basicSalary, hra, otherAllowance, healthInsuranceCost, professionalTax, permanentWfh, effectiveFrom) => {
   return safeFetch(`${config.BASE_URL}/api/salary/set`, {
     method: "POST",
-    body: JSON.stringify({ userId, monthlySalary, healthInsuranceCost, professionalTax, permanentWfh, effectiveFrom }),
+    body: JSON.stringify({ userId, basicSalary, hra, otherAllowance, healthInsuranceCost, professionalTax, permanentWfh, effectiveFrom }),
+  });
+};
+
+/** Admin-only. One-time payroll-profile fields (designation/DOJ/bank details/PAN), not effective-dated. */
+export const updateEmployeeProfile = async (userId, profile) => {
+  return safeFetch(`${config.BASE_URL}/api/salary/user/${userId}/employee-profile`, {
+    method: "PUT",
+    body: JSON.stringify(profile),
   });
 };
 
@@ -56,4 +64,16 @@ export const finalizePayslip = async (userId, year, month) => {
   return safeFetch(`${config.BASE_URL}/api/salary/user/${userId}/payslip/finalize?year=${year}&month=${month}`, {
     method: "POST",
   });
+};
+
+/** Self-or-SUPER_ADMIN. Returns a PDF Blob - bypasses safeFetch, which assumes a JSON response. */
+export const downloadPayslipPdf = async (userId, year, month) => {
+  const res = await fetch(`${config.BASE_URL}/api/salary/user/${userId}/payslip/pdf?year=${year}&month=${month}`, {
+    headers: config.getHeaders(),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || "Failed to download payslip PDF");
+  }
+  return res.blob();
 };

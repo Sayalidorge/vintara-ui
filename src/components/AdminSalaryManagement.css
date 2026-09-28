@@ -22,6 +22,20 @@
   color: var(--primary-purple);
 }
 
+.salary-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 64px;
+}
+
+/* flex-grow:0 - each column stays exactly as wide as its 360px form
+   content, instead of stretching to fill the card's full width and
+   stranding the two input clusters far apart with dead space between them. */
+.salary-form-col {
+  flex: 0 1 360px;
+  min-width: 300px;
+}
+
 .salary-form {
   display: flex;
   flex-direction: column;
@@ -36,16 +50,37 @@
 }
 
 .salary-form input[type="number"],
-.salary-form input[type="date"] {
+.salary-form input[type="text"] {
   padding: 8px 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
 
 .salary-form input[type="number"]:focus,
-.salary-form input[type="date"]:focus {
+.salary-form input[type="text"]:focus {
   outline: none;
   border-color: var(--primary-purple);
+}
+
+/* react-datepicker's rendered <input> - matches the plain number/text
+   inputs above instead of falling back to the browser's native date input
+   (which ignores this app's theme entirely - see feedback_ui_consistency_new_features). */
+.admin-salary-management .date-picker {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.admin-salary-management .date-picker:focus {
+  outline: none;
+  border-color: var(--primary-purple);
+}
+
+.admin-salary-management .react-datepicker-wrapper {
+  width: 100%;
 }
 
 .admin-salary-management .checkbox-label {

@@ -1,7 +1,8 @@
 // src/components/MySalary.jsx
 import React, { useEffect, useState } from "react";
 import Select from "react-select";
-import { getPayslip } from "../services/SalaryService";
+import { getPayslip, downloadPayslipPdf } from "../services/SalaryService";
+import { downloadBlob } from "../utils/csv";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 import "../css/theme.css";
 import "../css/components.css";
@@ -27,6 +28,7 @@ const MySalary = () => {
   const [payslip, setPayslip] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const monthOptions = MONTH_NAMES.map((m, idx) => ({ value: idx + 1, label: m }));
   const yearOptions = [today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1]
@@ -51,6 +53,19 @@ const MySalary = () => {
     loadPayslip();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, year, month]);
+
+  const handleDownloadPdf = async () => {
+    if (!userId) return;
+    setDownloadingPdf(true);
+    try {
+      const blob = await downloadPayslipPdf(userId, year, month);
+      downloadBlob(blob, `payslip-${userId}-${year}-${String(month).padStart(2, "0")}.pdf`);
+    } catch (err) {
+      setError(err.message || "Failed to download payslip PDF.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   return (
     <div className="my-salary">
@@ -105,8 +120,20 @@ const MySalary = () => {
             <table className="salary-breakdown">
               <tbody>
                 <tr>
-                  <td>Base Salary</td>
-                  <td>{formatAmount(payslip.baseSalary)}</td>
+                  <td>Basic Salary</td>
+                  <td>{formatAmount(payslip.basicSalary)}</td>
+                </tr>
+                <tr>
+                  <td>HRA</td>
+                  <td>{formatAmount(payslip.hra)}</td>
+                </tr>
+                <tr>
+                  <td>Other Allowance</td>
+                  <td>{formatAmount(payslip.otherAllowance)}</td>
+                </tr>
+                <tr className="total-deduction-row">
+                  <td>Gross Salary</td>
+                  <td>{formatAmount(payslip.grossSalary)}</td>
                 </tr>
                 <tr>
                   <td>Days in {MONTH_NAMES[payslip.month - 1]}</td>
@@ -119,6 +146,10 @@ const MySalary = () => {
                 <tr>
                   <td>Per-Day Rate (÷ working days)</td>
                   <td>{formatAmount(payslip.perDayRate)}</td>
+                </tr>
+                <tr>
+                  <td>Paid Days</td>
+                  <td>{payslip.paidDays} of {payslip.daysInMonth - payslip.weeklyOffDaysInMonth}</td>
                 </tr>
                 <tr>
                   <td>Absent Days</td>
@@ -163,6 +194,10 @@ const MySalary = () => {
               <span className="net-pay-label">Net Pay</span>
               <span className="net-pay-value">{formatAmount(payslip.netPay)}</span>
             </div>
+
+            <button className="vt-btn vt-btn-primary" onClick={handleDownloadPdf} disabled={downloadingPdf}>
+              {downloadingPdf ? "Downloading..." : "Download PDF"}
+            </button>
           </>
         )}
       </div>

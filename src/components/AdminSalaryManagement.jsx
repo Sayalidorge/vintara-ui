@@ -1,8 +1,19 @@
 // src/components/AdminSalaryManagement.jsx
 import React, { useEffect, useState } from "react";
 import Select from "react-select";
-import { getAllCurrentSalaries, setSalary, getPayslip, getSalaryHistory, finalizePayslip } from "../services/SalaryService";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import {
+  getAllCurrentSalaries,
+  setSalary,
+  updateEmployeeProfile,
+  getPayslip,
+  getSalaryHistory,
+  finalizePayslip,
+  downloadPayslipPdf,
+} from "../services/SalaryService";
 import { toLocalDateStr } from "../utils/date";
+import { downloadBlob } from "../utils/csv";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 import "../css/theme.css";
 import "../css/components.css";
@@ -28,13 +39,25 @@ const AdminSalaryManagement = () => {
 
   const [form, setForm] = useState({
     userId: "",
-    monthlySalary: "",
+    basicSalary: "",
+    hra: "",
+    otherAllowance: "",
     healthInsuranceCost: "",
     professionalTax: "",
     permanentWfh: false,
-    effectiveFrom: toLocalDateStr(new Date()),
+    effectiveFrom: new Date(),
   });
   const [saving, setSaving] = useState(false);
+
+  const emptyProfileForm = {
+    designation: "",
+    dateOfJoining: null,
+    bankName: "",
+    bankAccountNumber: "",
+    ifscCode: "",
+    panNumber: "",
+  };
+  const [profileForm, setProfileForm] = useState(emptyProfileForm);
 
   const today = new Date();
   const [payslipTarget, setPayslipTarget] = useState(null); // userId or null
@@ -44,6 +67,7 @@ const AdminSalaryManagement = () => {
   const [payslipError, setPayslipError] = useState(null);
   const [payslipLoading, setPayslipLoading] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const [historyTarget, setHistoryTarget] = useState(null); // userId or null
   const [history, setHistory] = useState([]);
@@ -66,30 +90,57 @@ const AdminSalaryManagement = () => {
     loadSalaries();
   }, []);
 
+  // Saves BOTH the salary/deduction fields and the one-time employee
+  // details in one action - these used to be two separate buttons, which
+  // meant clicking "Save Salary" alone silently discarded whatever had just
+  // been typed into the "Employee One-Time Details" fields (they were never
+  // sent to the backend, then wiped back to blank right after). One button,
+  // one save, no way to lose half of what you just typed.
   const handleSetSalary = async () => {
-    if (!form.userId || !form.monthlySalary) {
-      showToast("Select an employee and enter a monthly salary.", "warning");
+    if (!form.userId || !form.basicSalary) {
+      showToast("Select an employee and enter a basic salary.", "warning");
       return;
     }
     setSaving(true);
     try {
       await setSalary(
         form.userId,
-        Number(form.monthlySalary),
+        Number(form.basicSalary),
+        Number(form.hra) || 0,
+        Number(form.otherAllowance) || 0,
         Number(form.healthInsuranceCost) || 0,
         Number(form.professionalTax) || 0,
         form.permanentWfh,
-        form.effectiveFrom
+        toLocalDateStr(form.effectiveFrom)
       );
-      showToast("Salary saved.", "success");
+      try {
+        await updateEmployeeProfile(form.userId, {
+          ...profileForm,
+          dateOfJoining: profileForm.dateOfJoining ? toLocalDateStr(profileForm.dateOfJoining) : null,
+        });
+        showToast("Salary and employee details saved.", "success");
+      } catch (profileErr) {
+        // Salary already saved successfully at this point - say so, don't
+        // let a profile-save failure read as if nothing happened.
+        showToast(profileErr.message || "Salary saved, but employee details failed to save.", "danger");
+      }
+      // If the payslip panel is already open for this same employee, refresh
+      // it too - otherwise it keeps showing whatever was there before this
+      // save, which reads as "my change didn't take effect".
+      if (payslipTarget === form.userId) {
+        loadPayslip(payslipTarget, payslipYear, payslipMonth);
+      }
       setForm({
         userId: "",
-        monthlySalary: "",
+        basicSalary: "",
+        hra: "",
+        otherAllowance: "",
         healthInsuranceCost: "",
         professionalTax: "",
         permanentWfh: false,
-        effectiveFrom: toLocalDateStr(new Date()),
+        effectiveFrom: new Date(),
       });
+      setProfileForm(emptyProfileForm);
       await loadSalaries();
     } catch (err) {
       showToast(err.message || "Failed to save salary.", "danger");
@@ -98,29 +149,81 @@ const AdminSalaryManagement = () => {
     }
   };
 
-  const openPayslip = (userId) => {
-    setPayslipTarget(userId);
-    setPayslip(null);
-    setPayslipError(null);
+  // Prefills BOTH forms from whatever this employee's SalaryResponseDTO row
+  // already carries - the earnings/deduction fields so admin sees (and can
+  // just tweak) what's currently on file instead of starting blank, and the
+  // "Employee One-Time Details" block so unchanged details never need
+  // re-typing. effectiveFrom deliberately stays "today" (not the stored
+  // row's own effectiveFrom) - saving always creates a new effective-dated
+  // row starting now, not an edit of the old one.
+  const handleEmployeeSelect = (selected) => {
+    const userId = selected ? selected.value : "";
+    const existing = salaries.find((s) => s.userId === userId);
+    setForm({
+      ...form,
+      userId,
+      basicSalary: existing?.basicSalary ?? "",
+      hra: existing?.hra ?? "",
+      otherAllowance: existing?.otherAllowance ?? "",
+      healthInsuranceCost: existing?.healthInsuranceCost ?? "",
+      professionalTax: existing?.professionalTax ?? "",
+      permanentWfh: existing?.permanentWfh ?? false,
+    });
+    setProfileForm({
+      designation: existing?.designation || "",
+      dateOfJoining: existing?.dateOfJoining ? new Date(existing.dateOfJoining) : null,
+      bankName: existing?.bankName || "",
+      bankAccountNumber: existing?.bankAccountNumber || "",
+      ifscCode: existing?.ifscCode || "",
+      panNumber: existing?.panNumber || "",
+    });
   };
 
+  const handleDownloadPdf = async () => {
+    if (!payslipTarget) return;
+    setDownloadingPdf(true);
+    try {
+      const blob = await downloadPayslipPdf(payslipTarget, payslipYear, payslipMonth);
+      downloadBlob(blob, `payslip-${payslipTarget}-${payslipYear}-${String(payslipMonth).padStart(2, "0")}.pdf`);
+    } catch (err) {
+      showToast(err.message || "Failed to download payslip PDF.", "danger");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  // Pulled out of the effect below so it can also be called directly - a
+  // useEffect keyed on payslipTarget only re-fires when that value actually
+  // CHANGES, so clicking "View Payslip" again for the same employee (e.g.
+  // right after editing their salary/details while the panel is still open)
+  // was silently a no-op and kept showing stale data.
+  const loadPayslip = async (userId, year, month) => {
+    setPayslipLoading(true);
+    setPayslipError(null);
+    setPayslip(null);
+    try {
+      const data = await getPayslip(userId, year, month);
+      setPayslip(data);
+    } catch (err) {
+      setPayslipError(err.message || "Failed to load payslip.");
+    } finally {
+      setPayslipLoading(false);
+    }
+  };
+
+  const openPayslip = (userId) => {
+    setPayslipTarget(userId);
+    loadPayslip(userId, payslipYear, payslipMonth);
+  };
+
+  // Only reacts to the month/year pickers now - payslipTarget's own
+  // transitions (including "still the same employee") are always handled by
+  // openPayslip calling loadPayslip directly above.
   useEffect(() => {
     if (!payslipTarget) return;
-    async function load() {
-      setPayslipLoading(true);
-      setPayslipError(null);
-      setPayslip(null);
-      try {
-        const data = await getPayslip(payslipTarget, payslipYear, payslipMonth);
-        setPayslip(data);
-      } catch (err) {
-        setPayslipError(err.message || "Failed to load payslip.");
-      } finally {
-        setPayslipLoading(false);
-      }
-    }
-    load();
-  }, [payslipTarget, payslipYear, payslipMonth]);
+    loadPayslip(payslipTarget, payslipYear, payslipMonth);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payslipYear, payslipMonth]);
 
   const handleFinalize = async () => {
     if (!payslipTarget) return;
@@ -176,13 +279,15 @@ const AdminSalaryManagement = () => {
       <h2 className="section-title">Salary Management</h2>
 
       <div className="salary-admin-card">
+        <div className="salary-form-row">
+        <div className="salary-form-col">
         <h2>Set / Update Salary</h2>
         <div className="salary-form">
           <label>Employee</label>
           <Select
             options={employeeOptions}
             value={employeeOptions.find((o) => o.value === form.userId) || null}
-            onChange={(selected) => setForm({ ...form, userId: selected ? selected.value : "" })}
+            onChange={handleEmployeeSelect}
             placeholder="Select employee"
             isClearable
             classNamePrefix="react-select"
@@ -192,12 +297,28 @@ const AdminSalaryManagement = () => {
             styles={themedSelectStyles()}
           />
 
-          <label>Monthly Salary</label>
+          <label>Basic Salary</label>
           <input
             type="number"
-            value={form.monthlySalary}
-            onChange={(e) => setForm({ ...form, monthlySalary: e.target.value })}
-            placeholder="e.g. 25000"
+            value={form.basicSalary}
+            onChange={(e) => setForm({ ...form, basicSalary: e.target.value })}
+            placeholder="e.g. 15000"
+          />
+
+          <label>HRA (Optional)</label>
+          <input
+            type="number"
+            value={form.hra}
+            onChange={(e) => setForm({ ...form, hra: e.target.value })}
+            placeholder="e.g. 5000"
+          />
+
+          <label>Other Allowance (Optional)</label>
+          <input
+            type="number"
+            value={form.otherAllowance}
+            onChange={(e) => setForm({ ...form, otherAllowance: e.target.value })}
+            placeholder="e.g. 5000"
           />
 
           <label>Health Insurance Cost (Optional)</label>
@@ -217,10 +338,12 @@ const AdminSalaryManagement = () => {
           />
 
           <label>Effective From</label>
-          <input
-            type="date"
-            value={form.effectiveFrom}
-            onChange={(e) => setForm({ ...form, effectiveFrom: e.target.value })}
+          <DatePicker
+            selected={form.effectiveFrom}
+            onChange={(date) => setForm({ ...form, effectiveFrom: date })}
+            dateFormat="dd/MM/yyyy"
+            className="date-picker"
+            portalId="salary-datepicker-portal"
           />
 
           <label className="checkbox-label">
@@ -233,8 +356,73 @@ const AdminSalaryManagement = () => {
           </label>
 
           <button className="vt-btn vt-btn-primary" onClick={handleSetSalary} disabled={saving}>
-            {saving ? "Saving..." : "Save Salary"}
+            {saving ? "Saving..." : "Save Salary & Details"}
           </button>
+        </div>
+        </div>
+
+        <div className="salary-form-col">
+        <h2>Employee One-Time Details</h2>
+        <div className="salary-form">
+          <label>Designation</label>
+          <input
+            type="text"
+            value={profileForm.designation}
+            onChange={(e) => setProfileForm({ ...profileForm, designation: e.target.value })}
+            placeholder="e.g. Receptionist"
+          />
+
+          <label>Date of Joining</label>
+          <DatePicker
+            selected={profileForm.dateOfJoining}
+            onChange={(date) => setProfileForm({ ...profileForm, dateOfJoining: date })}
+            dateFormat="dd/MM/yyyy"
+            placeholderText="Select date"
+            isClearable
+            // Joining dates are often years back - month/year dropdowns
+            // beat clicking the back-arrow one month at a time.
+            showMonthDropdown
+            showYearDropdown
+            dropdownMode="select"
+            yearDropdownItemNumber={40}
+            scrollableYearDropdown
+            maxDate={new Date()}
+            className="date-picker"
+            portalId="salary-datepicker-portal"
+          />
+
+          <label>Bank Name</label>
+          <input
+            type="text"
+            value={profileForm.bankName}
+            onChange={(e) => setProfileForm({ ...profileForm, bankName: e.target.value })}
+            placeholder="e.g. Axis Bank"
+          />
+
+          <label>Bank Account Number</label>
+          <input
+            type="text"
+            value={profileForm.bankAccountNumber}
+            onChange={(e) => setProfileForm({ ...profileForm, bankAccountNumber: e.target.value })}
+          />
+
+          <label>IFSC Code</label>
+          <input
+            type="text"
+            value={profileForm.ifscCode}
+            onChange={(e) => setProfileForm({ ...profileForm, ifscCode: e.target.value.toUpperCase() })}
+          />
+
+          <label>PAN Number (Optional)</label>
+          <input
+            type="text"
+            value={profileForm.panNumber}
+            onChange={(e) => setProfileForm({ ...profileForm, panNumber: e.target.value.toUpperCase() })}
+          />
+          {/* Single "Save Salary & Details" button below covers this section
+              too - see handleSetSalary. */}
+        </div>
+        </div>
         </div>
       </div>
 
@@ -245,7 +433,7 @@ const AdminSalaryManagement = () => {
           <thead>
             <tr>
               <th>Employee</th>
-              <th>Monthly Salary</th>
+              <th>Gross Salary</th>
               <th>Health Insurance</th>
               <th>Professional Tax</th>
               <th>Permanent WFH</th>
@@ -258,7 +446,7 @@ const AdminSalaryManagement = () => {
               salaries.map((s) => (
                 <tr key={s.userId}>
                   <td>{s.userName || s.userId}</td>
-                  <td>{formatAmount(s.monthlySalary)}</td>
+                  <td>{formatAmount(s.grossSalary)}</td>
                   <td>{formatAmount(s.healthInsuranceCost)}</td>
                   <td>{formatAmount(s.professionalTax)}</td>
                   <td>{s.permanentWfh ? "Yes" : "No"}</td>
@@ -316,7 +504,7 @@ const AdminSalaryManagement = () => {
                 menuPosition={menuPosition}
                 styles={themedSelectStyles()}
               />
-              <button className="vt-btn vt-btn-secondary" onClick={() => setPayslipTarget(null)}>Close</button>
+              <button className="vt-btn vt-btn-purple" onClick={() => setPayslipTarget(null)}>Close</button>
             </div>
           </div>
 
@@ -327,22 +515,29 @@ const AdminSalaryManagement = () => {
             <>
               <table className="salary-breakdown">
                 <tbody>
-                  <tr><td>Base Salary</td><td>{formatAmount(payslip.baseSalary)}</td></tr>
+                  <tr><td>Basic Salary</td><td>{formatAmount(payslip.basicSalary)}</td></tr>
+                  <tr><td>HRA</td><td>{formatAmount(payslip.hra)}</td></tr>
+                  <tr><td>Other Allowance</td><td>{formatAmount(payslip.otherAllowance)}</td></tr>
+                  <tr className="total-deduction-row"><td>Gross Salary</td><td>{formatAmount(payslip.grossSalary)}</td></tr>
                   <tr><td>Days in Month</td><td>{payslip.daysInMonth}</td></tr>
                   <tr><td>Weekly Off Days</td><td>{payslip.weeklyOffDaysInMonth}</td></tr>
                   <tr><td>Per-Day Rate (÷ working days)</td><td>{formatAmount(payslip.perDayRate)}</td></tr>
+                  <tr><td>Paid Days</td><td>{payslip.paidDays} of {payslip.daysInMonth - payslip.weeklyOffDaysInMonth}</td></tr>
                   <tr><td>Absent Days</td><td>{payslip.absentDays}</td></tr>
                   <tr><td>Half Days</td><td>{payslip.halfDays}</td></tr>
                   <tr><td>Unpaid Leave Days</td><td>{payslip.unpaidLeaveDays}</td></tr>
                   <tr><td>WFH Days This Month</td><td>{payslip.wfhDaysThisMonth}</td></tr>
                   <tr><td>Excess WFH Days</td><td>{payslip.excessWfhDays}</td></tr>
-                  <tr className="total-deduction-row"><td>Total Deduction Days</td><td>{payslip.totalDeductionDays}</td></tr>
+                  <tr className="total-deduction-row"><td>Total Deduction Days (LOP)</td><td>{payslip.totalDeductionDays}</td></tr>
                   <tr><td>Deduction Amount</td><td>-{formatAmount(payslip.deductionAmount)}</td></tr>
                   <tr><td>Health Insurance</td><td>-{formatAmount(payslip.healthInsuranceCost)}</td></tr>
                   <tr><td>Professional Tax</td><td>-{formatAmount(payslip.professionalTax)}</td></tr>
                   <tr className="total-deduction-row"><td>Net Pay</td><td>{formatAmount(payslip.netPay)}</td></tr>
                 </tbody>
               </table>
+              <button className="vt-btn vt-btn-primary" onClick={handleDownloadPdf} disabled={downloadingPdf}>
+                {downloadingPdf ? "Downloading..." : "Download PDF"}
+              </button>{" "}
               {!payslip.finalized && (
                 <button className="vt-btn vt-btn-primary" onClick={handleFinalize} disabled={finalizing}>
                   {finalizing ? "Finalizing..." : "Finalize"}
@@ -357,7 +552,7 @@ const AdminSalaryManagement = () => {
         <div className="salary-admin-card">
           <div className="salary-header">
             <h2>Salary History - {historyTarget}</h2>
-            <button className="vt-btn vt-btn-secondary" onClick={() => setHistoryTarget(null)}>Close</button>
+            <button className="vt-btn vt-btn-purple" onClick={() => setHistoryTarget(null)}>Close</button>
           </div>
 
           {historyLoading && <p>Loading...</p>}
@@ -366,7 +561,10 @@ const AdminSalaryManagement = () => {
             <table>
               <thead>
                 <tr>
-                  <th>Monthly Salary</th>
+                  <th>Basic Salary</th>
+                  <th>HRA</th>
+                  <th>Other Allowance</th>
+                  <th>Gross Salary</th>
                   <th>Health Insurance</th>
                   <th>Professional Tax</th>
                   <th>Permanent WFH</th>
@@ -379,7 +577,10 @@ const AdminSalaryManagement = () => {
                 {history.length > 0 ? (
                   history.map((h) => (
                     <tr key={h.id}>
-                      <td>{formatAmount(h.monthlySalary)}</td>
+                      <td>{formatAmount(h.basicSalary)}</td>
+                      <td>{formatAmount(h.hra)}</td>
+                      <td>{formatAmount(h.otherAllowance)}</td>
+                      <td>{formatAmount(h.grossSalary)}</td>
                       <td>{formatAmount(h.healthInsuranceCost)}</td>
                       <td>{formatAmount(h.professionalTax)}</td>
                       <td>{h.permanentWfh ? "Yes" : "No"}</td>
@@ -390,7 +591,7 @@ const AdminSalaryManagement = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" style={{ textAlign: "center" }}>No history found</td>
+                    <td colSpan="10" style={{ textAlign: "center" }}>No history found</td>
                   </tr>
                 )}
               </tbody>
