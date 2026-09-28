@@ -195,8 +195,9 @@ const TeamAttendanceLeave = () => {
           Leave
         </button>
         {/* manage_salary is narrower than this page's own manage_leaves gate
-            (only SUPER_ADMIN has both today) - hidden entirely for anyone
-            without it, e.g. SUPER_USER, rather than shown and blocked. */}
+            (SUPER_ADMIN and SUPER_USER have both, other roles have neither)
+            - hidden entirely for anyone without it, rather than shown and
+            blocked. */}
         {hasPermission("manage_salary") && (
           <button
             type="button"
