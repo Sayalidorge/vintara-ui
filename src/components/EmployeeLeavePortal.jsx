@@ -4,7 +4,6 @@ import Select from "react-select";
 import LeaveCalendar from "./LeaveCalendar";
 import { getLeaveBalance, getLeaveRequests, applyLeaveRequest } from "../services/LeaveService";
 import "./EmployeeLeavePortal.css";
-import { toLocalDateStr } from "../utils/date";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 import ToastContainer, { useToast } from "./common/Toast";
 
@@ -174,8 +173,6 @@ const EmployeeLeavePortal = () => {
     }
   };
 
-  const today = toLocalDateStr(new Date()); // min date for input
-
   return (
     <div className="page-container leave-portal">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
@@ -211,15 +208,18 @@ const EmployeeLeavePortal = () => {
           <label>Start Date</label>
           <input
             type="date"
-            min={today}
             value={form.startDate}
             onChange={handleStartDateChange}
           />
 
+          {/* No lower bound tied to "today" - past dates are allowed
+              (e.g. filing leave retroactively for a day already missed).
+              Still can't be before Start Date, since an end before its own
+              start is never meaningful regardless of past/future. */}
           <label>End Date</label>
           <input
             type="date"
-            min={form.startDate || today}
+            min={form.startDate || undefined}
             value={form.endDate}
             onChange={(e) => setForm({ ...form, endDate: e.target.value })}
           />

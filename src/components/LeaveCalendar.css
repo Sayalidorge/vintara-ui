@@ -109,6 +109,14 @@
   color: #333333 !important; /* Resets text to standard weekday dark gray */
 }
 
+/* 3b. Darken the leading/trailing days from adjacent months - react-calendar's
+   default (~#757575 at reduced opacity) reads as barely-there next to this
+   card's white background. */
+.leave-calendar-container .react-calendar__month-view__days__day--neighboringMonth {
+  color: #767676 !important;
+  opacity: 1 !important;
+}
+
 /* 4. HIGH SPECIFICITY TILES: Forces Approved Leave Colors onto Calendar Day Circles */
 .leave-calendar-container .react-calendar__tile.leave-paid {
   background-color: var(--primary-teal, #008080) !important;
