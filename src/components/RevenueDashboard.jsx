@@ -21,6 +21,14 @@ import { downloadCsv } from "../utils/csv";
 import { isSuperAdmin } from "../utils/auth";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 
+// Matches the same formatAmount pattern already used in MySalary.jsx /
+// AdminSalaryManagement.jsx / AuditLog.jsx (this app has no shared currency
+// util - each page keeps its own copy).
+function formatAmount(value) {
+  if (value === null || value === undefined) return "₹0";
+  return "₹" + Number(value).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 // One consistent tooltip for every chart on this page (Yearly/Daily x
 // overall/resort-wise) - previously copy-pasted identically 4 times.
 const RevenueTooltip = ({ active, payload }) => {
@@ -37,9 +45,9 @@ const RevenueTooltip = ({ active, payload }) => {
       }}
     >
       <div><strong>{data.label}</strong></div>
-      <div style={{ color: "var(--primary-teal)" }}>Direct: ₹ {data.directRevenue}</div>
-      <div style={{ color: "var(--primary-purple)" }}>OTA: ₹ {data.otaRevenue}</div>
-      <div>Total: ₹ {data.directRevenue + data.otaRevenue}</div>
+      <div style={{ color: "var(--primary-teal)" }}>Direct: {formatAmount(data.directRevenue)}</div>
+      <div style={{ color: "var(--primary-purple)" }}>OTA: {formatAmount(data.otaRevenue)}</div>
+      <div>Total: {formatAmount(data.directRevenue + data.otaRevenue)}</div>
     </div>
   );
 };
@@ -200,7 +208,7 @@ const RevenueDashboard = () => {
         <div className="cards">
           <div className="card">
             <h4>Total Revenue</h4>
-            <p>₹ {getTotal(yearlyRevenueData)}</p>
+            <p>{formatAmount(getTotal(yearlyRevenueData))}</p>
           </div>
         </div>
 
@@ -251,7 +259,7 @@ const RevenueDashboard = () => {
   <div className="cards">
     <div className="card">
       <h4>Total Revenue</h4>
-      <p>₹ {getTotal(dailyRevenueData)}</p>
+      <p>{formatAmount(getTotal(dailyRevenueData))}</p>
     </div>
   </div>
 
@@ -313,7 +321,7 @@ const RevenueDashboard = () => {
         <div className="cards">
           <div className="card">
             <h4>Total Revenue</h4>
-            <p>₹ {getTotal(resortYearlyData)}</p>
+            <p>{formatAmount(getTotal(resortYearlyData))}</p>
           </div>
         </div>
 
@@ -375,7 +383,7 @@ const RevenueDashboard = () => {
   <div className="cards">
     <div className="card">
       <h4>Total Revenue</h4>
-      <p>₹ {getTotal(resortDailyData)}</p>
+      <p>{formatAmount(getTotal(resortDailyData))}</p>
     </div>
   </div>
 

@@ -1163,7 +1163,7 @@ const UserInventory = () => {
                             </span>
                           </p>
                           <p>
-                            <strong>Total Amount to be Paid:</strong>{" "}
+                            <strong>Total Due:</strong>{" "}
                             <span className={totalDue === 0 ? "booking-list-card__amount-ok" : "booking-list-card__amount-due"}>
                               ₹{totalDue}
                             </span>
