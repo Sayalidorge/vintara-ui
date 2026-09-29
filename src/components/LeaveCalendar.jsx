@@ -221,8 +221,15 @@ const LeaveCalendar = ({ adminView = false, userId, onDayClick, showAttendance =
         case "WFH":
           return "attendance-remote";
         case "ON_LEAVE":
-        case "WEEKLY_OFF":
           return ""; // already colored by the leave-type class above
+        case "WEEKLY_OFF":
+          // Unlike ON_LEAVE, a WEEKLY_OFF attendance record is usually just
+          // a schedule-derived non-working day, not backed by an approved
+          // WEEKLY_OFF-type leave request - so it can't rely on
+          // getTileClassName having already colored the tile. Without this,
+          // a weekly off with no matching leave request gets no class at
+          // all and renders as a blank, uncolored day.
+          return "leave-weekly-off";
         case "ABSENT":
           return "attendance-absent";
         default:

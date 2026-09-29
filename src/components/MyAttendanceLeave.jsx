@@ -55,7 +55,12 @@ const MyAttendanceLeave = () => {
       const status = await getTodayStatus();
       setToday(status);
     } catch (err) {
+      // Previously silent (console.error only) - on a poor connection this
+      // left the card stuck on "--" with zero indication to the user that
+      // anything had failed, which is what actually happened in the field
+      // (see MyAttendanceLeave.jsx's handleCheckIn/handleCheckOut refresh).
       console.error("Failed to load today's attendance:", err);
+      showToast("Couldn't load today's attendance - check your connection and reload.", "danger");
     } finally {
       setLoading(false);
     }
@@ -73,6 +78,13 @@ const MyAttendanceLeave = () => {
       setToday(result);
     } catch (err) {
       showToast(err.message || "Check-in failed", "danger");
+      // The initial load on mount can silently fail on a poor connection
+      // (loadToday only console.errors, no retry), leaving the card stuck
+      // on "--" even though the user already checked in earlier - a rejected
+      // attempt here ("Already checked in today") is the clearest signal
+      // that's happened, so re-sync with the server instead of leaving the
+      // stale/blank display up.
+      loadToday();
     } finally {
       setBusy(false);
     }
@@ -86,6 +98,7 @@ const MyAttendanceLeave = () => {
       setToday(result);
     } catch (err) {
       showToast(err.message || "Check-out failed", "danger");
+      loadToday();
     } finally {
       setBusy(false);
     }

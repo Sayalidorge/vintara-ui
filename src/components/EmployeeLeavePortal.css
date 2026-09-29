@@ -118,6 +118,7 @@
 
 .btn-apply-leave:disabled {
   background-color: var(--gray-400);
+  color: var(--gray-700);
   cursor: not-allowed;
 }
 

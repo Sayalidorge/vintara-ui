@@ -154,7 +154,7 @@
 }
 
 .leave-calendar-container .react-calendar__tile.leave-weekly-off {
-  background-color: var(--gray-300, #cccccc) !important;
+  background-color: var(--gray-400, #cccccc) !important;
   color: #555555 !important;
   border-radius: 50% !important;
   font-weight: 600;
@@ -213,7 +213,7 @@
 }
 
 .leave-calendar-container .legend-box.leave-weekly-off {
-  background-color: var(--gray-300, #cccccc) !important;
+  background-color: var(--gray-400, #cccccc) !important;
 }
 
 .leave-calendar-container .leave-legend span {
