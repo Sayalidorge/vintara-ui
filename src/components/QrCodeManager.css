@@ -1,0 +1,289 @@
+/* Scoped with a qr- prefix - see this app's convention of prefixing new
+   shared-looking class names to avoid colliding with other components'
+   globally-bundled CSS (CRA has no CSS scoping). */
+.qr-page-title {
+  margin: 0 0 16px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--primary-purple);
+}
+
+.qr-resort-select-card {
+  max-width: 360px;
+  margin-bottom: 20px;
+}
+
+.qr-resort-select-card label {
+  display: block;
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.qr-code-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.qr-links-page-card {
+  max-width: 420px;
+}
+
+/* Preview modal - QrCodeManager.jsx has no other modal today, so both the
+   overlay and modal shell are defined here (scoped qr- like everything
+   else in this file) rather than importing an unrelated component's CSS. */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.qr-preview-modal {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  max-width: 420px;
+  width: 90%;
+}
+
+.qr-preview-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--gray-900);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.qr-preview-close:hover {
+  background: #ffffff;
+}
+
+.qr-code-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.qr-code-card h3 {
+  margin: 0;
+  color: var(--primary-teal);
+}
+
+.qr-code-output {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--gray-300);
+}
+
+.qr-code-stats {
+  margin: 0;
+  font-size: 13px;
+  color: var(--gray-700);
+  text-align: center;
+}
+
+.qr-code-actions-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Color pickers (custom QR design) */
+.qr-color-row {
+  display: flex;
+  gap: 16px;
+}
+
+.qr-color-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.qr-color-field input[type="color"] {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+}
+
+/* Logo upload - styled to look like a small secondary button since the
+   native file input itself can't be restyled directly. */
+.qr-logo-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2, 8px) var(--space-4, 16px);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-size-base, 14px);
+  font-weight: var(--font-weight-semibold, 600);
+  background-color: var(--gray-200);
+  color: var(--gray-900);
+  border: 1px solid var(--gray-300);
+  cursor: pointer;
+}
+
+.qr-logo-upload-btn:hover {
+  background-color: var(--gray-300);
+}
+
+/* Links Page editable list */
+.qr-links-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qr-links-editor-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.qr-links-editor-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px;
+  box-sizing: border-box;
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+}
+
+.qr-links-editor-remove {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: var(--gray-200);
+  color: var(--gray-700);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.qr-links-editor-remove:hover {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.qr-tracking-card {
+  max-width: 640px;
+}
+
+.qr-tracking-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.qr-tracking-filters .qr-month-select,
+.qr-tracking-filters .qr-year-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.qr-tracking-table-wrapper {
+  max-height: 480px;
+  overflow-y: auto;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+}
+
+.qr-tracking-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.qr-tracking-table th,
+.qr-tracking-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.qr-tracking-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--gray-100);
+  color: var(--gray-700);
+  font-weight: 600;
+  z-index: 1;
+}
+
+/* Scan Analytics - chart-only tokens derived from the brand teal, same
+   approach as PerformanceDashboard.css/AdminDashboard.css (scoped locally
+   rather than importing an unrelated component's CSS). */
+.qr-analytics-card {
+  margin-top: 20px;
+  max-width: 900px;
+  --qr-chart-grid: #dceeee;
+  --qr-chart-axis: #6f9a9a;
+  --qr-chart-axis-line: #cfe4e4;
+}
+
+.qr-analytics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.qr-analytics-header h3 {
+  margin: 0;
+  color: var(--primary-teal);
+}
+
+.qr-analytics-type-select {
+  min-width: 180px;
+}
+
+.qr-analytics-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--gray-600);
+  text-align: center;
+  padding: 20px 0;
+}
+
+.qr-analytics-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.qr-analytics-chart h4 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-700);
+  text-align: center;
+}

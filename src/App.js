@@ -28,8 +28,10 @@ import MonthlySettlement from "./components/MonthlySettlement";
 import AuditLog from "./components/AuditLog";
 import GstInvoicePage from "./components/GstInvoicePage";
 import CompanySettings from "./components/CompanySettings";
+import QrCodeManager from "./components/QrCodeManager";
 import MySalary from "./components/MySalary";
 import GuestCheckInPage from "./components/guest-checkin/GuestCheckInPage";
+import PublicLinksPage from "./components/PublicLinksPage";
 
 function App() {
   return (
@@ -43,6 +45,7 @@ function App() {
     path="/checkin/:token"
     element={<GuestCheckInPage />}
 />
+  <Route path="/links/:code" element={<PublicLinksPage />} />
 
   {/* Change password */}
   <Route
@@ -77,6 +80,7 @@ function App() {
     <Route path="monthly-settlement" element={<ProtectedRoute requiredPermission="view_monthly_settlement"><MonthlySettlement /></ProtectedRoute>} />
     <Route path="audit-log" element={<ProtectedRoute requiredPermission="view_audit_log"><AuditLog /></ProtectedRoute>} />
     <Route path="settings" element={<ProtectedRoute requiredPermission="manage_company_settings"><CompanySettings /></ProtectedRoute>} />
+    <Route path="qr-codes" element={<ProtectedRoute requiredPermission="manage_qr_codes"><QrCodeManager /></ProtectedRoute>} />
   </Route>
 
   {/* User routes */}

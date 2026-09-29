@@ -20,6 +20,7 @@ import {
   FaCoins,
   FaChartLine,
   FaStar,
+  FaQrcode,
 } from "react-icons/fa";
 
 // Single source of truth for the sidebar. Each item is shown only if the
@@ -63,6 +64,7 @@ const MENU_CONFIG = [
   { label: "Audit Log", path: "/admin/audit-log", icon: FaHistory, requiredPermission: "view_audit_log" },
   { label: "GST Invoice", path: "/user/gst-invoice", icon: FaFileInvoice, requiredPermission: "generate_gst_invoice" },
   { label: "Settings", path: "/admin/settings", icon: FaCog, requiredPermission: "manage_company_settings" },
+  { label: "QR Codes", path: "/admin/qr-codes", icon: FaQrcode, requiredPermission: "manage_qr_codes" },
 ];
 
 export default MENU_CONFIG;
