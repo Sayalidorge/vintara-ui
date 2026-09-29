@@ -289,11 +289,38 @@
   background-color: var(--button-hover);
 }
 
+/* Quick Booking (create-from-inventory-card) room-card "+ Quick Booking"
+   button is a light teal, distinct from the default (solid) teal checkin-btn
+   used everywhere else on these cards - the modal's own Create Booking/
+   Cancel buttons keep the usual teal/purple split below. Hover switches to
+   brand purple (not teal) for contrast against the teal base. */
+.checkin-btn.quick-booking-btn {
+  background-color: #59acac;
+}
+
+.checkin-btn.quick-booking-btn:hover:not(:disabled) {
+  background-color: var(--primary-purple);
+}
+
 .modal .cancel-btn {
   background-color: #fff;
   color: var(--gray-800);
   margin-right: 0;
   border: 1px solid var(--gray-400);
+}
+
+/* Quick Booking modal's Cancel is purple (Create Booking stays the default
+   teal from ".modal .checkin-btn" above) - matches this app's convention of
+   Cancel being purple, but scoped to this modal only so other modals'
+   plain-gray Cancel buttons above are untouched. */
+.modal .cancel-btn.quick-booking-cancel-btn {
+  background-color: var(--primary-purple);
+  color: #fff;
+  border: none;
+}
+
+.modal .cancel-btn.quick-booking-cancel-btn:hover {
+  background-color: var(--button-purple-hover);
 }
 
 .modal .cancel-btn:hover {
@@ -529,6 +556,7 @@
 
 .checkin-modal .checkin-btn:disabled {
   background-color: var(--gray-400);
+  color: var(--gray-700);
   cursor: not-allowed;
 }
 
@@ -793,6 +821,17 @@
   width: 100%;
   padding: 8px;
   box-sizing: border-box;
+}
+
+/* react-datepicker wraps its <input> in an inline-block wrapper/container,
+   so plain "width: 100%" on .custom-datepicker (which is relative to that
+   wrapper) has nothing to expand into and the field renders shrink-to-fit -
+   these force the wrapper itself to go full width, matching the other
+   modal-field inputs beside it. */
+.modal-field .react-datepicker-wrapper,
+.modal-field .react-datepicker__input-container {
+  display: block;
+  width: 100%;
 }
 
 .modal-actions {

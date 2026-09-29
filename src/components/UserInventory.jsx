@@ -178,6 +178,18 @@ const UserInventory = () => {
   const [isSubmittingCheckIn, setIsSubmittingCheckIn] = useState(false);
   const [isSubmittingEarlyCheckout, setIsSubmittingEarlyCheckout] = useState(false);
 
+  // Quick Booking: clicking an empty (no-booking) room card on Growth
+  // Model - Marketing resorts creates a minimal WALKIN booking right there -
+  // guest name + amount + checkout date only, everything else (resort/room/
+  // check-in date/source) comes from which card was clicked. Checkout
+  // defaults to the next day but is editable for multi-night walk-ins.
+  const [showQuickBookingModal, setShowQuickBookingModal] = useState(false);
+  const [quickBookingContext, setQuickBookingContext] = useState(null); // { resortId, roomId, roomNumber, date }
+  const [quickGuestName, setQuickGuestName] = useState("");
+  const [quickAmount, setQuickAmount] = useState("");
+  const [quickCheckOutDate, setQuickCheckOutDate] = useState(null);
+  const [isSubmittingQuickBooking, setIsSubmittingQuickBooking] = useState(false);
+
   // Fetch payment accounts assigned to the currently selected resort
   useEffect(() => {
     if (!selectedResort) {
@@ -214,6 +226,7 @@ const UserInventory = () => {
           value: r.id,
           label: r.name,
           categories: r.categories || [],
+          commissionModel: r.commissionModel,
         }));
         setAllResorts(options);
       } catch (err) {
@@ -229,6 +242,10 @@ const UserInventory = () => {
   // filters to the caller's assigned resorts for every non-SUPER_ADMIN role),
   // so no client-side filtering is needed here.
   const resorts = allResorts;
+
+  // Quick Booking (create-from-inventory-card) is only offered for Growth
+  // Model - Marketing resorts.
+  const isGrowthMarketing = selectedResort?.commissionModel === "GROWTH_MARKETING";
 
   // Auto-select: reopen whatever resort was in the URL (?resortId=) so a
   // refresh stays put instead of always falling back to the first resort;
@@ -268,6 +285,88 @@ const UserInventory = () => {
     } catch (err) {
       console.error(err);
       setBookings([]);
+    }
+  };
+
+  const openQuickBookingModal = (context) => {
+    setQuickBookingContext(context);
+    setQuickGuestName("");
+    setQuickAmount("");
+    // Default checkout is the day after check-in - editable from here for
+    // multi-night walk-ins.
+    const defaultCheckOut = new Date(context.date + "T00:00:00");
+    defaultCheckOut.setDate(defaultCheckOut.getDate() + 1);
+    setQuickCheckOutDate(defaultCheckOut);
+    setShowQuickBookingModal(true);
+  };
+
+  const handleQuickBookingSubmit = async () => {
+    if (!quickBookingContext || isSubmittingQuickBooking) return;
+    if (!quickGuestName.trim()) {
+      showToast("Enter the guest name.", "warning");
+      return;
+    }
+    const amount = parseFloat(quickAmount) || 0;
+    if (amount <= 0) {
+      showToast("Enter the amount.", "warning");
+      return;
+    }
+    if (!quickCheckOutDate) {
+      showToast("Select a check-out date.", "warning");
+      return;
+    }
+
+    const checkInDate = quickBookingContext.date;
+    const checkOutDate = toLocalDateStr(quickCheckOutDate);
+    const numberOfNights = Math.round(
+      (new Date(checkOutDate + "T00:00:00") - new Date(checkInDate + "T00:00:00")) / 86400000
+    );
+    if (numberOfNights < 1) {
+      showToast("Check-out date must be after the check-in date.", "warning");
+      return;
+    }
+
+    setIsSubmittingQuickBooking(true);
+    try {
+      const res = await fetch(`${config.BASE_URL}/api/bookings`, {
+        method: "POST",
+        headers: config.getHeaders(),
+        body: JSON.stringify({
+          resortId: quickBookingContext.resortId,
+          customerName: quickGuestName.trim(),
+          checkInDate,
+          checkOutDate,
+          numberOfNights,
+          adults: 1,
+          kids: 0,
+          totalAmount: amount,
+          advanceAmount: 0,
+          balanceAmount: amount,
+          source: "WALKIN",
+          createdByUserId: user?.id,
+          leadOwnerUserId: user?.id,
+          bookingItems: [
+            {
+              roomCategoryId: quickBookingContext.categoryId,
+              roomIds: [quickBookingContext.roomId],
+            },
+          ],
+        }),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
+        throw new Error(errBody?.error || "Failed to create booking");
+      }
+
+      setShowQuickBookingModal(false);
+      setQuickBookingContext(null);
+      showToast("Booking created.", "success");
+      await fetchBookings();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "Failed to create booking. Please try again.", "danger");
+    } finally {
+      setIsSubmittingQuickBooking(false);
     }
   };
 
@@ -958,6 +1057,23 @@ const UserInventory = () => {
                                 View Linked Booking
                               </button>
                             </div>
+                          ) : isGrowthMarketing ? (
+                            <button
+                              type="button"
+                              className="checkin-btn quick-booking-btn"
+                              style={{ width: "100%" }}
+                              onClick={() =>
+                                openQuickBookingModal({
+                                  resortId: selectedResort.value,
+                                  roomId: room.id,
+                                  roomNumber: room.roomNumber,
+                                  categoryId: cat.id,
+                                  date: selectedDateStr,
+                                })
+                              }
+                            >
+                              + Quick Booking
+                            </button>
                           ) : (
                             <p>Available</p>
                           )}
@@ -1740,6 +1856,67 @@ const UserInventory = () => {
                 {isSubmittingEarlyCheckout ? "Processing..." : "Confirm"}
               </button>
               <button className="cancel-btn" onClick={() => setShowEarlyCheckoutModal(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showQuickBookingModal && quickBookingContext && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Quick Booking</h3>
+            <p>
+              <strong>Room:</strong> {quickBookingContext.roomNumber}
+              {" · "}
+              <strong>Check-In:</strong> {formatDateDMY(quickBookingContext.date)}
+            </p>
+
+            <div className="modal-field">
+              <label>Check-Out Date:</label>
+              <DatePicker
+                selected={quickCheckOutDate}
+                onChange={(date) => date && setQuickCheckOutDate(date)}
+                minDate={(() => {
+                  const d = new Date(quickBookingContext.date + "T00:00:00");
+                  d.setDate(d.getDate() + 1);
+                  return d;
+                })()}
+                dateFormat="dd/MM/yyyy"
+                className="custom-datepicker"
+              />
+            </div>
+
+            <div className="modal-field">
+              <label>Guest Name:</label>
+              <input
+                type="text"
+                value={quickGuestName}
+                onChange={(e) => setQuickGuestName(e.target.value)}
+                placeholder="Guest name"
+              />
+            </div>
+
+            <div className="modal-field">
+              <label>Amount (₹):</label>
+              <input
+                type="number"
+                value={quickAmount}
+                onChange={(e) => setQuickAmount(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="checkin-btn"
+                onClick={handleQuickBookingSubmit}
+                disabled={isSubmittingQuickBooking}
+              >
+                {isSubmittingQuickBooking ? "Creating..." : "Create Booking"}
+              </button>
+              <button className="cancel-btn quick-booking-cancel-btn" onClick={() => setShowQuickBookingModal(false)}>
                 Cancel
               </button>
             </div>
