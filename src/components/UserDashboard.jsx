@@ -11,6 +11,7 @@ import { toLocalDateStr } from "../utils/date";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 import { getUserRole } from "../utils/auth";
 import ToastContainer, { useToast } from "./common/Toast";
+import { useConfirm } from "./common/useConfirm";
 
 // Display-only relabeling of BookingSource values - see the matching
 // constant in UserInventory.jsx for the full rationale.
@@ -51,12 +52,12 @@ const resortSelectStyles = themedSelectStyles({
 
 // Booking status -> the shared semantic badge classes (teal/purple/gray -
 // this app has no green/red/amber). CHECKED_IN is the "good" outcome,
-// CANCELLED/EARLY_CHECK_OUT are terminal/negative, anything else (BOOKED,
-// pending states) is neutral.
+// CANCELLED/EARLY_CHECK_OUT/DELETED are terminal/negative, anything else
+// (BOOKED, pending states) is neutral.
 const bookingStatusBadgeClass = (status) =>
   status === "CHECKED_IN"
     ? "vt-badge vt-badge-success"
-    : status === "CANCELLED" || status === "EARLY_CHECK_OUT"
+    : status === "CANCELLED" || status === "EARLY_CHECK_OUT" || status === "DELETED"
     ? "vt-badge vt-badge-danger"
     : "vt-badge vt-badge-warning";
 
@@ -86,11 +87,16 @@ const formatStayDuration = (checkInStr, checkOutStr) => {
 
 const UserDashboard = () => {
   const { toasts, showToast, dismissToast } = useToast();
+  const { confirm, ConfirmDialogElement } = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const isFrontDeskRole = getUserRole() === "PROPERTY_MANAGER" || getUserRole() === "RECEPTION";
+  const role = getUserRole();
+  const isFrontDeskRole = role === "PROPERTY_MANAGER" || role === "RECEPTION";
+  // Same USER+SUPER_ADMIN+SUPER_USER set the backend's @PreAuthorize on
+  // PUT /api/bookings/{id}/delete uses.
+  const canDeleteBooking = role === "USER" || role === "SUPER_ADMIN" || role === "SUPER_USER";
 
   const [resorts, setResorts] = useState([]);
   const [selectedResort, setSelectedResortState] = useState(null);
@@ -216,7 +222,7 @@ const UserDashboard = () => {
     setSearchQuery("");
   };
 
-  const isTerminalStatus = (status) => status === "CANCELLED" || status === "EARLY_CHECK_OUT";
+  const isTerminalStatus = (status) => status === "CANCELLED" || status === "EARLY_CHECK_OUT" || status === "DELETED";
 
   const toggleRow = (id) => {
     setExpandedRows((prev) => {
@@ -319,6 +325,45 @@ const UserDashboard = () => {
     }
   };
 
+  // Soft delete for a duplicate/erroneous booking - USER/SUPER_ADMIN/SUPER_USER
+  // (see canDeleteBooking above), offered on any non-DELETED status. Lightweight
+  // compared to Cancel - no reason field, no refund flow.
+  const handleDeleteBooking = async (booking) => {
+    const hasRealStay = booking.status === "CHECKED_IN" || booking.status === "CHECKED_OUT";
+    const confirmed = await confirm({
+      title: "Delete Booking",
+      message: hasRealStay
+        ? `Delete booking #${booking.id} for ${booking.customerName}? This booking has a completed/in-progress stay with real revenue attached - deleting it removes that revenue from every report (Revenue, Settlement, Performance). It'll still show as DELETED here, but this can't be undone from here.`
+        : `Delete booking #${booking.id} for ${booking.customerName}? It'll be marked deleted and excluded from all reports - this can't be undone from here.`,
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`${config.BASE_URL}/api/bookings/${booking.id}/delete`, {
+        method: "PUT",
+        headers: config.getHeaders(),
+      });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
+        throw new Error(errBody?.error || "Failed to delete booking");
+      }
+
+      const updatedBooking = await res.json();
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === booking.id ? { ...b, ...updatedBooking, status: "DELETED" } : b
+        )
+      );
+      showToast("Booking deleted.", "success");
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "Failed to delete booking", "danger");
+    }
+  };
+
   const selectedResortFromNav = location.state?.selectedResortId;
 
   useEffect(() => {
@@ -407,6 +452,7 @@ const UserDashboard = () => {
   return (
     <div className="user-dashboard">
     <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+    {ConfirmDialogElement}
     <div className="vt-page-header">
   <h2>User Dashboard</h2>
   <button type="button" className="btn-create-booking" onClick={handleCreateBooking}>
@@ -650,6 +696,14 @@ const UserDashboard = () => {
                             className="btn-cancel"
                           >
                             Cancel
+                          </button>
+                        )}
+                        {canDeleteBooking && b.status !== "DELETED" && (
+                          <button
+                            onClick={() => handleDeleteBooking(b)}
+                            className="btn-delete"
+                          >
+                            Delete
                           </button>
                         )}
                       </div>

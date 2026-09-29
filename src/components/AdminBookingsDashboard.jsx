@@ -49,11 +49,12 @@ const statusOptions = [
   { value: "CANCELLED", label: "Cancelled" },
   { value: "EARLY_CHECK_OUT", label: "Early Check-Out" },
   { value: "NO_SHOW", label: "No Show" },
+  { value: "DELETED", label: "Deleted" },
 ];
 
 const statusBadgeClass = (status) => {
   if (status === "CHECKED_IN") return "vt-badge-success";
-  if (status === "CANCELLED" || status === "EARLY_CHECK_OUT") return "vt-badge-danger";
+  if (status === "CANCELLED" || status === "EARLY_CHECK_OUT" || status === "DELETED") return "vt-badge-danger";
   return "vt-badge-warning";
 };
 
@@ -412,16 +413,22 @@ const AdminBookingsDashboard = () => {
   // rows shown in that column - a booking with no splits but a legacy
   // single-account balanceCreditedTo still had its balance genuinely
   // collected, so it counts here too, even though its cell just shows "-".
+  // Deleted bookings stay visible as rows (marked DELETED) but are excluded
+  // from every sum below - a soft-deleted duplicate shouldn't count toward
+  // any total, same as every other calculation touchpoint (Revenue
+  // Dashboard, Settlement, Performance) already excludes it.
+  const calculationBookings = filteredBookings.filter((b) => b.status !== "DELETED");
+
   const sumColumn = (col) => {
     if (col.key === "balanceSplits") {
-      return filteredBookings.reduce((total, b) => {
+      return calculationBookings.reduce((total, b) => {
         if (b.balanceSplits && b.balanceSplits.length > 0) {
           return total + b.balanceSplits.reduce((s, split) => s + (split.amount || 0), 0);
         }
         return total + (b.balanceCreditedToAccountName ? (b.balanceAmount || 0) : 0);
       }, 0);
     }
-    return filteredBookings.reduce((total, b) => {
+    return calculationBookings.reduce((total, b) => {
       const value = col.foodOnly ? (b.foodPreorder ? b[col.key] : 0) : b[col.key];
       return total + (value || 0);
     }, 0);
@@ -458,7 +465,7 @@ const AdminBookingsDashboard = () => {
       if (!amount) return;
       bump(accountName || "Unknown Account", field, amount);
     };
-    filteredBookings.forEach((b) => {
+    calculationBookings.forEach((b) => {
       addTo(b.advanceCreditedToAccountName, "collected", b.advanceAmount);
       if (b.balanceSplits && b.balanceSplits.length > 0) {
         b.balanceSplits.forEach((s) => addTo(s.accountName, "collected", s.amount));

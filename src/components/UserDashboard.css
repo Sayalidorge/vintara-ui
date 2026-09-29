@@ -273,6 +273,21 @@
   cursor: not-allowed;
 }
 
+/* SUPER_USER-only soft-delete action - same purple as Cancel/Edit, per this
+   app's brand-only palette (no red anywhere, including here). */
+.btn-delete {
+  background: var(--primary-purple);
+  color: #fff;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-delete:hover:not(:disabled) {
+  background: #660066;
+}
+
 /* Row expand/collapse toggle for the extra booking details (OTA commission,
    food preorder amounts, remarks) that don't have their own table columns. */
 .user-dashboard .row-expand-btn {
@@ -435,6 +450,30 @@
   align-items: center;
   gap: 12px;
   margin-top: 14px;
+}
+
+/* Previous/Next reuse the ".reset-filters-btn" class, but that class's color
+   rule above is scoped to ".dashboard-filters" specifically, so these two
+   otherwise rendered with no background/color at all - same purple/teal-hover
+   treatment, plus a disabled state for the first/last page. */
+.user-dashboard .pagination-controls .reset-filters-btn {
+  background-color: var(--primary-purple);
+  color: #fff;
+  font-weight: 600;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.user-dashboard .pagination-controls .reset-filters-btn:hover:not(:disabled) {
+  background-color: var(--primary-teal);
+}
+
+.user-dashboard .pagination-controls .reset-filters-btn:disabled {
+  background-color: var(--gray-300);
+  color: var(--gray-700);
+  cursor: not-allowed;
 }
 
 /* ==============================
