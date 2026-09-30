@@ -112,13 +112,25 @@
   font-size: var(--font-size-base);
 }
 
+.resorts-page-container .form-field textarea {
+  width: 100%;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  resize: vertical;
+}
+
 /* Every plain text input on this page had no themed focus state at all -
    just the browser's default blue outline, inconsistent with every
    react-select control (purple border on focus, no glow). Applies to every
    text input across the page (form fields, room category row, search box),
    not just one spot. */
 .resorts-page-container input[type="text"]:focus,
-.resorts-page-container input[type="number"]:focus {
+.resorts-page-container input[type="number"]:focus,
+.resorts-page-container .form-field textarea:focus {
   outline: none;
   border-color: var(--primary-purple);
 }
@@ -173,12 +185,13 @@
 }
 
 /* One shared grid for every row (not a separate grid per row) - each row's
-   4 fields are direct children (via a React.Fragment, no wrapping div per
+   fields are direct children (via a React.Fragment, no wrapping div per
    row) so every row's columns are pinned to the exact same track widths,
-   instead of each row sizing its own columns independently. */
+   instead of each row sizing its own columns independently. Category name,
+   prefix, room count, nightly rate, Seasonal Rates toggle, Remove. */
 .resorts-page-container .room-category-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto auto;
   gap: var(--space-3);
   align-items: center;
   margin-bottom: var(--space-3);
@@ -199,6 +212,48 @@
 .resorts-page-container .room-category-grid .vt-btn {
   height: 36px;
   box-sizing: border-box;
+}
+
+/* Seasonal-rate override panel for one category - spans the full grid row
+   (not one more narrow column) so its own mini table/add-row have room. */
+.resorts-page-container .seasonal-rates-panel {
+  grid-column: 1 / -1;
+  background: var(--gray-100);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.resorts-page-container .seasonal-rates-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--space-3);
+}
+
+.resorts-page-container .seasonal-rates-table th,
+.resorts-page-container .seasonal-rates-table td {
+  text-align: left;
+  padding: 6px 8px;
+  font-size: var(--font-size-sm);
+  border-bottom: 1px solid var(--gray-300);
+}
+
+.resorts-page-container .seasonal-rates-add-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.resorts-page-container .seasonal-rates-add-row input {
+  width: 100%;
+  padding: 8px 12px;
+  height: 36px;
+  box-sizing: border-box;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-400);
+  font-size: var(--font-size-base);
 }
 
 .resorts-page-container .add-room-category-btn {

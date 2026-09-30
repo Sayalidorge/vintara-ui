@@ -9,6 +9,12 @@ import SimpleSelect from "./common/SimpleSelect";
 import ToastContainer, { useToast } from "./common/Toast";
 import { useConfirm } from "./common/useConfirm";
 import { setResortGbpLocation } from "../services/ReviewService";
+import {
+  setResortGuestFacingInfo,
+  fetchSeasonalRates,
+  addSeasonalRate,
+  deleteSeasonalRate,
+} from "../services/RateService";
 import "../css/theme.css";
 import "../css/components.css";
 import "./ManageResorts.css";
@@ -68,7 +74,22 @@ const ManageResorts = () => {
   // editingGbpId/gbpLocationDraft below, which back the table's own inline
   // quick-edit column; both write through the same setResortGbpLocation call.
   const [gbpLocationId, setGbpLocationId] = useState("");
+  // Staff-maintained FAQ/amenities text the WhatsApp chatbot grounds its
+  // answers in - SUPER_ADMIN only, same visibility precedent as GBP Location
+  // ID above (both feed straight to an AI that acts publicly).
+  const [guestFacingInfo, setGuestFacingInfo] = useState("");
+  // eZee Channel Manager HotelCode this resort's reservations sync to - open
+  // to SUPER_USER too (not SUPER_ADMIN-only like GBP/guestFacingInfo above),
+  // since a wrong guess here just misroutes an internal booking record
+  // (correctable), not a public-facing mistake.
+  const [ezeeHotelCode, setEzeeHotelCode] = useState("");
   const [roomCategories, setRoomCategories] = useState([]);
+  // Which room category's seasonal-rate panel is expanded (by index into
+  // roomCategories), the cached rates per saved category id, and the
+  // in-progress "add a rate" draft for whichever panel is open.
+  const [seasonalRatesOpenIdx, setSeasonalRatesOpenIdx] = useState(null);
+  const [seasonalRatesByCategoryId, setSeasonalRatesByCategoryId] = useState({});
+  const [newSeasonalRate, setNewSeasonalRate] = useState({ fromDate: "", toDate: "", nightlyRate: "" });
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -96,6 +117,29 @@ const ManageResorts = () => {
     } catch (err) {
       console.error(err);
       showToast(err.message || "Failed to update GBP location", "danger");
+    }
+  };
+
+  // Same inline quick-edit pattern as GBP Location above, for eZee's HotelCode.
+  const [editingEzeeId, setEditingEzeeId] = useState(null);
+  const [ezeeHotelCodeDraft, setEzeeHotelCodeDraft] = useState("");
+
+  const saveEzeeHotelCode = async (resort) => {
+    try {
+      const params = new URLSearchParams({ ezeeHotelCode: ezeeHotelCodeDraft.trim() });
+      const res = await fetch(`${config.BASE_URL}/api/resorts/${resort.id}/ezee-hotel-code?${params.toString()}`, {
+        method: "PUT",
+        headers: config.getHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to update eZee hotel code");
+      setResorts((prev) =>
+        prev.map((r) => (r.id === resort.id ? { ...r, ezeeHotelCode: ezeeHotelCodeDraft.trim() || null } : r))
+      );
+      setEditingEzeeId(null);
+      showToast("eZee hotel code updated", "success");
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "Failed to update eZee hotel code", "danger");
     }
   };
 
@@ -283,6 +327,57 @@ const getCommissionModelLabel = (value) =>
     setRoomCategories(updated);
   };
 
+  // Seasonal rates only exist for an already-saved category (they're keyed
+  // off RoomCategory.id on the backend) - a brand-new unsaved row has to be
+  // saved first before its own overrides can be added.
+  const toggleSeasonalRates = async (idx) => {
+    if (seasonalRatesOpenIdx === idx) {
+      setSeasonalRatesOpenIdx(null);
+      return;
+    }
+    const categoryId = roomCategories[idx]?.id;
+    setNewSeasonalRate({ fromDate: "", toDate: "", nightlyRate: "" });
+    if (categoryId && !seasonalRatesByCategoryId[categoryId]) {
+      try {
+        const rates = await fetchSeasonalRates(categoryId);
+        setSeasonalRatesByCategoryId((prev) => ({ ...prev, [categoryId]: rates }));
+      } catch (err) {
+        console.error(err);
+        showToast(err.message || "Failed to load seasonal rates", "danger");
+      }
+    }
+    setSeasonalRatesOpenIdx(idx);
+  };
+
+  const handleAddSeasonalRate = async (categoryId) => {
+    if (!newSeasonalRate.fromDate || !newSeasonalRate.toDate || !newSeasonalRate.nightlyRate) {
+      return showToast("Enter a from date, to date, and nightly rate", "warning");
+    }
+    try {
+      await addSeasonalRate(categoryId, newSeasonalRate);
+      const rates = await fetchSeasonalRates(categoryId);
+      setSeasonalRatesByCategoryId((prev) => ({ ...prev, [categoryId]: rates }));
+      setNewSeasonalRate({ fromDate: "", toDate: "", nightlyRate: "" });
+      showToast("Seasonal rate added", "success");
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "Failed to add seasonal rate", "danger");
+    }
+  };
+
+  const handleDeleteSeasonalRate = async (categoryId, rateId) => {
+    try {
+      await deleteSeasonalRate(categoryId, rateId);
+      setSeasonalRatesByCategoryId((prev) => ({
+        ...prev,
+        [categoryId]: (prev[categoryId] || []).filter((r) => r.id !== rateId),
+      }));
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "Failed to delete seasonal rate", "danger");
+    }
+  };
+
   // Add/Edit resort
   const handleAddOrEdit = async (e) => {
     e.preventDefault();
@@ -315,7 +410,9 @@ const getCommissionModelLabel = (value) =>
     id: cat.id || null,
     name: cat.name,
     roomPrefix: cat.roomPrefix,
-    totalRooms: cat.totalRooms
+    totalRooms: cat.totalRooms,
+    baseNightlyRate: cat.baseNightlyRate === "" || cat.baseNightlyRate == null ? null : cat.baseNightlyRate,
+    ezeeRoomTypeId: cat.ezeeRoomTypeId?.trim() || null,
   })),
 };
 
@@ -377,6 +474,26 @@ const getCommissionModelLabel = (value) =>
         console.error("Failed to update GBP location", err);
         showToast(err.message || "Resort saved, but failed to update its GBP location.", "warning");
       }
+      try {
+        await setResortGuestFacingInfo(savedResort.id, guestFacingInfo.trim());
+      } catch (err) {
+        console.error("Failed to update guest-facing info", err);
+        showToast(err.message || "Resort saved, but failed to update its guest-facing info.", "warning");
+      }
+    }
+
+    // Open to SUPER_USER too (the field is always rendered on this page,
+    // unlike the SUPER_ADMIN-only ones above), so this always runs.
+    try {
+      const params = new URLSearchParams({ ezeeHotelCode: ezeeHotelCode.trim() });
+      const ezeeRes = await fetch(`${config.BASE_URL}/api/resorts/${savedResort.id}/ezee-hotel-code?${params.toString()}`, {
+        method: "PUT",
+        headers: config.getHeaders(),
+      });
+      if (!ezeeRes.ok) throw new Error("Failed to update eZee hotel code");
+    } catch (err) {
+      console.error("Failed to update eZee hotel code", err);
+      showToast(err.message || "Resort saved, but failed to update its eZee hotel code.", "warning");
     }
 
     setName("");
@@ -384,6 +501,8 @@ const getCommissionModelLabel = (value) =>
     setGoogleMapLink("");
     setPropertyContact("");
     setGbpLocationId("");
+    setGuestFacingInfo("");
+    setEzeeHotelCode("");
     setCommissionModel("");
     setCommissionPercentage("");
     setOtherOtaCommissionPercentage("");
@@ -410,6 +529,8 @@ const getCommissionModelLabel = (value) =>
     setGoogleMapLink(resort.googleMapLink || "");
     setPropertyContact(resort.propertyContact || "");
     setGbpLocationId(resort.gbpLocationId || "");
+    setGuestFacingInfo(resort.guestFacingInfo || "");
+    setEzeeHotelCode(resort.ezeeHotelCode || "");
     setCommissionModel(resort.commissionModel || "");
     setCommissionPercentage(resort.commissionPercentage || "");
     setOtherOtaCommissionPercentage(resort.otherOtaCommissionPercentage ?? "");
@@ -421,8 +542,18 @@ const getCommissionModelLabel = (value) =>
         roomPrefix: c.roomPrefix,
         totalRooms: c.totalRooms,
         startNumber: c.startNumber || 1,
+        baseNightlyRate: c.baseNightlyRate ?? "",
+        ezeeRoomTypeId: c.ezeeRoomTypeId || "",
+        // A saved name that isn't one of STANDARD_CATEGORIES' fixed options
+        // was entered via "Other / Custom..." originally - the dropdown
+        // can't display or rename an arbitrary string (no matching option,
+        // so it just shows the blank placeholder), so this has to render as
+        // the free-text input again, same as while it was first being typed.
+        isCustom: !STANDARD_CATEGORIES.some((sc) => sc.value === c.name),
       })) || []
     );
+    setSeasonalRatesOpenIdx(null);
+    setSeasonalRatesByCategoryId({});
     setShowForm(true);
 
     try {
@@ -508,10 +639,14 @@ const getCommissionModelLabel = (value) =>
     setGoogleMapLink("");
     setPropertyContact("");
     setGbpLocationId("");
+    setGuestFacingInfo("");
+    setEzeeHotelCode("");
     setCommissionModel("");
     setCommissionPercentage("");
     setOtherOtaCommissionPercentage("");
     setRoomCategories([]);
+    setSeasonalRatesOpenIdx(null);
+    setSeasonalRatesByCategoryId({});
     setSelectedAccountIds([]);
     setAdvanceAccountIds([]);
   };
@@ -662,7 +797,7 @@ const getCommissionModelLabel = (value) =>
           </div>
 
           {/* ROW 3 */}
-          <div className="form-row form-row--2col">
+          <div className="form-row form-row--3col">
             <div className="form-field">
               <label>Google Map Link</label>
               <input
@@ -681,6 +816,33 @@ const getCommissionModelLabel = (value) =>
                   placeholder="locations/1234567890123456789 (optional)"
                   value={gbpLocationId}
                   onChange={(e) => setGbpLocationId(e.target.value)}
+                />
+              ) : (
+                <p className="field-hint">Only a SUPER_ADMIN can set this.</p>
+              )}
+            </div>
+
+            <div className="form-field">
+              <label>eZee Hotel Code</label>
+              <input
+                type="text"
+                placeholder="e.g. 37993 (optional)"
+                value={ezeeHotelCode}
+                onChange={(e) => setEzeeHotelCode(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* ROW 3b - WhatsApp chatbot FAQ grounding text (SUPER_ADMIN only, same as GBP Location ID above) */}
+          <div className="form-row">
+            <div className="form-field">
+              <label>Guest-Facing Info (for WhatsApp bot)</label>
+              {isSuperAdmin ? (
+                <textarea
+                  rows={4}
+                  placeholder="Amenities, check-in/out times, policies, what's nearby - the WhatsApp chatbot answers FAQs from this text only, and says it'll check with the team for anything not covered here. Leave blank to fall back to general policy text only."
+                  value={guestFacingInfo}
+                  onChange={(e) => setGuestFacingInfo(e.target.value)}
                 />
               ) : (
                 <p className="field-hint">Only a SUPER_ADMIN can set this.</p>
@@ -841,6 +1003,41 @@ const getCommissionModelLabel = (value) =>
         required
       />
 
+      {/* NIGHTLY RATE - what the WhatsApp bot quotes for this category;
+          blank means the bot can't quote it yet (see RoomCategory.baseNightlyRate) */}
+      <input
+        type="number"
+        min="0"
+        step="1"
+        placeholder="Nightly Rate"
+        value={cat.baseNightlyRate ?? ""}
+        onChange={(e) => handleRoomCategoryChange(idx, "baseNightlyRate", e.target.value === "" ? "" : parseFloat(e.target.value))}
+      />
+
+      {/* eZee's own room-type identifier for this category - lets eZee
+          Availability pushes go out (EzeeAvailabilityPushService) and, once
+          matched against an incoming reservation's RoomTypeCode, is how a
+          pulled/pushed booking resolves back to this specific category
+          instead of just a free-text OTA room-type label. Blank = not mapped
+          yet, same "optional integration detail" precedent as eZee Hotel
+          Code on the resort itself. */}
+      <input
+        type="text"
+        placeholder="eZee Room Type ID"
+        value={cat.ezeeRoomTypeId ?? ""}
+        onChange={(e) => handleRoomCategoryChange(idx, "ezeeRoomTypeId", e.target.value)}
+      />
+
+      <button
+        type="button"
+        onClick={() => toggleSeasonalRates(idx)}
+        className="vt-btn vt-btn-purple"
+        disabled={!cat.id}
+        title={cat.id ? "Peak-season rate overrides" : "Save this category first to add seasonal rates"}
+      >
+        {seasonalRatesOpenIdx === idx ? "Hide Rates" : "Seasonal Rates"}
+      </button>
+
       <button
         type="button"
         onClick={() => removeRoomCategoryRow(idx)}
@@ -848,6 +1045,66 @@ const getCommissionModelLabel = (value) =>
       >
         Remove
       </button>
+
+      {seasonalRatesOpenIdx === idx && cat.id && (
+        <div className="seasonal-rates-panel">
+          <table className="seasonal-rates-table">
+            <thead>
+              <tr>
+                <th>From</th>
+                <th>To</th>
+                <th>Nightly Rate</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {(seasonalRatesByCategoryId[cat.id] || []).map((rate) => (
+                <tr key={rate.id}>
+                  <td>{rate.fromDate}</td>
+                  <td>{rate.toDate}</td>
+                  <td>Rs. {rate.nightlyRate}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="vt-btn vt-btn-danger"
+                      onClick={() => handleDeleteSeasonalRate(cat.id, rate.id)}
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {(seasonalRatesByCategoryId[cat.id] || []).length === 0 && (
+                <tr>
+                  <td colSpan={4} className="field-hint">No seasonal overrides yet.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          <div className="seasonal-rates-add-row">
+            <input
+              type="date"
+              value={newSeasonalRate.fromDate}
+              onChange={(e) => setNewSeasonalRate({ ...newSeasonalRate, fromDate: e.target.value })}
+            />
+            <input
+              type="date"
+              value={newSeasonalRate.toDate}
+              onChange={(e) => setNewSeasonalRate({ ...newSeasonalRate, toDate: e.target.value })}
+            />
+            <input
+              type="number"
+              min="0"
+              placeholder="Nightly Rate"
+              value={newSeasonalRate.nightlyRate}
+              onChange={(e) => setNewSeasonalRate({ ...newSeasonalRate, nightlyRate: e.target.value })}
+            />
+            <button type="button" className="vt-btn vt-btn-primary" onClick={() => handleAddSeasonalRate(cat.id)}>
+              + Add
+            </button>
+          </div>
+        </div>
+      )}
     </React.Fragment>
   );
 })}
@@ -918,6 +1175,7 @@ const getCommissionModelLabel = (value) =>
                 <th>Contact</th>
                 <th>Google Map</th>
                 <th>GBP Location</th>
+                <th>eZee Hotel Code</th>
                 <th>Room Categories</th>
                 <th>Commission</th>
                 <th>Status</th>
@@ -926,7 +1184,7 @@ const getCommissionModelLabel = (value) =>
             </thead>
             <tbody>
               {filteredResorts.length === 0 ? (
-                <tr><td colSpan="10" style={{ textAlign: "center", padding: "20px" }}>{resorts.length === 0 ? "No resorts available" : "No resorts match your search"}</td></tr>
+                <tr><td colSpan="11" style={{ textAlign: "center", padding: "20px" }}>{resorts.length === 0 ? "No resorts available" : "No resorts match your search"}</td></tr>
               ) : (
                 filteredResorts.map((resort) => {
                   const totalRooms = resort.roomCategories?.reduce((sum, c) => sum + (c.totalRooms || 0), 0) || 0;
@@ -973,6 +1231,33 @@ const getCommissionModelLabel = (value) =>
                           }}
                         >
                           {resort.gbpLocationId || "Not mapped"}
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ maxWidth: "140px" }}>
+                      {editingEzeeId === resort.id ? (
+                        <div style={{ display: "flex", gap: "4px" }}>
+                          <input
+                            type="text"
+                            value={ezeeHotelCodeDraft}
+                            onChange={(e) => setEzeeHotelCodeDraft(e.target.value)}
+                            placeholder="HotelCode"
+                            style={{ width: "90px", fontSize: "12px", padding: "3px 6px" }}
+                            autoFocus
+                          />
+                          <button className="edit-btn" style={{ padding: "3px 8px", fontSize: "12px" }} onClick={() => saveEzeeHotelCode(resort)}>Save</button>
+                          <button className="edit-btn" style={{ padding: "3px 8px", fontSize: "12px" }} onClick={() => setEditingEzeeId(null)}>Cancel</button>
+                        </div>
+                      ) : (
+                        <span
+                          title="The eZee Channel Manager HotelCode this resort's reservations sync to"
+                          style={{ cursor: "pointer", fontSize: "12px", color: resort.ezeeHotelCode ? "var(--text-dark)" : "var(--gray-500)" }}
+                          onClick={() => {
+                            setEditingEzeeId(resort.id);
+                            setEzeeHotelCodeDraft(resort.ezeeHotelCode || "");
+                          }}
+                        >
+                          {resort.ezeeHotelCode || "Not mapped"}
                         </span>
                       )}
                     </td>
