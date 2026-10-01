@@ -83,6 +83,12 @@ const ManageResorts = () => {
   // since a wrong guess here just misroutes an internal booking record
   // (correctable), not a public-facing mistake.
   const [ezeeHotelCode, setEzeeHotelCode] = useState("");
+  // Which real staff member this resort's automated/imported bookings
+  // (currently just eZee) get attributed to instead of a generic admin
+  // fallback - open to SUPER_USER too, same risk tier as eZee Hotel Code
+  // above (misattribution is correctable, not public-facing).
+  const [ownerUserId, setOwnerUserId] = useState(null);
+  const [userOptions, setUserOptions] = useState([]);
   const [roomCategories, setRoomCategories] = useState([]);
   // Which room category's seasonal-rate panel is expanded (by index into
   // roomCategories), the cached rates per saved category id, and the
@@ -249,6 +255,22 @@ const STANDARD_CATEGORIES = [
 
   useEffect(() => {
     fetchResorts();
+  }, []);
+
+  // User picker for the Resort Owner field - /users is already
+  // SUPER_ADMIN/SUPER_USER only, matching this page's own access level.
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch(`${config.BASE_URL}/users`, { headers: config.getHeaders() });
+        if (!res.ok) throw new Error("Failed to fetch users");
+        const data = await res.json();
+        setUserOptions(data.map((u) => ({ value: u.id, label: u.name || u.userId })));
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchUsers();
   }, []);
 
   // Scroll/focus the form whenever it opens (Create or Edit) - the form is
@@ -498,6 +520,20 @@ const getCommissionModelLabel = (value) =>
       showToast(err.message || "Resort saved, but failed to update its eZee hotel code.", "warning");
     }
 
+    // Same "always runs" reasoning as eZee Hotel Code above.
+    try {
+      const params = new URLSearchParams();
+      if (ownerUserId != null) params.set("ownerUserId", ownerUserId);
+      const ownerRes = await fetch(`${config.BASE_URL}/api/resorts/${savedResort.id}/owner?${params.toString()}`, {
+        method: "PUT",
+        headers: config.getHeaders(),
+      });
+      if (!ownerRes.ok) throw new Error("Failed to update resort owner");
+    } catch (err) {
+      console.error("Failed to update resort owner", err);
+      showToast(err.message || "Resort saved, but failed to update its owner.", "warning");
+    }
+
     setName("");
     setLocation("");
     setGoogleMapLink("");
@@ -505,6 +541,7 @@ const getCommissionModelLabel = (value) =>
     setGbpLocationId("");
     setGuestFacingInfo("");
     setEzeeHotelCode("");
+    setOwnerUserId(null);
     setCommissionModel("");
     setCommissionPercentage("");
     setOtherOtaCommissionPercentage("");
@@ -533,6 +570,7 @@ const getCommissionModelLabel = (value) =>
     setGbpLocationId(resort.gbpLocationId || "");
     setGuestFacingInfo(resort.guestFacingInfo || "");
     setEzeeHotelCode(resort.ezeeHotelCode || "");
+    setOwnerUserId(resort.ownerUserId ?? null);
     setCommissionModel(resort.commissionModel || "");
     setCommissionPercentage(resort.commissionPercentage || "");
     setOtherOtaCommissionPercentage(resort.otherOtaCommissionPercentage ?? "");
@@ -645,6 +683,7 @@ const getCommissionModelLabel = (value) =>
     setGbpLocationId("");
     setGuestFacingInfo("");
     setEzeeHotelCode("");
+    setOwnerUserId(null);
     setCommissionModel("");
     setCommissionPercentage("");
     setOtherOtaCommissionPercentage("");
@@ -851,6 +890,29 @@ const getCommissionModelLabel = (value) =>
               ) : (
                 <p className="field-hint">Only a SUPER_ADMIN can set this.</p>
               )}
+            </div>
+          </div>
+
+          {/* ROW 3c - which real staff member this resort's automated/imported
+              bookings (currently just eZee) get attributed to instead of a
+              generic admin fallback. Open to SUPER_USER too, same tier as
+              eZee Hotel Code - a wrong pick just misattributes createdBy,
+              correctable, not public-facing. */}
+          <div className="form-row">
+            <div className="form-field">
+              <label>Resort Owner (for imported bookings)</label>
+              <Select
+                options={userOptions}
+                value={userOptions.find((o) => o.value === ownerUserId) || null}
+                onChange={(selected) => setOwnerUserId(selected ? selected.value : null)}
+                isClearable
+                placeholder="Select the staff member who owns this property (optional)"
+                classNamePrefix="react-select"
+                className="react-select-container"
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPosition}
+                styles={themedSelectStyles()}
+              />
             </div>
           </div>
 
