@@ -413,6 +413,8 @@ const getCommissionModelLabel = (value) =>
     totalRooms: cat.totalRooms,
     baseNightlyRate: cat.baseNightlyRate === "" || cat.baseNightlyRate == null ? null : cat.baseNightlyRate,
     ezeeRoomTypeId: cat.ezeeRoomTypeId?.trim() || null,
+    ezeeRatePlanId: cat.ezeeRatePlanId?.trim() || null,
+    ezeeRateTypeId: cat.ezeeRateTypeId?.trim() || null,
   })),
 };
 
@@ -544,6 +546,8 @@ const getCommissionModelLabel = (value) =>
         startNumber: c.startNumber || 1,
         baseNightlyRate: c.baseNightlyRate ?? "",
         ezeeRoomTypeId: c.ezeeRoomTypeId || "",
+        ezeeRatePlanId: c.ezeeRatePlanId || "",
+        ezeeRateTypeId: c.ezeeRateTypeId || "",
         // A saved name that isn't one of STANDARD_CATEGORIES' fixed options
         // was entered via "Other / Custom..." originally - the dropdown
         // can't display or rename an arbitrary string (no matching option,
@@ -1026,6 +1030,26 @@ const getCommissionModelLabel = (value) =>
         placeholder="eZee Room Type ID"
         value={cat.ezeeRoomTypeId ?? ""}
         onChange={(e) => handleRoomCategoryChange(idx, "ezeeRoomTypeId", e.target.value)}
+      />
+
+      {/* RatePlanID/RateTypeID - only needed to push a CALL/WALKIN booking
+          made here INTO eZee as a real reservation (EzeeInsertBookingService);
+          pull/availability-push only ever need the Room Type ID above. Read
+          off eZee's "Separatesourcemapping" request (RoomInfo.RatePlans.RatePlan[]
+          bundles all three IDs per plan) - see docs/ezee-integration.md.
+          Blank = this category can't be pushed yet, skipped rather than
+          guessed at. */}
+      <input
+        type="text"
+        placeholder="eZee Rate Plan ID"
+        value={cat.ezeeRatePlanId ?? ""}
+        onChange={(e) => handleRoomCategoryChange(idx, "ezeeRatePlanId", e.target.value)}
+      />
+      <input
+        type="text"
+        placeholder="eZee Rate Type ID"
+        value={cat.ezeeRateTypeId ?? ""}
+        onChange={(e) => handleRoomCategoryChange(idx, "ezeeRateTypeId", e.target.value)}
       />
 
       <button

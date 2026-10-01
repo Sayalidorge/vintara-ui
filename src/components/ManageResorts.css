@@ -188,10 +188,11 @@
    fields are direct children (via a React.Fragment, no wrapping div per
    row) so every row's columns are pinned to the exact same track widths,
    instead of each row sizing its own columns independently. Category name,
-   prefix, room count, nightly rate, Seasonal Rates toggle, Remove. */
+   prefix, room count, nightly rate, eZee Room/Rate Plan/Rate Type IDs,
+   Seasonal Rates toggle, Remove. */
 .resorts-page-container .room-category-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto auto;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr auto auto;
   gap: var(--space-3);
   align-items: center;
   margin-bottom: var(--space-3);
