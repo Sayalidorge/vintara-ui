@@ -397,6 +397,7 @@ const QrCodeManager = () => {
                         <QRCodeCanvas
                           value={scanUrl}
                           size={140}
+                          level="H"
                           fgColor={colors.fgColor}
                           bgColor={colors.bgColor}
                           imageSettings={
@@ -558,6 +559,7 @@ const QrCodeManager = () => {
                     <QRCodeCanvas
                       value={scanUrl}
                       size={140}
+                      level="H"
                       fgColor={colors.fgColor}
                       bgColor={colors.bgColor}
                       imageSettings={
