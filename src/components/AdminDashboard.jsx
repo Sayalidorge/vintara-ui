@@ -407,7 +407,7 @@ useEffect(() => {
         onChange={(date) => date && setSelectedDate(toLocalDateStr(date))}
         dateFormat="dd/MM/yyyy"
         className="custom-datepicker"
-        withPortal
+        portalId="admin-dashboard-datepicker-portal"
       />
       {isSuperAdmin() && (
         <button type="button" className="export-csv-btn" onClick={exportDailyOccupancy}>
