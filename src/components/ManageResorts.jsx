@@ -900,13 +900,13 @@ const getCommissionModelLabel = (value) =>
               correctable, not public-facing. */}
           <div className="form-row">
             <div className="form-field">
-              <label>Resort Owner (for imported bookings)</label>
+              <label>Primary Customer Support (for imported bookings)</label>
               <Select
                 options={userOptions}
                 value={userOptions.find((o) => o.value === ownerUserId) || null}
                 onChange={(selected) => setOwnerUserId(selected ? selected.value : null)}
                 isClearable
-                placeholder="Select the staff member who owns this property (optional)"
+                placeholder="Select the staff member who supports this property (optional)"
                 classNamePrefix="react-select"
                 className="react-select-container"
                 menuPortalTarget={menuPortalTarget}
