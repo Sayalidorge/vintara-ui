@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Select from "react-select";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { menuPortalTarget, menuPosition, themedSelectStyles } from "../utils/reactSelectTheme";
 import {
   BarChart,
@@ -28,7 +30,7 @@ import {
 } from "react-icons/fa";
 import config from "../config";
 import { Link, useNavigate } from "react-router-dom";
-import { toLocalDateStr } from "../utils/date";
+import { toLocalDateStr, parseLocalDateStr } from "../utils/date";
 import { downloadCsv } from "../utils/csv";
 import { isSuperAdmin } from "../utils/auth";
 
@@ -86,6 +88,13 @@ const AdminDashboard = () => {
   const [selectedDate, setSelectedDate] = useState(
     toLocalDateStr(new Date())
   );
+  // selectedDate is stored as a string (API calls/filenames use it as one),
+  // but DatePicker needs a Date object for `selected` - memoized so it's the
+  // SAME object reference across re-renders whenever selectedDate itself
+  // hasn't changed. Without this, parseLocalDateStr(selectedDate) inline in
+  // the JSX below returns a brand-new Date every render, which sent
+  // DatePicker into a render loop that hung the whole page on open.
+  const selectedDateObj = useMemo(() => parseLocalDateStr(selectedDate), [selectedDate]);
 
   // ================= DASHBOARD CARDS =================
 const [roomsSummary, setRoomsSummary] = useState({
@@ -100,13 +109,13 @@ const [errorSummary, setErrorSummary] = useState(null);
 // =====================================================
   // FETCH Card Details
   // =====================================================
-const fetchRoomsSummary = async () => {
+const fetchRoomsSummary = async (date) => {
   try {
     setLoadingSummary(true);
     setErrorSummary(null);
 
     const response = await fetch(
-      `${config.BASE_URL}/api/admin/dashboard/today-occupancy`, // your backend endpoint
+      `${config.BASE_URL}/api/admin/dashboard/today-occupancy?date=${date}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -126,9 +135,11 @@ const fetchRoomsSummary = async () => {
   }
 };
 
+// Shares the same date filter as Resort-wise Daily Occupancy below it -
+// these cards previously always showed today regardless of that filter.
 useEffect(() => {
-  fetchRoomsSummary();
-}, []);
+  fetchRoomsSummary(selectedDate);
+}, [selectedDate]);
   // =====================================================
   // FETCH RESORT DROPDOWN
   // =====================================================
@@ -391,10 +402,12 @@ useEffect(() => {
   <div className="chart-header">
     <h3>Resort-wise Daily Occupancy</h3>
     <div className="chart-header-controls">
-      <input
-        type="date"
-        value={selectedDate}
-        onChange={(e) => setSelectedDate(e.target.value)}
+      <DatePicker
+        selected={selectedDateObj}
+        onChange={(date) => date && setSelectedDate(toLocalDateStr(date))}
+        dateFormat="dd/MM/yyyy"
+        className="custom-datepicker"
+        withPortal
       />
       {isSuperAdmin() && (
         <button type="button" className="export-csv-btn" onClick={exportDailyOccupancy}>
