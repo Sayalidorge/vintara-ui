@@ -185,7 +185,7 @@ useEffect(() => {
                   <td>{l.type}</td>
                   <td>{l.startDate}</td>
                   <td>{l.endDate}</td>
-                  <td>{l.leaveDays}</td>
+                  <td>{l.leaveDays}{l.halfDay ? " (Half Day)" : ""}</td>
                   <td>{l.reason}</td>
                   <td
                     className={

@@ -74,6 +74,7 @@ export const applyLeaveRequest = async (userId, form) => {
       endDate: form.endDate,
       type: form.type,
       reason: form.reason,
+      halfDay: !!form.halfDay,
     }),
   });
 };

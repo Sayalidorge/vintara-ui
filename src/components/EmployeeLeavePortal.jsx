@@ -65,13 +65,23 @@ const EmployeeLeavePortal = () => {
     type: "",
     startDate: "",
     endDate: "",
-    reason: ""
+    reason: "",
+    halfDay: false
   });
   const [loading, setLoading] = useState(false);
 
   const paidLeavesLeft = balance.accruedPaidLeaves - balance.paidLeavesUsed;
   const casualLeavesLeft = balance.accruedCasualLeaves - balance.casualLeavesUsed;
   const sickLeavesLeft = balance.accruedSickLeaves - balance.sickLeavesUsed;
+
+  // Mirrors LeaveService.HALF_DAY_ELIGIBLE_TYPES on the backend - half day
+  // only makes sense against a real balance to deduct 0.5 from (Privilege/
+  // Casual/Sick). Unpaid is uncapped and WFH/Weekly Off aren't balance-
+  // tracked, so neither offers the option.
+  const currentTypeClean = (form.type || "").trim().toUpperCase();
+  const isHalfDayEligibleType =
+    currentTypeClean === "PAID" || currentTypeClean === "PRIVILEGE_LEAVE" || currentTypeClean === "PRIVILAGE_LEAVE"
+      || currentTypeClean === "CASUAL" || currentTypeClean === "SICK";
 
   const leaveTypeOptions = balance.allowedLeaveTypes.map(type => {
     const cleanedType = (type || "").trim();
@@ -115,6 +125,9 @@ const EmployeeLeavePortal = () => {
     form.startDate && form.endDate
       ? Math.floor((new Date(form.endDate) - new Date(form.startDate)) / (1000 * 60 * 60 * 24)) + 1
       : 0;
+  // What actually gets deducted/validated against balance - 0.5 instead of
+  // the whole-day count whenever Half Day is checked.
+  const effectiveRequestedDays = form.halfDay ? 0.5 : requestedDays;
 
   // Custom handler for Start Date to automatically set End Date to matching day
   const handleStartDateChange = (e) => {
@@ -126,21 +139,32 @@ const EmployeeLeavePortal = () => {
     }));
   };
 
+  // Half Day only ever applies to a single day - checking it snaps End Date
+  // back to match Start Date (mirrors the backend's own rejection of a
+  // halfDay request spanning more than one day) and locks the End Date
+  // field while checked, same idea as handleStartDateChange above.
+  const handleHalfDayToggle = (checked) => {
+    setForm(f => ({
+      ...f,
+      halfDay: checked,
+      endDate: checked ? f.startDate : f.endDate
+    }));
+  };
+
   // Apply leave
   const handleApply = async () => {
     if (!form.startDate || !form.endDate) return showToast("Select start and end dates", "warning");
 
     // 🛡️ Balance Check Validation: Protects against exceeding paid/privilege/casual/sick balance allocations
-    const currentTypeClean = (form.type || "").trim().toUpperCase();
     const isPaidType = currentTypeClean === "PAID" || currentTypeClean === "PRIVILEGE_LEAVE" || currentTypeClean === "PRIVILAGE_LEAVE";
-    if (isPaidType && requestedDays > paidLeavesLeft) {
-      return showToast(`Cannot submit request! You are trying to apply for ${requestedDays} days, but you only have ${paidLeavesLeft} paid leave day(s) remaining.`, "warning");
+    if (isPaidType && effectiveRequestedDays > paidLeavesLeft) {
+      return showToast(`Cannot submit request! You are trying to apply for ${effectiveRequestedDays} days, but you only have ${paidLeavesLeft} paid leave day(s) remaining.`, "warning");
     }
-    if (currentTypeClean === "CASUAL" && requestedDays > casualLeavesLeft) {
-      return showToast(`Cannot submit request! You are trying to apply for ${requestedDays} days, but you only have ${casualLeavesLeft} casual leave day(s) remaining.`, "warning");
+    if (currentTypeClean === "CASUAL" && effectiveRequestedDays > casualLeavesLeft) {
+      return showToast(`Cannot submit request! You are trying to apply for ${effectiveRequestedDays} days, but you only have ${casualLeavesLeft} casual leave day(s) remaining.`, "warning");
     }
-    if (currentTypeClean === "SICK" && requestedDays > sickLeavesLeft) {
-      return showToast(`Cannot submit request! You are trying to apply for ${requestedDays} days, but you only have ${sickLeavesLeft} sick leave day(s) remaining.`, "warning");
+    if (currentTypeClean === "SICK" && effectiveRequestedDays > sickLeavesLeft) {
+      return showToast(`Cannot submit request! You are trying to apply for ${effectiveRequestedDays} days, but you only have ${sickLeavesLeft} sick leave day(s) remaining.`, "warning");
     }
 
     try {
@@ -162,7 +186,7 @@ const EmployeeLeavePortal = () => {
       setLeaveRequests(requests);
       setBalance(bal);
 
-      setForm({ type: "PAID", startDate: "", endDate: "", reason: "" });
+      setForm({ type: "PAID", startDate: "", endDate: "", reason: "", halfDay: false });
 
       showToast("Leave request submitted successfully", "success");
     } catch (err) {
@@ -201,7 +225,12 @@ const EmployeeLeavePortal = () => {
             menuPosition={menuPosition}
             options={leaveTypeOptions}
             value={selectedLeaveTypeOption}
-            onChange={(opt) => setForm({ ...form, type: opt.value })}
+            onChange={(opt) => {
+              const cleaned = (opt.value || "").trim().toUpperCase();
+              const stillEligible = cleaned === "PAID" || cleaned === "PRIVILEGE_LEAVE" || cleaned === "PRIVILAGE_LEAVE"
+                || cleaned === "CASUAL" || cleaned === "SICK";
+              setForm({ ...form, type: opt.value, halfDay: stillEligible ? form.halfDay : false });
+            }}
             isSearchable={false}
           />
 
@@ -221,13 +250,28 @@ const EmployeeLeavePortal = () => {
             type="date"
             min={form.startDate || undefined}
             value={form.endDate}
+            disabled={form.halfDay}
             onChange={(e) => setForm({ ...form, endDate: e.target.value })}
           />
 
+          {/* Only offered for Privilege/Casual/Sick - these are the only
+              leave types with a real accrued balance to deduct 0.5 from
+              (Unpaid is uncapped, WFH/Weekly Off aren't balance-tracked). */}
+          {isHalfDayEligibleType && (
+            <label className="half-day-checkbox-label">
+              <input
+                type="checkbox"
+                checked={form.halfDay}
+                onChange={(e) => handleHalfDayToggle(e.target.checked)}
+              />
+              {" "}Half Day
+            </label>
+          )}
+
           {/* Dynamic counter block showing total count of days being applied for */}
-          {requestedDays > 0 && (
+          {effectiveRequestedDays > 0 && (
             <div className="requested-days-box">
-              Total Applied Duration: <strong>{requestedDays} Day(s)</strong>
+              Total Applied Duration: <strong>{form.halfDay ? "0.5 Day (Half Day)" : `${requestedDays} Day(s)`}</strong>
             </div>
           )}
 
@@ -237,19 +281,19 @@ const EmployeeLeavePortal = () => {
             onChange={(e) => setForm({ ...form, reason: e.target.value })}
           />
 
-          {requestedDays > paidLeavesLeft && ((form.type || "").trim().toUpperCase() === "PAID" || (form.type || "").trim().toUpperCase() === "PRIVILEGE_LEAVE" || (form.type || "").trim().toUpperCase() === "PRIVILAGE_LEAVE") && (
+          {effectiveRequestedDays > paidLeavesLeft && (currentTypeClean === "PAID" || currentTypeClean === "PRIVILEGE_LEAVE" || currentTypeClean === "PRIVILAGE_LEAVE") && (
             <p className="warning-text">
               ⚠️ Warning: Requested duration exceeds your available paid balance!
             </p>
           )}
 
-          {requestedDays > casualLeavesLeft && (form.type || "").trim().toUpperCase() === "CASUAL" && (
+          {effectiveRequestedDays > casualLeavesLeft && currentTypeClean === "CASUAL" && (
             <p className="warning-text">
               ⚠️ Warning: Requested duration exceeds your available casual leave balance!
             </p>
           )}
 
-          {requestedDays > sickLeavesLeft && (form.type || "").trim().toUpperCase() === "SICK" && (
+          {effectiveRequestedDays > sickLeavesLeft && currentTypeClean === "SICK" && (
             <p className="warning-text">
               ⚠️ Warning: Requested duration exceeds your available sick leave balance!
             </p>
@@ -290,7 +334,7 @@ const EmployeeLeavePortal = () => {
                 <td>{l.type}</td>
                 <td>{l.startDate}</td>
                 <td>{l.endDate}</td>
-                <td>{l.leaveDays}</td>
+                <td>{l.leaveDays}{l.halfDay ? " (Half Day)" : ""}</td>
                 <td className={`leave-status-cell leave-status-cell--${l.status?.toLowerCase()}`}>
                   {l.status}
                 </td>
