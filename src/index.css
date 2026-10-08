@@ -19,6 +19,24 @@ html, body {
   scrollbar-gutter: stable; /* Reserves scrollbar space so popups (e.g. the date picker) don't shift layout when they toggle the scrollbar on/off */
 }
 
+/* iOS Safari auto-zooms the whole page on focus whenever a text input's
+   computed font-size is under 16px - several component stylesheets across
+   the app set inputs/selects/textareas to 13-14px on mobile breakpoints,
+   which is what's triggering that zoom. Global + !important rather than
+   fixing each file individually, since this needs to win regardless of
+   which component's stylesheet last set a smaller size, and new
+   components will keep hitting the same iOS quirk otherwise. Scoped to
+   touch-capable/no-hover devices so desktop input sizing is untouched. */
+@media (hover: none) {
+  input,
+  select,
+  textarea,
+  .react-select__input input,
+  .react-datepicker__input-container input {
+    font-size: 16px !important;
+  }
+}
+
 /* Export CSV buttons — Admin Dashboard, Revenue, Expenses, Property
    Collection, Monthly Settlement. Global since CRA bundles all component
    CSS together regardless of which file imports it. */

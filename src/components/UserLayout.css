@@ -17,6 +17,14 @@
   display: flex;
   width: 100vw;
   height: 100vh;
+  /* On mobile, 100vh is based on the viewport with the browser's address
+     bar hidden - as it shows/hides while scrolling, the actual visible
+     area changes but a plain 100vh shell doesn't track that, so the whole
+     fixed-height shell (and everything sized relative to it, including
+     .content-viewport below) visibly resizes/jumps mid-scroll. 100dvh
+     tracks the real visible viewport instead; falls back to 100vh above
+     on browsers that don't support dvh. */
+  height: 100dvh;
   overflow: hidden;
   position: relative;
   background: #f5f6fa;
@@ -27,6 +35,7 @@
   width: var(--sidebar-width);
   min-width: var(--sidebar-width);
   height: 100vh;
+  height: 100dvh; /* see .admin-layout above */
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -118,6 +127,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh; /* see .admin-layout above */
   overflow: hidden;
   min-width: 0;
 }
