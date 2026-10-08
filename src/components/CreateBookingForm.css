@@ -435,6 +435,17 @@
     width: 100%;
   }
 
+  /* .booking-item-card .form-row > .form-group:not(.action-buttons) sets
+     flex: 1 1 220px for desktop's row-direction layout (a min-width). With
+     .form-row now flex-direction: column above, that same flex-basis forces
+     a 220px min-HEIGHT instead - leaving a large empty gap below each
+     ~40px-tall Category/Rooms dropdown. Reset it here at equal specificity
+     so it only takes its natural content height when stacked. */
+  .booking-item-card .form-row > .form-group:not(.action-buttons) {
+    flex: 1 1 auto;
+    max-width: 100%;
+  }
+
   /* Ensure inputs and React-Select dropdowns stretch cleanly */
   .booking-form input,
   .booking-form select,
